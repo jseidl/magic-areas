@@ -106,7 +106,7 @@ Your support helps keep the project alive and is **hugely appreciated**.  ❤️
 [buymecoffeebadgebig]: https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png
 [commits-shield]: https://img.shields.io/github/commit-activity/y/jseidl/hass-magic_areas.svg?style=for-the-badge
 [commits]: https://github.com/jseidl/hass-magic_areas/commits/main
-[discord]: https://discord.gg/tvaS4BG5
+[discord]: https://discord.gg/3yu2F7bSaT
 [hacs]: https://github.com/hacs/integration
 [discord-shield]: https://img.shields.io/discord/928386239789400065?style=for-the-badge&label=Discord
 [license-shield]: https://img.shields.io/github/license/jseidl/hass-magic_areas.svg?style=for-the-badge
