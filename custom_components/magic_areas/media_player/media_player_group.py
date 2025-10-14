@@ -2,13 +2,13 @@
 
 import logging
 
-from custom_components.magic_areas.base.entities import MagicEntity
 from homeassistant.components.group.media_player import MediaPlayerGroup
 
+from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.const import (
-    MagicAreasFeatureInfoMediaPlayerGroups,
     EMPTY_STRING,
     MEDIA_PLAYER_DOMAIN,
+    MagicAreasFeatureInfoMediaPlayerGroups,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)

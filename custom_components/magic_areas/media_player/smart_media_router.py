@@ -1,34 +1,37 @@
 """Smart Media Router component."""
 
-import logging
 from enum import StrEnum, auto
+import logging
 from typing import Any
 
-from custom_components.magic_areas.base.entities import MagicEntity
-from homeassistant.core import State
-from homeassistant.const import ATTR_ENTITY_ID, STATE_IDLE
-from homeassistant.components.media_player import MediaPlayerEntity
-from homeassistant.components.media_player.const import MediaPlayerEntityFeature
-from homeassistant.helpers.entity_registry import (
-    async_get as entityreg_async_get,
-    RegistryEntry,
+from homeassistant.components.media_player import (
+    MediaPlayerDeviceClass,
+    MediaPlayerEntity,
 )
-from homeassistant.helpers.device_registry import (
-    async_get as devicereg_async_get,
-    DeviceEntry,
-)
-from homeassistant.components.media_player import MediaPlayerDeviceClass
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_ANNOUNCE,
-    MediaType,
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
     SERVICE_PLAY_MEDIA,
+    MediaPlayerEntityFeature,
     MediaPlayerState,
+    MediaType,
 )
+from homeassistant.const import ATTR_ENTITY_ID, STATE_IDLE
+from homeassistant.core import State
+from homeassistant.helpers.device_registry import (
+    DeviceEntry,
+    async_get as devicereg_async_get,
+)
+from homeassistant.helpers.entity_registry import (
+    RegistryEntry,
+    async_get as entityreg_async_get,
+)
+
+from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.const import (
-    MEDIA_PLAYER_DOMAIN,
     INVALID_STATES,
+    MEDIA_PLAYER_DOMAIN,
     MagicAreasFeatureInfoSmartMediaRouter,
 )
 
@@ -226,17 +229,14 @@ class SmartMediaRouter(MagicEntity, MediaPlayerEntity):
 
         _LOGGER.warning("Forwarding request: %s", str(data))
 
-        # return True
-
         try:
             await self.hass.services.async_call(
-                MEDIA_PLAYER_DOMAIN,
-                SERVICE_PLAY_MEDIA,
-                data,
+                MEDIA_PLAYER_DOMAIN, SERVICE_PLAY_MEDIA, data
             )
+
             return True
-        except Exception as e:  # pylint disable=broad-exception-caught
-            _LOGGER.error("Error forwarding call: %s", str(e))
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            _LOGGER.warning("Error forwarding request: %s", str(e))
             return False
 
     def get_routing_group_for_request(
@@ -333,7 +333,7 @@ class SmartMediaRouter(MagicEntity, MediaPlayerEntity):
             return False
 
         # Platform checks
-        ## Alexa
+        # Alexa
         if entity_entry.platform == PLATFORM_ALEXA_MEDIA:
             return True
 
@@ -415,7 +415,7 @@ class SmartMediaRouter(MagicEntity, MediaPlayerEntity):
             return False
 
         # Platform checks
-        ## WebOSTv
+        # WebOsTV
         if entity_entry.platform == PLATFORM_WEBOSTV:
             return True
 

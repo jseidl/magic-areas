@@ -17,9 +17,6 @@ from custom_components.magic_areas.helpers.area import get_area_from_config_entr
 from custom_components.magic_areas.switch.base import SwitchBase
 from custom_components.magic_areas.switch.climate_control import ClimateControlSwitch
 from custom_components.magic_areas.switch.fan_control import FanControlSwitch
-from custom_components.magic_areas.switch.media_player_control import (
-    MediaPlayerControlSwitch,
-)
 from custom_components.magic_areas.switch.presence_hold import PresenceHoldSwitch
 from custom_components.magic_areas.util import cleanup_removed_entries
 
