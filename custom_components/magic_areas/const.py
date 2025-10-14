@@ -298,9 +298,16 @@ class MagicAreasFeatureInfoMediaPlayerGroups(MagicAreasFeatureInfo):
     id = "media_player_groups"
     translation_keys = {
         MEDIA_PLAYER_DOMAIN: "media_player_group",
-        SWITCH_DOMAIN: "media_player_control",
     }
-    icons = {SWITCH_DOMAIN: "mdi:auto-mode"}
+
+
+class MagicAreasFeatureInfoSmartMediaRouter(MagicAreasFeatureInfo):
+    """Feature information for feature: Smart media router."""
+
+    id = "smart_media_router"
+    translation_keys = {
+        MEDIA_PLAYER_DOMAIN: "smart_media_router",
+    }
 
 
 class MagicAreasFeatureInfoCoverGroups(MagicAreasFeatureInfo):
@@ -666,6 +673,7 @@ CONFIGURABLE_AREA_STATE_MAP = {
 CONF_FEATURE_CLIMATE_CONTROL = "climate_control"
 CONF_FEATURE_FAN_GROUPS = "fan_groups"
 CONF_FEATURE_MEDIA_PLAYER_GROUPS = "media_player_groups"
+CONF_FEATURE_SMART_MEDIA_ROUTER = "smart_media_router"
 CONF_FEATURE_LIGHT_GROUPS = "light_groups"
 CONF_FEATURE_COVER_GROUPS = "cover_groups"
 CONF_FEATURE_AREA_AWARE_MEDIA_PLAYER = "area_aware_media_player"
@@ -686,6 +694,7 @@ CONF_FEATURE_LIST_META = [
 
 CONF_FEATURE_LIST = CONF_FEATURE_LIST_META + [
     CONF_FEATURE_AREA_AWARE_MEDIA_PLAYER,
+    CONF_FEATURE_SMART_MEDIA_ROUTER,
     CONF_FEATURE_PRESENCE_HOLD,
     CONF_FEATURE_BLE_TRACKERS,
     CONF_FEATURE_FAN_GROUPS,
