@@ -25,6 +25,7 @@
           "fan_groups": "Create fan groups",
           "climate_control": "Create climate controller",
           "media_player_groups": "Create media player groups",
+          "smart_media_router": "Create Smart media router",
           "light_groups": "Create light groups",
           "cover_groups": "Create cover groups",
           "area_aware_media_player": "Area-aware media player",
@@ -393,6 +394,9 @@
       }
     },
     "media_player": {
+      "smart_media_router": {
+        "name": "Smart Media Router"
+      },
       "media_player_group": {
         "name": "Media Players"
       },

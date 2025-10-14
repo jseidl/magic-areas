@@ -8,6 +8,7 @@ from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     CONF_FEATURE_AREA_AWARE_MEDIA_PLAYER,
     CONF_FEATURE_MEDIA_PLAYER_GROUPS,
+    CONF_FEATURE_SMART_MEDIA_ROUTER,
     CONF_NOTIFICATION_DEVICES,
     DATA_AREA_OBJECT,
     META_AREA_GLOBAL,
@@ -20,6 +21,9 @@ from custom_components.magic_areas.media_player.area_aware_media_player import (
 from custom_components.magic_areas.media_player.media_player_group import (
     AreaMediaPlayerGroup,
 )
+from custom_components.magic_areas.media_player.smart_media_router import (
+    SmartMediaRouter,
+)
 from custom_components.magic_areas.util import cleanup_removed_entries
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,12 +35,19 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     area: MagicArea | None = get_area_from_config_entry(hass, config_entry)
     assert area is not None
 
-    entities_to_add: list[AreaAwareMediaPlayer | AreaMediaPlayerGroup] = []
+    entities_to_add: list[
+        AreaAwareMediaPlayer | AreaMediaPlayerGroup | SmartMediaRouter
+    ] = []
 
     # Media Player Groups
     if area.has_feature(CONF_FEATURE_MEDIA_PLAYER_GROUPS):
         _LOGGER.debug("%s: Setting up media player groups.", area.name)
         entities_to_add.extend(setup_media_player_group(area))
+
+    # Smart Media Router
+    if area.has_feature(CONF_FEATURE_SMART_MEDIA_ROUTER):
+        _LOGGER.debug("%s: Setting up smart media router.", area.name)
+        entities_to_add.extend(setup_smart_media_router(area))
 
     # Check if we are the Global Meta Area
     if area.is_meta() and area.id == META_AREA_GLOBAL.lower():
@@ -63,6 +74,18 @@ def setup_media_player_group(area):
     media_player_entities = [e["entity_id"] for e in area.entities[MEDIA_PLAYER_DOMAIN]]
 
     return [AreaMediaPlayerGroup(area, media_player_entities)]
+
+
+def setup_smart_media_router(area):
+    """Create the media player groups."""
+    # Check if there are any media player devices
+    if not area.has_entities(MEDIA_PLAYER_DOMAIN):
+        _LOGGER.debug("%s: No %s entities.", area.name, MEDIA_PLAYER_DOMAIN)
+        return []
+
+    media_player_entities = [e["entity_id"] for e in area.entities[MEDIA_PLAYER_DOMAIN]]
+
+    return [SmartMediaRouter(area, media_player_entities)]
 
 
 def setup_area_aware_media_player(area):

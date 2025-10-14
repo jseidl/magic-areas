@@ -6,8 +6,9 @@ from typing import Any
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from homeassistant.core import State
-from homeassistant.const import ATTR_ENTITY_ID
-from homeassistant.components.group.media_player import MediaPlayerGroup
+from homeassistant.const import ATTR_ENTITY_ID, STATE_IDLE
+from homeassistant.components.media_player import MediaPlayerEntity
+from homeassistant.components.media_player.const import MediaPlayerEntityFeature
 from homeassistant.helpers.entity_registry import (
     async_get as entityreg_async_get,
     RegistryEntry,
@@ -26,10 +27,9 @@ from homeassistant.components.media_player.const import (
     MediaPlayerState,
 )
 from custom_components.magic_areas.const import (
-    MagicAreasFeatureInfoMediaPlayerGroups,
-    EMPTY_STRING,
     MEDIA_PLAYER_DOMAIN,
     INVALID_STATES,
+    MagicAreasFeatureInfoSmartMediaRouter,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
     @TODO LIST
     - move AAMP configuration into here
     - remove media player group from non-meta areas
+    - move this to regular MediaPlayerEntity instead of group
     - fall back to interrupting playing devices if no other are available
 """
 
@@ -47,10 +48,10 @@ TTS_MEDIA_SOURCE_PREFIX: str = "media-source://tts"
 MEDIA_PLAYER_AVAILABLE_STATES = [
     MediaPlayerState.OFF,
     MediaPlayerState.IDLE,
-    MediaPlayerState.STANDBY,
 ]
 
 PLATFORM_ALEXA_MEDIA = "alexa_media"
+PLATFORM_WEBOSTV = "webostv"
 MANUFACTURER_GOOGLE = "Google Inc."
 
 AUDIO_DEVICE_CLASSES = [MediaPlayerDeviceClass.SPEAKER, MediaPlayerDeviceClass.RECEIVER]
@@ -59,6 +60,7 @@ VIDEO_DEVICE_CLASSES = [MediaPlayerDeviceClass.TV]
 SMART_SPEAKER_MODELS: dict[str, list[str]] = {
     MANUFACTURER_GOOGLE: ["Google Home Mini", "Google Nest Mini", "Google Nest Hub"]
 }
+VIDEO_CAPABLE_MODELS: dict[str, list[str]] = {MANUFACTURER_GOOGLE: ["Google Nest Hub"]}
 
 
 class ContentTypeRoutingGroup(StrEnum):
@@ -103,26 +105,53 @@ ROUTING_GROUP_PRIORITY_MAP: dict[
         ContentTypeRoutingGroup.AUDIO,
         ContentTypeRoutingGroup.VIDEO,
     ],
+    ContentTypeRoutingGroup.VIDEO: [
+        ContentTypeRoutingGroup.VIDEO,
+    ],
 }
 
 
-class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
+class SmartMediaRouter(MagicEntity, MediaPlayerEntity):
     """Media player group."""
 
-    feature_info = MagicAreasFeatureInfoMediaPlayerGroups()
+    feature_info = MagicAreasFeatureInfoSmartMediaRouter()
 
     def __init__(self, area, entities):
         """Initialize media player group."""
         MagicEntity.__init__(self, area, domain=MEDIA_PLAYER_DOMAIN)
-        MediaPlayerGroup.__init__(
-            self,
-            name=EMPTY_STRING,
-            unique_id=self._attr_unique_id,
-            entities=entities,
-        )
+        MediaPlayerEntity.__init__(self)
+
+        self._attr_extra_state_attributes = {}
+        self._state = STATE_IDLE
+
+        self.classified_devices: dict[str, set] = {}
+
+    async def async_added_to_hass(self):
+        """Call when entity about to be added to hass."""
+
+        await super().async_added_to_hass()
+
         self.classified_devices: dict[str, set] = {
-            eid: self.classify_device(eid) for eid in entities
+            entity[ATTR_ENTITY_ID]: self.classify_device(entity[ATTR_ENTITY_ID])
+            for entity in self.area.entities[MEDIA_PLAYER_DOMAIN]
         }
+
+        await self.restore_state()
+
+    @property
+    def state(self):
+        """Return the state of the media player."""
+        return self._state
+
+    @property
+    def supported_features(self):
+        """Flag media player features that are supported."""
+        return (
+            MediaPlayerEntityFeature.PLAY_MEDIA
+            | MediaPlayerEntityFeature.MEDIA_ANNOUNCE
+        )
+
+    # Functions
 
     async def async_play_media(
         self, media_type: MediaType, media_id: str, **kwargs
@@ -157,7 +186,7 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
         """Route request to target device, falling back to other candidates when needed."""
 
         target_devices: list[str] = self.get_target_devices_for_content(routing_group)
-
+        _LOGGER.warning("CD: %s", str(self.classified_devices))
         _LOGGER.warning("Elected candidate devices: %s", str(target_devices))
 
         # Run full checks
@@ -247,6 +276,8 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
             routing_group, []
         )
 
+        _LOGGER.warning("PG: %s", str(priority_groups))
+
         # Fetch device list, orderd by priority group
         for priority_group in priority_groups:
             # Devices belonging to this group
@@ -260,15 +291,17 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
             exclusive: list[str] = [
                 eid for eid in group_devices if len(self.classified_devices[eid]) == 1
             ]
-            multi: list[str] = [
-                eid for eid in group_devices if len(self.classified_devices[eid]) > 1
-            ]
+            multi: list[str] = sorted(
+                [eid for eid in group_devices if len(self.classified_devices[eid]) > 1],
+                key=lambda eid: len(self.classified_devices[eid]),
+            )
 
             for eid in exclusive + multi:
                 if eid not in seen_devices:
                     seen_devices.add(eid)
                     candidates.append(eid)
 
+        _LOGGER.warning("CAND: %s", str(candidates))
         return candidates
 
     def classify_device(self, entity_id: str) -> set[str]:
@@ -329,6 +362,7 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
         entity_registry = entityreg_async_get(self.hass)
 
         entity_entry: RegistryEntry | None = entity_registry.async_get(entity_id)
+        device_registry = devicereg_async_get(self.hass)
 
         if not entity_entry:
             return False
@@ -340,6 +374,7 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
         )
         _LOGGER.warning("Entity dump %s", str(entity_entry))
 
+        # Entity checks
         if (
             entity_entry.device_class
             and entity_entry.device_class in AUDIO_DEVICE_CLASSES
@@ -348,6 +383,22 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
             and entity_entry.original_device_class in AUDIO_DEVICE_CLASSES
         ):
             return True
+
+        # Device checks
+        if entity_entry.device_id:
+            device_entry: DeviceEntry | None = device_registry.async_get(
+                entity_entry.device_id
+            )
+
+            if not device_entry:
+                return False
+
+            # Google
+            if (
+                device_entry.manufacturer == MANUFACTURER_GOOGLE
+                and device_entry.model in SMART_SPEAKER_MODELS[MANUFACTURER_GOOGLE]
+            ):
+                return True
 
         return False
 
@@ -358,10 +409,17 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
         entity_registry = entityreg_async_get(self.hass)
 
         entity_entry: RegistryEntry | None = entity_registry.async_get(entity_id)
+        device_registry = devicereg_async_get(self.hass)
 
         if not entity_entry:
             return False
 
+        # Platform checks
+        ## WebOSTv
+        if entity_entry.platform == PLATFORM_WEBOSTV:
+            return True
+
+        # Entity checks
         if (
             entity_entry.device_class
             and entity_entry.device_class in VIDEO_DEVICE_CLASSES
@@ -370,5 +428,21 @@ class SmartMediaRouter(MagicEntity, MediaPlayerGroup):
             and entity_entry.original_device_class in VIDEO_DEVICE_CLASSES
         ):
             return True
+
+        # Device checks
+        if entity_entry.device_id:
+            device_entry: DeviceEntry | None = device_registry.async_get(
+                entity_entry.device_id
+            )
+
+            if not device_entry:
+                return False
+
+            # Google
+            if (
+                device_entry.manufacturer == MANUFACTURER_GOOGLE
+                and device_entry.model in VIDEO_CAPABLE_MODELS[MANUFACTURER_GOOGLE]
+            ):
+                return True
 
         return False

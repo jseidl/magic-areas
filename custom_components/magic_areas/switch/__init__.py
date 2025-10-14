@@ -54,13 +54,13 @@ async def async_setup_entry(
                 "%s: Error loading light control switch: %s", area.name, str(e)
             )
 
-    if area.has_feature(MagicAreasFeatures.MEDIA_PLAYER_GROUPS) and not area.is_meta():
-        try:
-            switch_entities.append(MediaPlayerControlSwitch(area))
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            _LOGGER.error(
-                "%s: Error loading media player control switch: %s", area.name, str(e)
-            )
+    # if area.has_feature(MagicAreasFeatures.MEDIA_PLAYER_GROUPS) and not area.is_meta():
+    #     try:
+    #         switch_entities.append(MediaPlayerControlSwitch(area))
+    #     except Exception as e:  # pylint: disable=broad-exception-caught
+    #         _LOGGER.error(
+    #             "%s: Error loading media player control switch: %s", area.name, str(e)
+    #         )
 
     if area.has_feature(MagicAreasFeatures.FAN_GROUPS) and not area.is_meta():
         try:

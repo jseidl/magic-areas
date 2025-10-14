@@ -327,19 +327,20 @@ class MagicAreasFeatureInfoAreaAwareMediaPlayer(MagicAreasFeatureInfo):
 class MagicAreasFeatures(StrEnum):
     """Magic Areas features."""
 
-    AREA = "area"  # Default feature
-    PRESENCE_HOLD = "presence_hold"
-    LIGHT_GROUPS = "light_groups"
-    CLIMATE_CONTROL = "climate_control"
-    COVER_GROUPS = "cover_groups"
+    AREA = auto()  # Default feature
+    PRESENCE_HOLD = auto()
+    LIGHT_GROUPS = auto()
+    CLIMATE_CONTROL = auto()
+    COVER_GROUPS = auto()
     MEDIA_PLAYER_GROUPS = "media_player_groups"
-    AREA_AWARE_MEDIA_PLAYER = "area_aware_media_player"
-    AGGREGATES = "aggregates"
-    HEALTH = "health"
-    THRESHOLD = "threshold"
-    FAN_GROUPS = "fan_groups"
-    WASP_IN_A_BOX = "wasp_in_a_box"
-    BLE_TRACKER = "ble_trackers"
+    SMART_MEDIA_ROUTER = auto()
+    AREA_AWARE_MEDIA_PLAYER = auto()
+    AGGREGATES = auto()
+    HEALTH = auto()
+    THRESHOLD = auto()
+    FAN_GROUPS = auto()
+    WASP_IN_A_BOX = auto()
+    BLE_TRACKERS = auto()
 
 
 # Magic Areas Events

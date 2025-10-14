@@ -36,7 +36,7 @@ class AreaBLETrackerBinarySensor(MagicEntity, BinarySensorEntity):
         MagicEntity.__init__(self, area, domain=BINARY_SENSOR_DOMAIN)
         BinarySensorEntity.__init__(self)
 
-        self._sensors = self.area.feature_config(MagicAreasFeatures.BLE_TRACKER).get(
+        self._sensors = self.area.feature_config(MagicAreasFeatures.BLE_TRACKERS).get(
             CONF_BLE_TRACKER_ENTITIES, []
         )
 
