@@ -2,24 +2,23 @@
 
 import logging
 
-from homeassistant.components.group.media_player import MediaPlayerGroup
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 
-from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     CONF_FEATURE_AREA_AWARE_MEDIA_PLAYER,
     CONF_FEATURE_MEDIA_PLAYER_GROUPS,
     CONF_NOTIFICATION_DEVICES,
     DATA_AREA_OBJECT,
-    EMPTY_STRING,
     META_AREA_GLOBAL,
     MODULE_DATA,
-    MagicAreasFeatureInfoMediaPlayerGroups,
 )
 from custom_components.magic_areas.helpers.area import get_area_from_config_entry
 from custom_components.magic_areas.media_player.area_aware_media_player import (
     AreaAwareMediaPlayer,
+)
+from custom_components.magic_areas.media_player.media_player_group import (
+    AreaMediaPlayerGroup,
 )
 from custom_components.magic_areas.util import cleanup_removed_entries
 
@@ -124,19 +123,3 @@ def setup_area_aware_media_player(area):
     )
 
     return [AreaAwareMediaPlayer(area, areas_with_media_players)]
-
-
-class AreaMediaPlayerGroup(MagicEntity, MediaPlayerGroup):
-    """Media player group."""
-
-    feature_info = MagicAreasFeatureInfoMediaPlayerGroups()
-
-    def __init__(self, area, entities):
-        """Initialize media player group."""
-        MagicEntity.__init__(self, area, domain=MEDIA_PLAYER_DOMAIN)
-        MediaPlayerGroup.__init__(
-            self,
-            name=EMPTY_STRING,
-            unique_id=self._attr_unique_id,
-            entities=entities,
-        )

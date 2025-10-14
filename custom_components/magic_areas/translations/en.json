@@ -99,13 +99,15 @@
       },
       "feature_conf_area_aware_media_player": {
         "title": "Feature: Area-aware media player",
-        "description": "Creates a media player device that will forward play calls to other media players in occupied areas only. This is useful if you want to use TTS notifications but only want to notify areas that are occupied to avoid notifying media players in vacant areas. This feature has configuration options in each area but it is only created if you have a `Global` meta area.",
+        "description": "Creates a media player device that will forward play calls to other media players or assist satellites in occupied areas only. This is useful if you want to use TTS notifications but only want to notify areas that are occupied to avoid notifying devices in vacant areas. This feature has configuration options in each area but it is only created if you have a `Global` meta area.",
         "data": {
           "notification_devices": "Media Player devices used for broadcasting",
-          "notification_states": "Play notifications devices only when on these states"
+          "notification_states": "Play notifications devices only when on these states",
+          "route_notifications_to_satellites": "Route notifications through area satellites"
         },
         "data_description": {
-          "notification_states": "Notifications will only be played when an area is on this state. Using `extended` will ensure you don't get notified in rooms you just passed by and not selecting `sleep` will prevent notifications while on this mode."
+          "notification_states": "Notifications will only be played when an area is on this state. Using `extended` will ensure you don't get notified in rooms you just passed by and not selecting `sleep` will prevent notifications while on this mode.",
+          "route_notifications_to_satellites": "When enabled, notifications (TTS, announcements, alerts) will be sent to assist satellites in this area. Media playback will continue to use media players. Automatically falls back to media players if no satellites are available."
         }
       },
       "feature_conf_aggregates": {

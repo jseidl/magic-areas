@@ -18,3 +18,4 @@ temp/*
 
 # Home Assistant configuration
 config/*
+venv/

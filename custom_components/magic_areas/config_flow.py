@@ -103,6 +103,7 @@ from .const import (
     CONF_PRESENCE_HOLD_TIMEOUT,
     CONF_PRESENCE_SENSOR_DEVICE_CLASS,
     CONF_RELOAD_ON_REGISTRY_CHANGE,
+    CONF_ROUTE_NOTIFICATIONS_TO_SATELLITES,
     CONF_SECONDARY_STATES,
     CONF_SECONDARY_STATES_CALCULATION_MODE,
     CONF_SLEEP_ENTITY,
@@ -1177,6 +1178,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             dynamic_validators={
                 CONF_NOTIFICATION_DEVICES: cv.multi_select(self.all_media_players),
                 CONF_NOTIFY_STATES: cv.multi_select(available_states),
+                CONF_ROUTE_NOTIFICATIONS_TO_SATELLITES: cv.boolean,
             },
             selectors={
                 CONF_NOTIFICATION_DEVICES: self._build_selector_entity_simple(
@@ -1187,6 +1189,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
                     multiple=True,
                     translation_key=SelectorTranslationKeys.AREA_STATES,
                 ),
+                CONF_ROUTE_NOTIFICATIONS_TO_SATELLITES: self._build_selector_boolean(),
             },
             user_input=user_input,
         )
