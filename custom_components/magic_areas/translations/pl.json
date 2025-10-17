@@ -1,0 +1,457 @@
+{
+  "title": "Magiczne Obszary",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Utwórz Magiczny Obszar",
+        "description": "Wybierz obszar, który chcesz aby stał się Magiczny!",
+        "data": {
+          "name": "Obszar"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "To urządzenie jest już skonfigurowane",
+      "invalid_area": "Wybrany obszar nie istnieje",
+      "no_more_areas": "Wszystkie Twoje obszary już są Magiczne!"
+    }
+  },
+  "options": {
+    "step": {
+      "select_features": {
+        "title": "Wybór funkcji",
+        "description": "Wybierz funkcję, którą chcesz wykonać dla tego obszaru. Nowe menu z opcjami pojawi się aby tę funkcję skonfigurować, jeśli istnieją opcje konfiguracji dla tej funkcji.",
+        "data": {
+          "fan_groups": "Utwórz grupę wentylatorów",
+          "climate_control": "Utwórz kontroler klimatu",
+          "media_player_groups": "Utwórz grupy odtwarzaczy multimedialnych",
+          "light_groups": "Utwórz grupy lamp",
+          "cover_groups": "Utwórz grupy rolet",
+          "area_aware_media_player": "Odtwarzacz multimedialny powiązany z obszarem",
+          "aggregates": "Utwórz sensory agregacji",
+          "health": "Utwórz sensory zdrowia",
+          "presence_hold": "Utwórz przełącznik blokady obecności",
+          "ble_trackers": "Utwórz sensory śledzenia BLE (Bluetooth Low Energy)",
+          "wasp_in_a_box": "Utwórz sensor 'Owad w pojemniku'"
+        }
+      },
+      "show_menu": {
+        "title": "Opcje obszarów magicznych",
+        "description": "Magiczny Obszar domyślnie wykrywa obecność, ale można wykorzystać jego pełne możliwości konfigurując zaawansowane śledzenie stanu oraz dostosowując parametry śledzenia obecności i włączając magiczne funkcje! Ustawienia nie zostaną zapisane, dopóki nie naciśniesz przycisku `Zapisz i Wyjdź`.",
+        "menu_options": {
+          "area_config": "Podstawowe opcje obszaru",
+          "secondary_states": "Zaawansowane śledzenie stanu obszaru",
+          "presence_tracking": "Opcje śledzenia obecności",
+          "select_features": "Wybór funkcji",
+          "finish": "Zapisz i Wyjdź",
+          "feature_conf_health": "Skonfuguruj sensor zdrowia",
+          "feature_conf_fan_groups": "Skonfiguruj grupy wentylatorów",
+          "feature_conf_climate_control": "Skonfiguruj kontroler klimatu",
+          "feature_conf_light_groups": "Skonfiguruj grupy lamp",
+          "feature_conf_area_aware_media_player": "Skonfiguruj odtwarzacz multimedialny powiązany z obszarem",
+          "feature_conf_aggregates": "Skonfiguruj sensory agregacji",
+          "feature_conf_presence_hold": "Skonfiguruj przełącznik blokady obecności",
+          "feature_conf_ble_trackers": "Skonfiguruj monitoring śledzenia BLE",
+          "feature_conf_wasp_in_a_box": "Skonfiguruj `owad w pojemniku`"
+        }
+      },
+      "feature_conf_health": {
+        "title": "Sensor zdrowia",
+        "description": "Możesz wybrać zestaw urządzeń z klasą sensorów binarnych, które będą śledzone przez sensor zdrowia, wykorzystywany w automatyzacjach.",
+        "data": {
+          "health_binary_sensor_device_classes": "Klasa urządzeń zdrowia do śledzenia"
+        }
+      },
+      "feature_conf_light_groups": {
+        "title": "Grupy lamp",
+        "description": "Magiczny Obszar czyni te cztery (plus jedną globalną) [grupy oświetlenia](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (jeśli przypiszesz im oświetlenie) gotowymi do użycia. Domyślnie są to zwykłe grupy oświetlenia, ale można nimi sterować automatycznie, przypisując je do stanów obszarów i włączając przełącznik sterowania oświetleniem, który zostanie utworzony po włączeniu tej funkcji. Wszystkie oświetlenia zostaną wyłączone po opuszczeniu obszaru. Dodatkowe stany można odblokować, konfigurując opcję `Zaawansowane śledzenie stanu obszaru`.",
+        "data": {
+          "overhead_lights": "Oświetlenie górne",
+          "overhead_lights_states": "Wskazuje, jakie oświetlenie górne jest załączone",
+          "overhead_lights_act_on": "Kiedy sterować oświetleniem górnym?",
+          "sleep_lights": "Lampy nocne",
+          "sleep_lights_states": "Wskazuje, które lampy nocne są załączone",
+          "sleep_lights_act_on": "Kiedy sterować lampami nocnymi?",
+          "accent_lights": "Oświetlenie akcentujące",
+          "accent_lights_states": "Wskazuje, jakie oświetlenie akcentujące jest załączone",
+          "accent_lights_act_on": "Kiedy sterować oświetleniem akcentującym?",
+          "task_lights": "Oświeltenie robocze",
+          "task_lights_states": "Wskazuje, jakie oświetlenie robocze jest załączone",
+          "task_lights_act_on": "Kiedy sterować oświetleniem roboczym?"
+        },
+        "data_description": {
+          "overhead_lights_states": "Skonfiguruj stan obszaru, bedący wyzwalaczem dla tej grupy oświetlenia. Grupy oświetlenia będą załączane, gdy obszar znajdzie się we wskazanym stanie, a wyłączane, gdy obszar znajdzie się w innym stanie, niż skonfigurowany tutaj. Np. jeśli chcesz, aby oświetlenie pozostało załączone po dłuższym czasie, wskaż także wartość przedłużenia czasu.",
+          "overhead_lights_act_on": "Wskaż, czy ta grupa oświetlenia powinna być sterowana tylko w chwili zajętości obszaru, zmiany stanu zajętości, czy w obu tych przypadkach.",
+          "sleep_lights_states": "Skonfiguruj stan obszaru, bedący wyzwalaczem dla tej grupy oświetlenia. Grupy oświetlenia będą załączane, gdy obszar znajdzie się we wskazanym stanie, a wyłączane, gdy obszar znajdzie się w innym stanie, niż skonfigurowany tutaj. Np. jeśli chcesz, aby oświetlenie pozostało załączone po dłuższym czasie, wskaż także wartość przedłużenia czasu.",
+          "sleep_lights_act_on": "Wskaż, czy ta grupa oświetlenia powinna być sterowana tylko w chwili zajętości obszaru, zmiany stanu zajętości, czy w obu tych przypadkach.",
+          "accent_lights_states": "Skonfiguruj stan obszaru, bedący wyzwalaczem dla tej grupy oświetlenia. Grupy oświetlenia będą załączane, gdy obszar znajdzie się we wskazanym stanie, a wyłączane, gdy obszar znajdzie się w innym stanie, niż skonfigurowany tutaj. Np. jeśli chcesz, aby oświetlenie pozostało załączone po dłuższym czasie, wskaż także wartość przedłużenia czasu.",
+          "accent_lights_act_on": "Wskaż, czy ta grupa oświetlenia powinna być sterowana tylko w chwili zajętości obszaru, zmiany stanu zajętości, czy w obu tych przypadkach.",
+          "task_lights_states": "Skonfiguruj stan obszaru, bedący wyzwalaczem dla tej grupy oświetlenia. Grupy oświetlenia będą załączane, gdy obszar znajdzie się we wskazanym stanie, a wyłączane, gdy obszar znajdzie się w innym stanie, niż skonfigurowany tutaj. Np. jeśli chcesz, aby oświetlenie pozostało załączone po dłuższym czasie, wskaż także wartość przedłużenia czasu.",
+          "task_lights_act_on": "Wskaż, czy ta grupa oświetlenia powinna być sterowana tylko w chwili zajętości obszaru, zmiany stanu zajętości, czy w obu tych przypadkach."
+        }
+      },
+      "feature_conf_presence_hold": {
+        "title": "Podtrzymanie obeności",
+        "description": "Tworzy przełącznik podtrzymujący stan obecności na wskazanym obszarze. Można skonfigurować opóźnienie, które automatycznie wyłączy ten przełącznik po zadanym czasie, jeśli często zdarza Ci się pozostawiać go załączonym.",
+        "data": {
+          "presence_hold_timeout": "Opóźnienie, po którym przełącznik zostanie automatycznie wyłączony. (0 = wyłączenie opóźnienia)."
+        }
+      },
+      "feature_conf_area_aware_media_player": {
+        "title": "Odtwarzacz multimedialny",
+        "description": "Tworzy odtwarzacz multimedialny, który będzie przekierowywać połączenia do innych odtwarzaczy tylko w zajętych obszarach. Jest to przydatne, jeśli chcesz korzystać z powiadomień TTS, ale chcesz powiadamiać tylko zajęte obszary, aby uniknąć powiadamiania odtwarzaczy w wolnych obszarach. Ta funkcja ma opcje konfiguracji dla każdego obszaru, ale jest tworzona tylko wtedy, gdy masz już zdefiniowany metaobszar 'Globalny'.",
+        "data": {
+          "notification_devices": "Odtwarzacze wykorzystywane do nadawania",
+          "notification_states": "Odtwarzaj powiadomienia tylko na urządzeniach w tym stanie"
+        },
+        "data_description": {
+          "notification_states": "Powiadomienia będą odtwarzane tylko wtedy, gdy obszar znajduje się w tym stanie. Użycie trybu rozszerzonego wyłącza powiadomienia w obszarach, które właśnie minąłeś. Brak wyboru trybu uśpienia uniemożliwi wyświetlanie powiadomień w tym trybie."
+        }
+      },
+      "feature_conf_aggregates": {
+        "title": "Agregacja sensorów",
+        "description": "Jeśli posiadasz wiele sensorów (w tym także binarnych) tego samego typu, Magiczny Obszar może je grupować w jedną całość, co pozwala na uzyskanie średnich (lub sum) z sensorów lub łącznego stanu sensorów binarnych. Jest to przydatne nawet wtedy, gdy posiadasz tylko jeden sensor każdego rodzaju, ponieważ pozwala na wykorzystanie agregacji w automatyzacjach i przyszłą rozbudowę bez konieczności przepisywania automatyzacji.",
+        "data": {
+          "aggregates_min_entities": "Minimalna liczba urządzeń tej samej klasy, wymagana do stworzenia agregacji",
+          "aggregates_binary_sensor_device_classes": "Klasy urządzeń z sensorami binarnymi do agregacji.",
+          "aggregates_sensor_device_classes": "Klasy urządzeń z sensorami do agregacji.",
+          "aggregates_illuminance_threshold": "Próg oświetlenia dla tego obszaru",
+          "aggregates_illuminance_threshold_hysteresis": "Histereza dla semsora progu natężenia oświetlenia"
+        },
+        "data_description": {
+          "aggregates_illuminance_threshold": "Magic Areas utworzy binarny sensor oświetlenia, śledzący moment, w którym suma natężeń oświetlenia w danym obszarze przekroczy ten próg. Wymaga to wybrania do agregacji klasy urządzenia "oświetlenie". Ustaw wartość 0, aby wyłączyć.",
+          "aggregates_illuminance_threshold_hysteresis": "[Histereza](https://www.home-assistant.io/integrations/threshold/#hysteresis) definiuje czułość sensora na zmiany jego wartości. Wartość zerowa spowoduje zmianę stanu sensora za każdym razem, gdy natężenie oświetlenia przekroczy górny próg. Wartości dodatnie oznaczają, że sensor zmieni stan tylko wtedy, gdy próg zostanie przekroczony o określoną wartość, wyrażoną w procentach górnej wartości progu. Zwiększenie tej wartości może być przydatne, jeśli chcesz użyć tego sensora jako czujnika oświetlenia swojego obszaru."
+        }
+      },
+      "feature_conf_fan_groups": {
+        "title": "Grupy wentylatorów",
+        "description": "Grupowanie i sterowanie wszystkimi wentylatorami w danym obszarze. Ta funkcja umożliwia automatyczne sterowanie wentylatorami w zależności od stanu obszaru i od przekroczenia zagregowanej zadanej wartości sensorów. Sterowanie wentylatorami wymaga włączenia funkcji agregacji i wybrania odpowiednich klas urządzeń.",
+        "data": {
+          "required_state": "Wymagany stan.",
+          "tracked_device_class": "Klasa urządzenia śledzącego.",
+          "setpoint": "Wartość docelowa."
+        },
+        "data_description": {
+          "required_state": "Określ, jakie warunki musi spełniać obszar, aby można było włączyć grupę wentylatorów.",
+          "tracked_device_class": "Wybierz klasę zagregowanych urządzeń, której zmiany wartości chcesz śledzić.",
+          "setpoint": "Liczba równa lub większa od wartości śledzonego sensora zagregowanego, wymagana dla włączenia grupy wentylatorów."
+        }
+      },
+      "feature_conf_climate_control": {
+        "title": "Sterowanie klimatem > Wybór encji",
+        "description": "Wybierz urządzenie klimatyczne, które chcesz sterować za pomocą stanów obszarów.",
+        "data": {
+          "entity_id": "Urządzenie klimatyczne"
+        },
+        "data_description": {
+          "entity_id": "Urządzenie klimatyczne do sterowania."
+        }
+      },
+      "feature_conf_climate_control_select_presets": {
+        "title": "Sterowanie klimatem > Mapowanie ustawień wstępnych",
+        "description": "Steruj jednostką klimatyczną, mapując ustawienia wstępne na stan obszaru. Stan „rozszerzony” ma pierwszeństwo przed „zajętym”, a stan „uśpiony” ma pierwszeństwo przed „rozszerzonym” i „zajętym”. Przypisz stan do pustego ustawienia wstępnego, aby uniemożliwić zmianę ustawień wstępnych dla tego stanu.",
+        "data": {
+          "preset_clear": "Wolny",
+          "preset_occupied": "Zajęty",
+          "preset_sleep": "Uśpiony",
+          "preset_extended": "Rozszerzony"
+        },
+        "data_description": {
+          "preset_clear": "Ustawienie wstępne można zmienić, gdy jest w stanie `Wolny`",
+          "preset_occupied": "Ustawienie wstępne można zmienić, gdy jest w stanie `Zajęty`.",
+          "preset_sleep": "Ustawienie wstępne można zmienić, gdy jest w stanie `Uśpiony`.",
+          "preset_extended": "Ustawienie wstępne można zmienić, gdy jest w stanie `Rozszerzony`"
+        }
+      },
+      "feature_conf_ble_trackers": {
+        "title": "Integracja śledzenia BLE",
+        "description": "Śledzi sensory z urządzeń śledzących BLE i tworzy odpowiedni binarny sensor „obecności” dla obszaru, który jest włączany, gdy sensor urządzenia śledzącego BLE ma stan równy nazwie lub identyfikatorowi obszaru. **Ta funkcja _NIE_ wykonuje samodzielnego śledzenia BLE.**",
+        "data": {
+          "ble_tracker_entities": "Encje urządzenia śledzącego BLE do śledzenia."
+        },
+        "data_description": {
+          "ble_tracker_entities": "Urządzenie śledzące BLE, jak np. [room-assistant](https://github.com/mKeRix/room-assistant), [Bermuda](https://github.com/agittins/bermuda) czy [ESPresence](https://github.com/ESPresense/ESPresense) tworzy sensory, które zmieniają stan w zależności od obszaru najbliższego   temu urządzeniu."
+        }
+      },
+      "feature_conf_wasp_in_a_box": {
+        "title": "Owad w pojemniku",
+        "description": "Jeśli widzimy owada, to owad jest w pojemniku. Jeśli zamkniemy pojemnik, gdy jest w nim owad, owad pozostanie w pojemniku. Jeśli pojemnik pozostanie zamknięty, gdy jest w nim owad, a owad przestanie się poruszać, zakładamy, że nadal jest w pojemniku. Jeśli pojemnik jest otwarty, a owad się nie porusza, zakładamy, że owad uciekł z pojemnika. Ta funkcja monitoruje agregacje `drzwi` jako pojemnik, a agregacje `ruchu` (domyślnie) jako owada. Zostanie utworzony nowy `sensor binarny`, którego obecność będzie automatycznie śledzona.",
+        "data": {
+          "delay": "Opóźnienie",
+          "wasp_device_classes": "Klasy urządzeń typu `owad w pojemniku`"
+        },
+        "data_description": {
+          "delay": "Czas oczekiwania przed sprawdzeniem obecności owada po zmianie stanu pojemnika. Ustaw na 0, aby wyłączyć.",
+          "wasp_device_classes": "Jeżeli chcesz, aby inne agregacje były traktowane jako `owady`, wybierz je z listy."
+        }
+      },
+      "secondary_states": {
+        "title": "Zaawansowane śledzenie stanu obszaru",
+        "description": "Możesz włączyć [stan drugorzędny](https://github.com/jseidl/hass-magic_areas/wiki/Area-State) dla obszaru magicznego, przypisując mu encję. Stany drugorzędne są używane przez funkcje włączające oświetlenie tylko wtedy, gdy jest ciemno, włączające urządzenia klimatyzacyjne dopiero po upływie „dłuższego” czasu lub nie wysyłające powiadomień do obszaru, gdy jest on w trybie „uśpienia”.`",
+        "data": {
+          "dark_entity": "Sensor oświetlenia obszaru",
+          "sleep_entity": "Encja stanu uśpienia",
+          "sleep_timeout": "Wyłączenie opóźnienia (uśpienie)",
+          "accent_entity": "Encja stanu oświetlenia akcentującego",
+          "extended_time": "Wymagany wydłużony czas trwania stanu",
+          "extended_timeout": "Wyłączenie opóźnienia (rozszerzenie)",
+          "calculation_mode": "Tryb obliczania stanu drugorzędnego"
+        },
+        "data_description": {
+          "dark_entity": "Sensor oświetlenia w danym obszarze będzie używany do śledzenia statusu `jasno`/`ciemno` w danym obszarze, wykorzystywanego przez funkcje grupy oświetlenia do włączania/wyłączania oświetlenia zgodnie ze poziomem jasności w pomieszczeniu.\n\n**Należy unikać używania sensora `oświetlenia` w tym samym obszarze, ponieważ może to powodować pętlę sprzężenia zwrotnego.** Zaleca się użycie `sun.sun` lub zewnętrznego sensora `oświetlenia`, na który nie będzie miało wpływu sterowane oświetlenie.",
+          "sleep_entity": "Encja służąca do śledzenia stanu `uśpienia` w danym obszarze",
+          "sleep_timeout": "Jak długo obszar ma czekać przed skasowaniem stanu, gdy jest w stanie uśpienia?",
+          "accent_entity": "Encja służąca do śledzenia stanu `zakcentowania` w danym obszarze",
+          "extended_time": "Obszar zostanie oznaczony jako `rozszerzony` po zajęciu przez tak długi czas",
+          "extended_timeout": "Jak długo obszar ma czekać przed skasowaniem stanu, gdy jest w stanie rozszerzonym?",
+          "calculation_mode": "Sposób obliczania stanów drugorzędnych metaobszaru na podstawie ich obszarów potomnych. „Dowolny” oznacza, że ​​każdy obszar ma dany stan, „Wszystkie” oznacza, że ​​wszystkie obszary muszą mieć dany stan, a „Większość” oznacza, że ​​ponad 50% obszarów musi mieć dany stan."
+        }
+      },
+      "area_config": {
+        "title": "Podstawowe opcje obszaru",
+        "description": "Skonfiguruj podstawowe opcje obszaru. Typ obszaru jest używany dla [Meta-obszarów]: Wewnętrznych/Zewnętrznych/Globalnych (https://github.com/jseidl/hass-magic_areas/wiki/Meta-Areas). Możesz precyzyjnie określić, które encje są analizowane przez Magiczne Obszary, korzystając z opcji uwzględniania/wykluczania encji.",
+        "data": {
+          "include_entities": "Dołącz encje do tego obszaru",
+          "exclude_entities": "Wyłącz encje z analizy",
+          "type": "Typ obszaru (wewnętrzny/zewnętrzny)",
+          "reload_on_registry_change": "Automatycznie przeładuj ten obszar magiczny podczas aktualizacji rejestru"
+          "ignore_diagnostic_entities": "Ignoruj encje diagnostyczne i konfiguracyjne"
+        },
+        "data_description": {
+          "include_entities": "Obszary Magiczne mogą uwzględniać obiekty z innych obszarów, w tym inne obiekty Magiczne. Możesz użyć tej funkcji, aby binarny sensor obecności w danym pomieszczeniu działał również jako sensor obecności w innym pomieszczeniu.",
+          "exclude_entities": "Encje wymienione tutaj będą całkowicie ignorowane przez Obszary Magiczne. Użyj tej opcji, jeśli używasz encji zakłócających dane, takie jak sensory temperatury urządzeń",
+          "type": "Zdefiniowanie typu obszaru umożliwia tworzenie metaobszarów dla wnętrza/zewnętrza.",
+          "reload_on_registry_change": "Automatycznie przeładuj ten Obszar Magiczny, gdy jakiekolwiek urządzenie lub encja zostaną przypisane do obszaru lub przeniesione do niego.",
+          "ignore_diagnostic_entities": "Obszary magiczne mogą ignorować encje diagnostyczne i konfiguracyjne, które zazwyczaj nie są istotne."
+        }
+      },
+      "presence_tracking": {
+        "title": "Śledzenie obecności",
+        "description": "Skonfiguruj, które platformy i klasy sensorów binarnych są używane do [śledzenia obecności](https://github.com/jseidl/hass-magic_areas/wiki/Presence-Sensing). Ta sekcja umożliwia również skonfigurowanie czasu oczekiwania Magcznego Obszaru na skasowanie stanu obszaru po zarejestrowaniu ostatniej obecności.",
+        "data": {
+          "presence_sensor_device_class": "Klasy urządzeń obecności",
+          "presence_device_platforms": "Platformy przeznaczone do wykrywania obecności",
+          "keep_only_entities": "Encje tylko do przechowywania",
+          "clear_timeout": "Wyczyść limit czasu"
+        },
+        "data_description": {
+          "presence_device_platforms": "Standardowym źródłem obecności są zazwyczaj sensory binarne, ale można również używać urządzeń multimedialnych.",
+          "presence_sensor_device_class": "Zdefiniuj, które klasy urządzeń „sensorów binarnych” będą używane do śledzenia obecności. Typowe opcje niestandardowe to sensory drzwi i wilgotności.",
+          "keep_only_entities": "Wybierz jednostki śledzące obecność, które będą brane pod uwagę tylko wtedy, gdy pomieszczenie jest już zajęte. Jest to przydatne przy zapobieganiu fałszywemu wykrywaniu obecności w danym obszarze przez sensory o dużej czułości, takie jak sensory mmWave i trackery BLE.",
+          "clear_timeout": "Jak długo od wykrycia ostatniej obecności należy odczekać przed skasowaniem stanu obszaru?"
+        }
+      }
+    },
+    "error": {
+      "option_error": "Błedna opcja",
+      "malformed_input": "To pole jest błędne lub wymagane",
+      "no_entity_selected": "Nie wybrano żadnej encji",
+      "invalid_entity": "Wybrano błędną encję",
+      "climate_no_preset_support": "Encja klimatu nie wspiera trybów ustawień wstępnych"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "area_state": {
+        "name": "Stan obszaru",
+        "state": {
+          "off": "Wolny",
+          "on": "Zajęty"
+        },
+        "state_attributes": {
+          "areas": {
+            "name": "Areas"
+          },
+          "states": {
+            "name": "States",
+            "state": {
+              "clear": "Clear",
+              "occupied": "Occupied",
+              "extended": "Extended",
+              "sleep": "Sleep",
+              "dark": "Dark",
+              "bright": "Bright"
+            }
+          },
+          "active_sensors": {
+            "name": "Aktywne sensory"
+          },
+          "last_active_sensors": {
+            "name": "Ostatnio aktywne sensory"
+          },
+          "presence_sensors": {
+            "name": "Sensory obecności"
+          },
+          "type": {
+            "name": "Typ",
+            "state": {
+              "interior": "Wewnętrzny",
+              "exterior": "Zewnętrzny"
+            }
+          },
+          "clear_timeout": {
+            "name": "Opóźnienie wyjścia"
+          }
+        }
+      },
+      "ble_tracker_monitor": {
+        "name": "Skaner obecności BLE"
+      },
+      "health_problem": {
+        "name": "Zdrowie obszaru",
+        "state": {
+          "off": "Zdrowy",
+          "on": "Niezdrowy"
+        }
+      },
+      "threshold_light": {
+        "name": "Ośiwtlenie (obliczane)"
+      },
+      "wasp_in_a_box": {
+        "name": "Owady w pojemniku",
+        "state": {
+          "off": "Brak owadów w pojemniku",
+          "on": "Owady w pojemniku"
+        },
+        "state_attributes": {
+          "wasp": {
+            "name": "Owady",
+            "state": {
+              "off": "Niewidoczne",
+              "on": "Widoczne"
+            }
+          },
+          "box": {
+            "name": "Pojemnik",
+            "state": {
+              "off": "Zamknięty",
+              "on": "Otwarty"
+            }
+          }
+        }
+      }
+    },
+    "fan": {
+      "fan_group": {
+        "name": "Wentylatory"
+      }
+    },
+    "cover": {
+      "cover_group_awning": {
+        "name": "Markizy"
+      },
+      "cover_group_blind": {
+        "name": "Rolety"
+      },
+      "cover_group_curtain": {
+        "name": "Zasłony"
+      },
+      "cover_group_damper": {
+        "name": "Tłumiki"
+      },
+      "cover_group_door": {
+        "name": "Drzwi"
+      },
+      "cover_group_garage": {
+        "name": "Brama garażowa"
+      },
+      "cover_group_gate": {
+        "name": "Bramki"
+      },
+      "cover_group_shade": {
+        "name": "Cienie"
+      },
+      "cover_group_shutter": {
+        "name": "Żaluzje"
+      },
+      "cover_group_window": {
+        "name": "Okna"
+      },
+      "cover_group": {
+        "name": "Pokrywy"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Wszystkie światła"
+      },
+      "overhead_lights": {
+        "name": "Oświetlenie górne"
+      },
+      "task_lights": {
+        "name": "Oświetlenie robocze"
+      },
+      "accent_lights": {
+        "name": "Oświetlenie akcentujące"
+      },
+      "sleep_lights": {
+        "name": "Oświetlenie nocne"
+      }
+    },
+    "media_player": {
+      "media_player_group": {
+        "name": "Odtwarzacze multimedialne"
+      },
+      "area_aware_media_player": {
+        "name": "Odtwarzacz multimedialny z rozpoznwaniem obszaru"
+      }
+    },
+    "switch": {
+      "presence_hold": {
+        "name": "Presence Hold"
+      },
+      "light_control": {
+        "name": "Sterowanie oświetleniem"
+      },
+      "media_player_control": {
+        "name": "Sterowanie odtwarzaczem multimedialnym"
+      },
+      "climate_control": {
+        "name": "Sterowanie klimatem"
+      },
+      "fan_control": {
+        "name": "Sterowanie wentylatorów"
+      }
+    }
+  },
+  "selector": {
+    "area_type": {
+      "options": {
+        "interior": "Wewnętrzny",
+        "exterior": "Zewnętrzny"
+      }
+    },
+    "area_states": {
+      "options": {
+        "clear": "Wolny",
+        "occupied": "Zajęty",
+        "extended": "Rozszerzony",
+        "sleep": "Uśpiony"
+      }
+    },
+    "control_on": {
+      "options": {
+        "occupancy": "Podczas zmiany stanu obszaru na zajęty",
+        "state": "Podczas zmiany wtórnego stanu"
+      }
+    },
+    "calculation_mode": {
+      "options": {
+        "any": "Którykolwiek",
+        "all": "Wszystkie",
+        "majority": "Większośc"
+      }
+    }
+  },
+  "device": {
+    "global": {
+      "name": "Globalne"
+    },
+    "interior": {
+      "name": "Wewnętrzne"
+    },
+    "exterior": {
+      "name": "Zewnętrzne"
+    }
+  }
+}
