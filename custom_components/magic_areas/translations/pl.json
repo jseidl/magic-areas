@@ -119,7 +119,7 @@
           "aggregates_illuminance_threshold_hysteresis": "Histereza dla semsora progu natężenia oświetlenia"
         },
         "data_description": {
-          "aggregates_illuminance_threshold": "Magic Areas utworzy binarny sensor oświetlenia, śledzący moment, w którym suma natężeń oświetlenia w danym obszarze przekroczy ten próg. Wymaga to wybrania do agregacji klasy urządzenia "oświetlenie". Ustaw wartość 0, aby wyłączyć.",
+          "aggregates_illuminance_threshold": "Magic Areas utworzy binarny sensor oświetlenia, śledzący moment, w którym suma natężeń oświetlenia w danym obszarze przekroczy ten próg. Wymaga to wybrania do agregacji klasy urządzenia `oświetlenie`. Ustaw wartość 0, aby wyłączyć.",
           "aggregates_illuminance_threshold_hysteresis": "[Histereza](https://www.home-assistant.io/integrations/threshold/#hysteresis) definiuje czułość sensora na zmiany jego wartości. Wartość zerowa spowoduje zmianę stanu sensora za każdym razem, gdy natężenie oświetlenia przekroczy górny próg. Wartości dodatnie oznaczają, że sensor zmieni stan tylko wtedy, gdy próg zostanie przekroczony o określoną wartość, wyrażoną w procentach górnej wartości progu. Zwiększenie tej wartości może być przydatne, jeśli chcesz użyć tego sensora jako czujnika oświetlenia swojego obszaru."
         }
       },
