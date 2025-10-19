@@ -214,7 +214,7 @@
           "include_entities": "Dołącz encje do tego obszaru",
           "exclude_entities": "Wyłącz encje z analizy",
           "type": "Typ obszaru (wewnętrzny/zewnętrzny)",
-          "reload_on_registry_change": "Automatycznie przeładuj ten obszar magiczny podczas aktualizacji rejestru"
+          "reload_on_registry_change": "Automatycznie przeładuj ten obszar magiczny podczas aktualizacji rejestru",
           "ignore_diagnostic_entities": "Ignoruj encje diagnostyczne i konfiguracyjne"
         },
         "data_description": {
