@@ -23,7 +23,7 @@
         "description": "Wybierz funkcję, którą chcesz wykonać dla tego obszaru. Nowe menu z opcjami pojawi się aby tę funkcję skonfigurować, jeśli istnieją opcje konfiguracji dla tej funkcji.",
         "data": {
           "fan_groups": "Utwórz grupę wentylatorów",
-          "climate_control": "Utwórz kontroler klimatu",
+          "climate_control": "Utwórz kontrolera klimatu",
           "media_player_groups": "Utwórz grupy odtwarzaczy multimedialnych",
           "light_groups": "Utwórz grupy lamp",
           "cover_groups": "Utwórz grupy rolet",
@@ -64,19 +64,19 @@
       },
       "feature_conf_light_groups": {
         "title": "Grupy lamp",
-        "description": "Magiczny Obszar czyni te cztery (plus jedną globalną) [grupy oświetlenia](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (jeśli przypiszesz im oświetlenie) gotowymi do użycia. Domyślnie są to zwykłe grupy oświetlenia, ale można nimi sterować automatycznie, przypisując je do stanów obszarów i włączając przełącznik sterowania oświetleniem, który zostanie utworzony po włączeniu tej funkcji. Wszystkie oświetlenia zostaną wyłączone po opuszczeniu obszaru. Dodatkowe stany można odblokować, konfigurując opcję `Zaawansowane śledzenie stanu obszaru`.",
+        "description": "Magiczny Obszar czyni te cztery (plus jedną globalną) [grupy oświetlenia](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (jeśli przypiszesz im oświetlenie) gotowymi do użycia. Domyślnie są to zwykłe grupy oświetlenia, ale można nimi sterować automatycznie, przypisując je do stanów obszarów i włączając przełącznik sterowania oświetleniem, który zostanie utworzony po włączeniu tej funkcji. Wszystkie światła zostaną wyłączone po opuszczeniu obszaru. Dodatkowe stany można odblokować, konfigurując opcję `Zaawansowane śledzenie stanu obszaru`.",
         "data": {
           "overhead_lights": "Oświetlenie górne",
-          "overhead_lights_states": "Wskazuje, jakie oświetlenie górne jest załączone",
+          "overhead_lights_states": "Wskaż, które oświetlenie górne jest załączone",
           "overhead_lights_act_on": "Kiedy sterować oświetleniem górnym?",
           "sleep_lights": "Lampy nocne",
-          "sleep_lights_states": "Wskazuje, które lampy nocne są załączone",
+          "sleep_lights_states": "Wskaż, które lampy nocne są załączone",
           "sleep_lights_act_on": "Kiedy sterować lampami nocnymi?",
           "accent_lights": "Oświetlenie akcentujące",
-          "accent_lights_states": "Wskazuje, jakie oświetlenie akcentujące jest załączone",
+          "accent_lights_states": "Wskaż, które oświetlenie akcentujące jest załączone",
           "accent_lights_act_on": "Kiedy sterować oświetleniem akcentującym?",
           "task_lights": "Oświetlenie robocze",
-          "task_lights_states": "Wskazuje, jakie oświetlenie robocze jest załączone",
+          "task_lights_states": "Wskaż, które oświetlenie robocze jest załączone",
           "task_lights_act_on": "Kiedy sterować oświetleniem roboczym?"
         },
         "data_description": {
