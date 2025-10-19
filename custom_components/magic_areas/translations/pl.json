@@ -75,7 +75,7 @@
           "accent_lights": "Oświetlenie akcentujące",
           "accent_lights_states": "Wskazuje, jakie oświetlenie akcentujące jest załączone",
           "accent_lights_act_on": "Kiedy sterować oświetleniem akcentującym?",
-          "task_lights": "Oświeltenie robocze",
+          "task_lights": "Oświetlenie robocze",
           "task_lights_states": "Wskazuje, jakie oświetlenie robocze jest załączone",
           "task_lights_act_on": "Kiedy sterować oświetleniem roboczym?"
         },
@@ -237,7 +237,7 @@
         "data_description": {
           "presence_device_platforms": "Standardowym źródłem obecności są zazwyczaj sensory binarne, ale można również używać urządzeń multimedialnych.",
           "presence_sensor_device_class": "Zdefiniuj, które klasy urządzeń „sensorów binarnych” będą używane do śledzenia obecności. Typowe opcje niestandardowe to sensory drzwi i wilgotności.",
-          "keep_only_entities": "Wybierz jednostki śledzące obecność, które będą brane pod uwagę tylko wtedy, gdy pomieszczenie jest już zajęte. Jest to przydatne przy zapobieganiu fałszywemu wykrywaniu obecności w danym obszarze przez sensory o dużej czułości, takie jak sensory mmWave i trackery BLE.",
+          "keep_only_entities": "Wybierz encje śledzące obecność, które będą brane pod uwagę tylko wtedy, gdy pomieszczenie jest już zajęte. Jest to przydatne przy zapobieganiu fałszywemu wykrywaniu obecności w danym obszarze przez sensory o dużej czułości, takie jak sensory mmWave i trackery BLE.",
           "clear_timeout": "Jak długo od wykrycia ostatniej obecności należy odczekać przed skasowaniem stanu obszaru?"
         }
       }
