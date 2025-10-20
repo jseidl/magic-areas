@@ -260,17 +260,17 @@
         },
         "state_attributes": {
           "areas": {
-            "name": "Areas"
+            "name": "Obszary"
           },
           "states": {
-            "name": "States",
+            "name": "Stany",
             "state": {
-              "clear": "Clear",
-              "occupied": "Occupied",
-              "extended": "Extended",
-              "sleep": "Sleep",
-              "dark": "Dark",
-              "bright": "Bright"
+              "clear": "Wolny",
+              "occupied": "Zajęty",
+              "extended": "Rozszerzony",
+              "sleep": "Uśpiony",
+              "dark": "Ciemno",
+              "bright": "Jasno"
             }
           },
           "active_sensors": {
@@ -308,17 +308,17 @@
         "name": "Ośiwtlenie (obliczane)"
       },
       "wasp_in_a_box": {
-        "name": "Owady w pojemniku",
+        "name": "Owad w pojemniku",
         "state": {
           "off": "Brak owadów w pojemniku",
-          "on": "Owady w pojemniku"
+          "on": "Owad w pojemniku"
         },
         "state_attributes": {
           "wasp": {
-            "name": "Owady",
+            "name": "Owad",
             "state": {
-              "off": "Niewidoczne",
-              "on": "Widoczne"
+              "off": "Niewidoczny",
+              "on": "Widoczny"
             }
           },
           "box": {
@@ -359,7 +359,7 @@
         "name": "Bramki"
       },
       "cover_group_shade": {
-        "name": "Cienie"
+        "name": "Cień"
       },
       "cover_group_shutter": {
         "name": "Żaluzje"
@@ -398,7 +398,7 @@
     },
     "switch": {
       "presence_hold": {
-        "name": "Presence Hold"
+        "name": "Podtrzymanie obecności"
       },
       "light_control": {
         "name": "Sterowanie oświetleniem"
@@ -439,7 +439,7 @@
       "options": {
         "any": "Którykolwiek",
         "all": "Wszystkie",
-        "majority": "Większośc"
+        "majority": "Większość"
       }
     }
   },
