@@ -64,13 +64,13 @@ Smart areas that just works, everytime, out of the box. Fully customizable if yo
 
 ## 🧙 Demo / How can Magic Areas help me?
 
-Check out the [Implementation Ideas](https://magicareas.io/how-to/implementation-ideas/) documentation to see how you can apply Magic Areas to make every room in your house, magic!
+Check out the [Implementation Ideas](https://magicareas.io/how-to/library/implementation-ideas-for-every-room/) documentation to see how you can apply Magic Areas to make every room in your house, magic!
 
 ## 🚀 Getting Started
 
 Go to the documentation [Quick Start](https://magicareas.io/how-to/getting-started/) for installation instruction.
 
-📖 Visit the [documentation](https://magicareas.io/how-to/implementation-ideas/) for complete guides, examples, and tips.
+📖 Visit the [documentation](https://magicareas.io/how-to/library/implementation-ideas-for-every-room/) for complete guides, examples, and tips.
 
 Enjoy smarter automations — and areas that finally understand you're still in the room ✨
 
