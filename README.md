@@ -64,7 +64,7 @@ Smart areas that just works, everytime, out of the box. Fully customizable if yo
 
 ## 🧙 Demo / How can Magic Areas help me?
 
-Check out the [Implementation Ideas](https://magicareas.io/how-to/implementation-ideas/) documentation to see how you can apply Magic Areas to make every room in your house, magic!
+Check out the [Implementation Ideas](https://magicareas.io/how-to/library/implementation-ideas-for-every-room/) documentation to see how you can apply Magic Areas to make every room in your house, magic!
 
 ## 🚀 Getting Started
 
