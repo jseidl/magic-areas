@@ -25,19 +25,13 @@ from custom_components.magic_areas.binary_sensor.wasp_in_a_box import (
     AreaWaspInABoxBinarySensor,
 )
 from custom_components.magic_areas.const import (
-    CONF_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_BLE_TRACKER_ENTITIES,
-    CONF_FEATURE_AGGREGATION,
-    CONF_FEATURE_BLE_TRACKERS,
-    CONF_FEATURE_HEALTH,
-    CONF_FEATURE_WASP_IN_A_BOX,
-    CONF_HEALTH_SENSOR_DEVICE_CLASSES,
-    DEFAULT_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
-    DEFAULT_HEALTH_SENSOR_DEVICE_CLASSES,
+    Features,
     MagicAreasFeatureInfoAggregates,
     MagicAreasFeatureInfoHealth,
 )
+from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
+from custom_components.magic_areas.const.health import HealthOptions
 from custom_components.magic_areas.helpers.area import get_area_from_config_entry
 from custom_components.magic_areas.threshold import create_illuminance_threshold
 from custom_components.magic_areas.util import cleanup_removed_entries
@@ -83,20 +77,20 @@ async def async_setup_entry(
         entities.append(AreaStateBinarySensor(area))
 
     # Create extra sensors
-    if area.has_feature(CONF_FEATURE_AGGREGATION):
+    if area.has_feature(Features.AGGREGATION):
         entities.extend(create_aggregate_sensors(area))
         illuminance_threshold_sensor = create_illuminance_threshold(hass, area)
         if illuminance_threshold_sensor:
             entities.append(illuminance_threshold_sensor)
 
         # Wasp in a box
-        if area.has_feature(CONF_FEATURE_WASP_IN_A_BOX) and not area.is_meta():
+        if area.has_feature(Features.WASP_IN_A_BOX) and not area.is_meta():
             entities.extend(create_wasp_in_a_box_sensor(area))
 
-    if area.has_feature(CONF_FEATURE_HEALTH):
+    if area.has_feature(Features.HEALTH):
         entities.extend(create_health_sensors(area))
 
-    if area.has_feature(CONF_FEATURE_BLE_TRACKERS):
+    if area.has_feature(Features.BLE_TRACKERS):
         entities.extend(create_ble_tracker_sensor(area))
 
     # Add all entities
@@ -114,8 +108,8 @@ def create_wasp_in_a_box_sensor(
 ) -> list[AreaWaspInABoxBinarySensor]:
     """Add the Wasp in a box sensor for the area."""
 
-    if not area.has_feature(CONF_FEATURE_WASP_IN_A_BOX) or not area.has_feature(
-        CONF_FEATURE_AGGREGATION
+    if not area.has_feature(Features.WASP_IN_A_BOX) or not area.has_feature(
+        Features.AGGREGATION
     ):
         return []
 
@@ -132,12 +126,10 @@ def create_wasp_in_a_box_sensor(
 
 def create_ble_tracker_sensor(area: MagicArea) -> list[AreaBLETrackerBinarySensor]:
     """Add the BLE tracker sensor for the area."""
-    if not area.has_feature(CONF_FEATURE_BLE_TRACKERS):
+    if not area.has_feature(Features.BLE_TRACKERS):
         return []
 
-    if not area.feature_config(CONF_FEATURE_BLE_TRACKERS).get(
-        CONF_BLE_TRACKER_ENTITIES, []
-    ):
+    if not area.config.get(BleTrackerOptions.ENTITIES):
         return []
 
     try:
@@ -157,7 +149,7 @@ def create_ble_tracker_sensor(area: MagicArea) -> list[AreaBLETrackerBinarySenso
 
 def create_health_sensors(area: MagicArea) -> list[AreaHealthBinarySensor]:
     """Add the health sensors for the area."""
-    if not area.has_feature(CONF_FEATURE_HEALTH):
+    if not area.has_feature(Features.HEALTH):
         return []
 
     if BINARY_SENSOR_DOMAIN not in area.entities:
@@ -165,9 +157,7 @@ def create_health_sensors(area: MagicArea) -> list[AreaHealthBinarySensor]:
 
     distress_entities: list[str] = []
 
-    health_sensor_device_classes = area.feature_config(CONF_FEATURE_HEALTH).get(
-        CONF_HEALTH_SENSOR_DEVICE_CLASSES, DEFAULT_HEALTH_SENSOR_DEVICE_CLASSES
-    )
+    health_sensor_device_classes = area.config.get(HealthOptions.SENSOR_DEVICE_CLASSES)
 
     for entity in area.entities[BINARY_SENSOR_DOMAIN]:
         if ATTR_DEVICE_CLASS not in entity:
@@ -212,7 +202,7 @@ def create_health_sensors(area: MagicArea) -> list[AreaHealthBinarySensor]:
 def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
     """Create the aggregate sensors for the area."""
     # Create aggregates
-    if not area.has_feature(CONF_FEATURE_AGGREGATION):
+    if not area.has_feature(Features.AGGREGATION):
         return []
 
     aggregates: list[Entity] = []
@@ -233,14 +223,11 @@ def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
         device_class_entities[entity[ATTR_DEVICE_CLASS]].append(entity["entity_id"])
 
     for device_class, entity_list in device_class_entities.items():
-        if len(entity_list) < area.feature_config(CONF_FEATURE_AGGREGATION).get(
-            CONF_AGGREGATES_MIN_ENTITIES, 0
-        ):
+        if len(entity_list) < area.config.get(AggregateOptions.MIN_ENTITIES):
             continue
 
-        if device_class not in area.feature_config(CONF_FEATURE_AGGREGATION).get(
-            CONF_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
-            DEFAULT_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
+        if device_class not in area.config.get(
+            AggregateOptions.BINARY_SENSOR_DEVICE_CLASSES
         ):
             continue
 

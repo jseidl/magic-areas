@@ -11,8 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    CONF_FEATURE_FAN_GROUPS,
     EMPTY_STRING,
+    Features,
     MagicAreasFeatureInfoFanGroups,
 )
 from custom_components.magic_areas.helpers.area import get_area_from_config_entry
@@ -32,7 +32,7 @@ async def async_setup_entry(
     assert area is not None
 
     # Check feature availability
-    if not area.has_feature(CONF_FEATURE_FAN_GROUPS):
+    if not area.has_feature(Features.FAN_GROUPS):
         return []
 
     # Check if there are any fan entities

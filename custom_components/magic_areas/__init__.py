@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_NAME, EVENT_HOMEASSISTANT_STARTED
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.device_registry import (
     EVENT_DEVICE_REGISTRY_UPDATED,
@@ -19,11 +19,10 @@ from homeassistant.helpers.entity_registry import (
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    CONF_RELOAD_ON_REGISTRY_CHANGE,
     DATA_AREA_OBJECT,
     DATA_TRACKED_LISTENERS,
-    DEFAULT_RELOAD_ON_REGISTRY_CHANGE,
     MODULE_DATA,
+    AreaConfigOptions,
     MagicConfigEntryVersion,
 )
 from custom_components.magic_areas.helpers.area import get_magic_area_for_config_entry
@@ -60,24 +59,25 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         # Check if disabled
         if not area_data.get(
-            CONF_RELOAD_ON_REGISTRY_CHANGE, DEFAULT_RELOAD_ON_REGISTRY_CHANGE
+            AreaConfigOptions.RELOAD_ON_REGISTRY_CHANGE.key,
+            AreaConfigOptions.RELOAD_ON_REGISTRY_CHANGE.default,
         ):
             _LOGGER.debug(
                 "%s: Auto-Reloading disabled for this area skipping...",
-                config_entry.data[ATTR_NAME],
+                config_entry.title,
             )
             return
 
         _LOGGER.debug(
             "%s: Reloading entry due entity registry change",
-            config_entry.data[ATTR_NAME],
+            config_entry.title,
         )
 
         await _async_reload_entry()
 
     async def _async_setup_integration(*args, **kwargs) -> None:
         """Load integration when Hass has finished starting."""
-        _LOGGER.debug("Setting up entry for %s", config_entry.data[ATTR_NAME])
+        _LOGGER.debug("Setting up entry for %s", config_entry.title)
 
         magic_area: MagicArea | None = get_magic_area_for_config_entry(
             hass, config_entry
@@ -182,7 +182,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
     """Migrate old entry."""
     _LOGGER.info(
         "%s: Migrating configuration from version %s.%s, current config: %s",
-        config_entry.data[ATTR_NAME],
+        config_entry.title,
         config_entry.version,
         config_entry.minor_version,
         str(config_entry.data),
@@ -192,7 +192,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
         # This means the user has downgraded from a future version
         _LOGGER.warning(
             "%s: Major version downgrade detection, skipping migration.",
-            config_entry.data[ATTR_NAME],
+            config_entry.title,
         )
 
         return False

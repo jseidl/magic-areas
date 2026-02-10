@@ -17,14 +17,11 @@ from homeassistant.core import HomeAssistant
 from custom_components.magic_areas.const import (
     ATTR_PRESENCE_SENSORS,
     ATTR_STATES,
-    CONF_ACCENT_ENTITY,
-    CONF_DARK_ENTITY,
-    CONF_KEEP_ONLY_ENTITIES,
-    CONF_SECONDARY_STATES,
-    CONF_SLEEP_ENTITY,
     DOMAIN,
     AreaStates,
+    PresenceTrackingOptions,
 )
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -48,13 +45,13 @@ def mock_config_entry_secondary_states() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
     data.update(
-        {
-            CONF_SECONDARY_STATES: {
-                CONF_ACCENT_ENTITY: "binary_sensor.accent_sensor",
-                CONF_DARK_ENTITY: "binary_sensor.area_light_sensor",
-                CONF_SLEEP_ENTITY: "binary_sensor.sleep_sensor",
+        SecondaryStateOptions.to_config(
+            {
+                SecondaryStateOptions.ACCENT_ENTITY.key: "binary_sensor.accent_sensor",
+                SecondaryStateOptions.DARK_ENTITY.key: "binary_sensor.area_light_sensor",
+                SecondaryStateOptions.SLEEP_ENTITY.key: "binary_sensor.sleep_sensor",
             }
-        }
+        )
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 
@@ -63,7 +60,12 @@ def mock_config_entry_secondary_states() -> MockConfigEntry:
 def mock_config_entry_keep_only_sensor() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update({CONF_KEEP_ONLY_ENTITIES: ["binary_sensor.motion_sensor_1"]})
+    # Merge keep_only_entities into existing presence_tracking config
+    if "presence_tracking" not in data:
+        data["presence_tracking"] = {}
+    data["presence_tracking"][PresenceTrackingOptions.KEEP_ONLY_ENTITIES.key] = [
+        "binary_sensor.motion_sensor_1"
+    ]
     return MockConfigEntry(domain=DOMAIN, data=data)
 
 

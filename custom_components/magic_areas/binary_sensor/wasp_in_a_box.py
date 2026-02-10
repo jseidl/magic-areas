@@ -14,16 +14,12 @@ from homeassistant.helpers.event import async_track_state_change_event
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    CONF_WASP_IN_A_BOX_DELAY,
-    CONF_WASP_IN_A_BOX_WASP_DEVICE_CLASSES,
-    CONF_WASP_IN_A_BOX_WASP_TIMEOUT,
-    DEFAULT_WASP_IN_A_BOX_DELAY,
-    DEFAULT_WASP_IN_A_BOX_WASP_DEVICE_CLASSES,
-    DEFAULT_WASP_IN_A_BOX_WASP_TIMEOUT,
     ONE_MINUTE,
-    WASP_IN_A_BOX_BOX_DEVICE_CLASSES,
     MagicAreasFeatureInfoWaspInABox,
-    MagicAreasFeatures,
+)
+from custom_components.magic_areas.const.wasp_in_a_box import (
+    WASP_IN_A_BOX_BOX_DEVICE_CLASSES,
+    WaspInABoxOptions,
 )
 from custom_components.magic_areas.helpers.timer import ReusableTimer
 
@@ -45,13 +41,9 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
         MagicEntity.__init__(self, area, domain=BINARY_SENSOR_DOMAIN)
         BinarySensorEntity.__init__(self)
 
-        self._delay: int = self.area.feature_config(
-            MagicAreasFeatures.WASP_IN_A_BOX
-        ).get(CONF_WASP_IN_A_BOX_DELAY, DEFAULT_WASP_IN_A_BOX_DELAY)
+        self._delay: int = self.area.config.get(WaspInABoxOptions.DELAY)
 
-        self._wasp_timeout: int = self.area.feature_config(
-            MagicAreasFeatures.WASP_IN_A_BOX
-        ).get(CONF_WASP_IN_A_BOX_WASP_TIMEOUT, DEFAULT_WASP_IN_A_BOX_WASP_TIMEOUT)
+        self._wasp_timeout: int = self.area.config.get(WaspInABoxOptions.WASP_TIMEOUT)
 
         self._attr_device_class = BinarySensorDeviceClass.PRESENCE
         self._attr_extra_state_attributes = {
@@ -72,11 +64,8 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
         await self.restore_state()
 
         # Check entities exist
-        wasp_device_classes = self.area.feature_config(
-            MagicAreasFeatures.WASP_IN_A_BOX
-        ).get(
-            CONF_WASP_IN_A_BOX_WASP_DEVICE_CLASSES,
-            DEFAULT_WASP_IN_A_BOX_WASP_DEVICE_CLASSES,
+        wasp_device_classes = self.area.config.get(
+            WaspInABoxOptions.WASP_DEVICE_CLASSES
         )
 
         for device_class in wasp_device_classes:

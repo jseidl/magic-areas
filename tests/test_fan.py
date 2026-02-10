@@ -24,16 +24,9 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_ENABLED_FEATURES,
-    CONF_FAN_GROUPS_REQUIRED_STATE,
-    CONF_FAN_GROUPS_SETPOINT,
-    CONF_FEATURE_AGGREGATION,
-    CONF_FEATURE_FAN_GROUPS,
-    DOMAIN,
-    AreaStates,
-)
+from custom_components.magic_areas.const import DOMAIN, AreaStates
+from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -41,6 +34,7 @@ from tests.helpers import (
     assert_state,
     get_basic_config_entry_data,
     init_integration,
+    merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
 )
@@ -58,16 +52,15 @@ SENSOR_INITIAL_VALUE = 25
 def mock_config_entry_fan_groups() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                CONF_FEATURE_AGGREGATION: {CONF_AGGREGATES_MIN_ENTITIES: 1},
-                CONF_FEATURE_FAN_GROUPS: {
-                    CONF_FAN_GROUPS_REQUIRED_STATE: AreaStates.OCCUPIED,
-                    CONF_FAN_GROUPS_SETPOINT: SETPOINT_VALUE,
-                },
+    merge_feature_config(
+        data,
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+        FanGroupOptions.to_config(
+            {
+                FanGroupOptions.REQUIRED_STATE.key: AreaStates.OCCUPIED,
+                FanGroupOptions.SETPOINT.key: SETPOINT_VALUE,
             }
-        }
+        ),
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 

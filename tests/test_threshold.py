@@ -17,14 +17,8 @@ from homeassistant.components.threshold.const import ATTR_HYSTERESIS, ATTR_UPPER
 from homeassistant.const import LIGHT_LUX, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    CONF_AGGREGATES_ILLUMINANCE_THRESHOLD,
-    CONF_AGGREGATES_ILLUMINANCE_THRESHOLD_HYSTERESIS,
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_ENABLED_FEATURES,
-    CONF_FEATURE_AGGREGATION,
-    DOMAIN,
-)
+from custom_components.magic_areas.const import DOMAIN
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -47,15 +41,13 @@ def mock_config_entry_threshold() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
     data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                CONF_FEATURE_AGGREGATION: {
-                    CONF_AGGREGATES_MIN_ENTITIES: 1,
-                    CONF_AGGREGATES_ILLUMINANCE_THRESHOLD: 600,
-                    CONF_AGGREGATES_ILLUMINANCE_THRESHOLD_HYSTERESIS: 10,
-                },
+        AggregateOptions.to_config(
+            {
+                AggregateOptions.MIN_ENTITIES.key: 1,
+                AggregateOptions.ILLUMINANCE_THRESHOLD.key: 600,
+                AggregateOptions.ILLUMINANCE_THRESHOLD_HYSTERESIS.key: 10,
             }
-        }
+        )
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 

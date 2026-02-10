@@ -8,7 +8,10 @@ from homeassistant.components.group.binary_sensor import BinarySensorGroup
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.const import AGGREGATE_MODE_ALL, EMPTY_STRING
+from custom_components.magic_areas.const import EMPTY_STRING
+from custom_components.magic_areas.const.aggregates import (
+    BINARY_SENSOR_ALL_MODE_CLASSES,
+)
 
 
 class AreaSensorGroupBinarySensor(MagicEntity, BinarySensorGroup):
@@ -33,6 +36,6 @@ class AreaSensorGroupBinarySensor(MagicEntity, BinarySensorGroup):
             name=EMPTY_STRING,
             unique_id=self._attr_unique_id,
             entity_ids=entity_ids,
-            mode=device_class in AGGREGATE_MODE_ALL,
+            mode=device_class in BINARY_SENSOR_ALL_MODE_CLASSES,
         )
         delattr(self, "_attr_name")

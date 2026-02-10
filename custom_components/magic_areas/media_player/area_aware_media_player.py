@@ -15,13 +15,11 @@ from homeassistant.const import ATTR_ENTITY_ID, STATE_IDLE, STATE_ON
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.const import (
-    CONF_NOTIFICATION_DEVICES,
-    CONF_NOTIFY_STATES,
-    DEFAULT_NOTIFICATION_DEVICES,
-    DEFAULT_NOTIFY_STATES,
     AreaStates,
     MagicAreasFeatureInfoAreaAwareMediaPlayer,
-    MagicAreasFeatures,
+)
+from custom_components.magic_areas.const.area_aware_media_player import (
+    AreaAwareMediaPlayerOptions,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,9 +61,9 @@ class AreaAwareMediaPlayer(MagicEntity, MediaPlayerEntity):
         """Return media players for a given area."""
         entity_ids = []
 
-        notification_devices = area.feature_config(
-            MagicAreasFeatures.AREA_AWARE_MEDIA_PLAYER
-        ).get(CONF_NOTIFICATION_DEVICES, DEFAULT_NOTIFICATION_DEVICES)
+        notification_devices = area.config.get(
+            AreaAwareMediaPlayerOptions.NOTIFICATION_DEVICES
+        )
 
         _LOGGER.debug("%s: Notification devices: %s", area.name, notification_devices)
 
@@ -129,9 +127,9 @@ class AreaAwareMediaPlayer(MagicEntity, MediaPlayerEntity):
                 continue
 
             # Check notification states
-            notification_states = area.feature_config(
-                MagicAreasFeatures.AREA_AWARE_MEDIA_PLAYER
-            ).get(CONF_NOTIFY_STATES, DEFAULT_NOTIFY_STATES)
+            notification_states = area.config.get(
+                AreaAwareMediaPlayerOptions.NOTIFY_STATES
+            )
 
             # Check sleep
             if area.has_state(AreaStates.SLEEP) and (

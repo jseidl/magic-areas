@@ -23,23 +23,22 @@ from custom_components.magic_areas.binary_sensor.wasp_in_a_box import (
 from custom_components.magic_areas.const import (
     ATTR_ACTIVE_SENSORS,
     ATTR_PRESENCE_SENSORS,
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_ENABLED_FEATURES,
-    CONF_FEATURE_AGGREGATION,
-    CONF_FEATURE_WASP_IN_A_BOX,
-    CONF_WASP_IN_A_BOX_DELAY,
-    CONF_WASP_IN_A_BOX_WASP_TIMEOUT,
     DOMAIN,
 )
+from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.wasp_in_a_box import WaspInABoxOptions
 
-from tests.conftest import (
-    DEFAULT_MOCK_AREA,
+from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import (
+    assert_attribute,
+    assert_in_attribute,
+    assert_state,
     get_basic_config_entry_data,
     init_integration,
+    merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
 )
-from tests.helpers import assert_attribute, assert_in_attribute, assert_state
 from tests.mocks import MockBinarySensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,16 +50,15 @@ _LOGGER = logging.getLogger(__name__)
 def mock_config_entry_wasp_in_a_box() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                CONF_FEATURE_WASP_IN_A_BOX: {
-                    CONF_WASP_IN_A_BOX_DELAY: 0,
-                    CONF_WASP_IN_A_BOX_WASP_TIMEOUT: 1,
-                },
-                CONF_FEATURE_AGGREGATION: {CONF_AGGREGATES_MIN_ENTITIES: 1},
-            },
-        }
+    merge_feature_config(
+        data,
+        WaspInABoxOptions.to_config(
+            {
+                WaspInABoxOptions.DELAY.key: 0,
+                WaspInABoxOptions.WASP_TIMEOUT.key: 1,
+            }
+        ),
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 

@@ -63,31 +63,53 @@
         }
       },
       "feature_conf_light_groups": {
-        "title": "Light Groups",
-        "description": "Magic Areas creates these four (plus a global one) [light groups](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (if you assign lights to them) for you to use. These by default are plain light groups but can be automatically controlled if you assign them to area states and enable the light control switch (that will be created when you enable this feature). All lights will be turned off when an area is cleared. Additional states can be unlocked by configuring `Advanced area state tracking`.",
+        "title": "Light Groups - Manage Groups",
+        "description": "Create custom light groups for this area. Each group can have its own set of lights, area states that trigger them, and control behavior. You currently have {group_count} group(s) with {total_lights} total light(s). Groups can be automatically controlled if you assign them to area states and enable the light control switch.",
         "data": {
-          "overhead_lights": "Overhead lights",
-          "overhead_lights_states": "States which overhead lights are turned on",
-          "overhead_lights_act_on": "When should overhead lights be controlled?",
-          "sleep_lights": "Sleep lights",
-          "sleep_lights_states": "States which sleep lights are turned on",
-          "sleep_lights_act_on": "When should sleep lights be controlled?",
-          "accent_lights": "Accent lights",
-          "accent_lights_states": "States which accent lights are turned on",
-          "accent_lights_act_on": "When should accent lights be controlled?",
-          "task_lights": "Task lights",
-          "task_lights_states": "States which task lights are turned on",
-          "task_lights_act_on": "When should task lights be controlled?"
+          "action": "Select an action"
+        }
+      },
+      "feature_conf_light_groups_add_group": {
+        "title": "Add Light Group",
+        "description": "Create a new light group for this area. The name will generate the entity ID (e.g., 'Reading Nook' → light.kitchen_reading_nook).",
+        "data": {
+          "name": "Group Name",
+          "lights": "Lights",
+          "states": "Active States",
+          "act_on": "Control Behavior",
+          "icon": "Icon"
         },
         "data_description": {
-          "overhead_lights_states": "Configure which area states will trigger this light group. Light groups will be turned `on` while area is on this state and `off` if the area loses these states. For example, if you want the light to stay `on` after an extended period of time, you need to select the `extended` state too.",
-          "overhead_lights_act_on": "Select if this light group should be controlled only when an area first gets occupied, only on area state changes or both.",
-          "sleep_lights_states": "Configure which area states will trigger this light group. Light groups will be turned `on` while area is on this state and `off` if the area loses these states. For example, if you want the light to stay `on` after an extended period of time, you need to select the `extended` state too.",
-          "sleep_lights_act_on": "Select if this light group should be controlled only when an area first gets occupied, only on area state changes or both.",
-          "accent_lights_states": "Configure which area states will trigger this light group. Light groups will be turned `on` while area is on this state and `off` if the area loses these states. For example, if you want the light to stay `on` after an extended period of time, you need to select the `extended` state too.",
-          "accent_lights_act_on": "Select if this light group should be controlled only when an area first gets occupied, only on area state changes or both.",
-          "task_lights_states": "Configure which area states will trigger this light group. Light groups will be turned `on` while area is on this state and `off` if the area loses these states. For example, if you want the light to stay `on` after an extended period of time, you need to select the `extended` state too.",
-          "task_lights_act_on": "Select if this light group should be controlled only when an area first gets occupied, only on area state changes or both."
+          "name": "Enter a unique name for this light group",
+          "lights": "Select the lights to include in this group",
+          "states": "Select area states that will turn on these lights. Lights turn on when area enters these states and turn off when states are lost.",
+          "act_on": "Control on occupancy (area becomes occupied), state changes (sleep, extended, etc.), or both",
+          "icon": "MDI icon (e.g., mdi:ceiling-light, mdi:lamp). See https://mdi.bessarabov.com/ for all icons. Leave default for lightbulb."
+        }
+      },
+      "feature_conf_light_groups_edit_group": {
+        "title": "Edit Light Group",
+        "description": "Modify your light group configuration. Note: Renaming will update the entity ID but preserve history.",
+        "data": {
+          "name": "Group Name",
+          "lights": "Lights",
+          "states": "Active States",
+          "act_on": "Control Behavior",
+          "icon": "Icon"
+        },
+        "data_description": {
+          "name": "Enter a unique name for this light group",
+          "lights": "Select the lights to include in this group",
+          "states": "Select area states that will turn on these lights. Lights turn on when area enters these states and turn off when states are lost.",
+          "act_on": "Control on occupancy (area becomes occupied), state changes (sleep, extended, etc.), or both",
+          "icon": "MDI icon (e.g., mdi:ceiling-light, mdi:lamp). See https://mdi.bessarabov.com/ for all icons. Leave default for lightbulb."
+        }
+      },
+      "feature_conf_light_groups_delete_confirm": {
+        "title": "Delete Light Group",
+        "description": "Are you sure you want to delete '{group_name}'? This action cannot be undone.",
+        "data": {
+          "confirm": "Confirm deletion"
         }
       },
       "feature_conf_presence_hold": {
@@ -249,7 +271,11 @@
       "malformed_input": "This field is invalid or required",
       "no_entity_selected": "No entity was selected",
       "invalid_entity": "Invalid entity selected",
-      "climate_no_preset_support": "Climate entity does not support preset modes"
+      "climate_no_preset_support": "Climate entity does not support preset modes",
+      "duplicate_group_name": "A group with this name already exists",
+      "no_lights_selected": "You must select at least one light",
+      "invalid_icon": "Invalid icon format. Use MDI format (e.g., mdi:ceiling-light)",
+      "reserved_name": "This name is reserved and cannot be used. Please choose a different name."
     }
   },
   "entity": {

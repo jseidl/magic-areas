@@ -12,20 +12,11 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    CONF_CLIMATE_CONTROL_ENTITY_ID,
-    CONF_CLIMATE_CONTROL_PRESET_CLEAR,
-    CONF_CLIMATE_CONTROL_PRESET_EXTENDED,
-    CONF_CLIMATE_CONTROL_PRESET_OCCUPIED,
-    CONF_CLIMATE_CONTROL_PRESET_SLEEP,
-    DEFAULT_CLIMATE_CONTROL_PRESET_CLEAR,
-    DEFAULT_CLIMATE_CONTROL_PRESET_EXTENDED,
-    DEFAULT_CLIMATE_CONTROL_PRESET_OCCUPIED,
-    DEFAULT_CLIMATE_CONTROL_PRESET_SLEEP,
     AreaStates,
     MagicAreasEvents,
     MagicAreasFeatureInfoClimateControl,
-    MagicAreasFeatures,
 )
+from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 from custom_components.magic_areas.switch.base import SwitchBase
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,35 +36,19 @@ class ClimateControlSwitch(SwitchBase):
 
         SwitchBase.__init__(self, area)
 
-        self.climate_entity_id = self.area.feature_config(
-            MagicAreasFeatures.CLIMATE_CONTROL
-        ).get(CONF_CLIMATE_CONTROL_ENTITY_ID, None)
+        self.climate_entity_id = self.area.config.get(ClimateControlOptions.ENTITY_ID)
 
         if not self.climate_entity_id:
             raise ValueError("Climate entity not set")
 
         self.preset_map = {
-            AreaStates.CLEAR: self.area.feature_config(
-                MagicAreasFeatures.CLIMATE_CONTROL
-            ).get(
-                CONF_CLIMATE_CONTROL_PRESET_CLEAR, DEFAULT_CLIMATE_CONTROL_PRESET_CLEAR
+            AreaStates.CLEAR: self.area.config.get(ClimateControlOptions.PRESET_CLEAR),
+            AreaStates.OCCUPIED: self.area.config.get(
+                ClimateControlOptions.PRESET_OCCUPIED
             ),
-            AreaStates.OCCUPIED: self.area.feature_config(
-                MagicAreasFeatures.CLIMATE_CONTROL
-            ).get(
-                CONF_CLIMATE_CONTROL_PRESET_OCCUPIED,
-                DEFAULT_CLIMATE_CONTROL_PRESET_OCCUPIED,
-            ),
-            AreaStates.SLEEP: self.area.feature_config(
-                MagicAreasFeatures.CLIMATE_CONTROL
-            ).get(
-                CONF_CLIMATE_CONTROL_PRESET_SLEEP, DEFAULT_CLIMATE_CONTROL_PRESET_SLEEP
-            ),
-            AreaStates.EXTENDED: self.area.feature_config(
-                MagicAreasFeatures.CLIMATE_CONTROL
-            ).get(
-                CONF_CLIMATE_CONTROL_PRESET_EXTENDED,
-                DEFAULT_CLIMATE_CONTROL_PRESET_EXTENDED,
+            AreaStates.SLEEP: self.area.config.get(ClimateControlOptions.PRESET_SLEEP),
+            AreaStates.EXTENDED: self.area.config.get(
+                ClimateControlOptions.PRESET_EXTENDED
             ),
         }
 

@@ -29,25 +29,7 @@ from homeassistant.helpers.entity_registry import (
 from homeassistant.util import Throttle, slugify
 
 from custom_components.magic_areas.const import (
-    AREA_STATE_OCCUPIED,
-    AREA_TYPE_EXTERIOR,
-    AREA_TYPE_INTERIOR,
-    AREA_TYPE_META,
-    CONF_ENABLED_FEATURES,
-    CONF_EXCLUDE_ENTITIES,
-    CONF_FEATURE_AGGREGATION,
-    CONF_FEATURE_BLE_TRACKERS,
-    CONF_FEATURE_PRESENCE_HOLD,
-    CONF_FEATURE_WASP_IN_A_BOX,
-    CONF_IGNORE_DIAGNOSTIC_ENTITIES,
-    CONF_INCLUDE_ENTITIES,
-    CONF_PRESENCE_DEVICE_PLATFORMS,
-    CONF_PRESENCE_SENSOR_DEVICE_CLASS,
-    CONF_TYPE,
-    CONFIGURABLE_AREA_STATE_MAP,
     DATA_AREA_OBJECT,
-    DEFAULT_IGNORE_DIAGNOSTIC_ENTITIES,
-    DEFAULT_PRESENCE_DEVICE_PLATFORMS,
     MAGIC_AREAS_COMPONENTS,
     MAGIC_AREAS_COMPONENTS_GLOBAL,
     MAGIC_AREAS_COMPONENTS_META,
@@ -55,9 +37,19 @@ from custom_components.magic_areas.const import (
     MAGICAREAS_UNIQUEID_PREFIX,
     META_AREA_GLOBAL,
     MODULE_DATA,
+    AreaConfigOptions,
+    AreaStates,
+    AreaType,
+    ConfigDomains,
+    ConfigHelper,
+    Features,
     MagicAreasEvents,
     MetaAreaAutoReloadSettings,
     MetaAreaType,
+    PresenceTrackingOptions,
+)
+from custom_components.magic_areas.const.secondary_states import (
+    CONFIGURABLE_AREA_STATE_MAP,
 )
 
 # Classes
@@ -109,7 +101,7 @@ class MagicArea:
         area_config = dict(config.data)
         if config.options:
             area_config.update(config.options)
-        self.config = area_config
+        self.config = ConfigHelper(area_config)
 
         self.entities: dict[str, list[dict[str, str]]] = {}
         self.magic_entities: dict[str, list[dict[str, str]]] = {}
@@ -151,55 +143,41 @@ class MagicArea:
 
     def is_occupied(self) -> bool:
         """Return if area is occupied."""
-        return self.has_state(AREA_STATE_OCCUPIED)
+        return self.has_state(AreaStates.OCCUPIED)
 
     def has_state(self, state) -> bool:
         """Check if area has a given state."""
         return state in self.states
 
-    def has_configured_state(self, state) -> bool:
-        """Check if area supports a given state."""
-        state_opts = CONFIGURABLE_AREA_STATE_MAP.get(state, None)
+    def has_user_defined_state(self, state) -> bool:
+        """Check if user has defined an entity for a given state."""
 
-        if not state_opts:
+        # Check if this state is user-configurable
+        state_entity_key = CONFIGURABLE_AREA_STATE_MAP.get(state, None)
+
+        if not state_entity_key:
             return False
 
-        state_entity, state_value = state_opts
+        # Get the secondary states config
+        secondary_states_config = self.config.get_raw(
+            ConfigDomains.SECONDARY_STATES, {}
+        )
 
-        if state_entity and state_value:
-            return True
-
-        return False
+        # Check if user has configured an entity for this state (non-empty string)
+        entity_id = secondary_states_config.get(state_entity_key, "")
+        return bool(entity_id and entity_id.strip())
 
     def has_feature(self, feature) -> bool:
         """Check if area has a given feature."""
-        enabled_features = self.config.get(CONF_ENABLED_FEATURES)
+        # Get features config from the new structure
+        features_config = self.config.get_raw(ConfigDomains.FEATURES, {})
 
-        # Deal with legacy
-        if isinstance(enabled_features, list):
-            return feature in enabled_features
-
-        # Handle everything else
-        if not isinstance(enabled_features, dict):
-            self.logger.warning(
-                "%s: Invalid configuration for %s", self.name, CONF_ENABLED_FEATURES
-            )
+        if not isinstance(features_config, dict):
+            self.logger.warning("%s: Invalid configuration for features", self.name)
             return False
 
-        return feature in enabled_features
-
-    def feature_config(self, feature) -> dict:
-        """Return configuration for a given feature."""
-        if not self.has_feature(feature):
-            self.logger.debug("%s: Feature '%s' not enabled.", self.name, feature)
-            return {}
-
-        options = self.config.get(CONF_ENABLED_FEATURES, {})
-
-        if not options:
-            self.logger.debug("%s: No feature config found for %s", self.name, feature)
-
-        return options.get(feature, {})
+        # Feature is enabled if it exists in the config (presence = enabled)
+        return feature in features_config
 
     def available_platforms(self):
         """Return available platforms to area type."""
@@ -219,19 +197,19 @@ class MagicArea:
     @property
     def area_type(self):
         """Return the area type."""
-        return self.config.get(CONF_TYPE)
+        return self.config.get(AreaConfigOptions.TYPE)
 
     def is_meta(self) -> bool:
         """Return if area is Meta or not."""
-        return self.area_type == AREA_TYPE_META
+        return self.area_type == AreaType.META
 
     def is_interior(self):
         """Return if area type is interior or not."""
-        return self.area_type == AREA_TYPE_INTERIOR
+        return self.area_type == AreaType.INTERIOR
 
     def is_exterior(self):
         """Return if area type is exterior or not."""
-        return self.area_type == AREA_TYPE_EXTERIOR
+        return self.area_type == AreaType.EXTERIOR
 
     def _is_magic_area_entity(self, entity: RegistryEntry) -> bool:
         """Return if entity belongs to this integration instance."""
@@ -249,13 +227,11 @@ class MagicArea:
             return True
 
         # Is in the exclusion list?
-        if entity.entity_id in self.config.get(CONF_EXCLUDE_ENTITIES, []):
+        if entity.entity_id in self.config.get(AreaConfigOptions.EXCLUDE_ENTITIES):
             return True
 
         # Are we excluding DIAGNOSTIC and CONFIG?
-        if self.config.get(
-            CONF_IGNORE_DIAGNOSTIC_ENTITIES, DEFAULT_IGNORE_DIAGNOSTIC_ENTITIES
-        ):
+        if self.config.get(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES):
             if entity.entity_category in [
                 EntityCategory.CONFIG,
                 EntityCategory.DIAGNOSTIC,
@@ -268,7 +244,7 @@ class MagicArea:
         """Load entities into entity list."""
 
         entity_list: list[RegistryEntry] = []
-        include_entities = self.config.get(CONF_INCLUDE_ENTITIES)
+        include_entities = self.config.get(AreaConfigOptions.INCLUDE_ENTITIES)
 
         entity_registry = entityreg_async_get(self.hass)
         device_registry = devicereg_async_get(self.hass)
@@ -396,7 +372,7 @@ class MagicArea:
         sensors: list[str] = []
 
         valid_presence_platforms = self.config.get(
-            CONF_PRESENCE_DEVICE_PLATFORMS, DEFAULT_PRESENCE_DEVICE_PLATFORMS
+            PresenceTrackingOptions.DEVICE_PLATFORMS
         )
 
         for component, entities in self.entities.items():
@@ -412,27 +388,27 @@ class MagicArea:
                         continue
 
                     if entity[ATTR_DEVICE_CLASS] not in self.config.get(
-                        CONF_PRESENCE_SENSOR_DEVICE_CLASS, []
+                        PresenceTrackingOptions.SENSOR_DEVICE_CLASS
                     ):
                         continue
 
                 sensors.append(entity[ATTR_ENTITY_ID])
 
         # Append presence_hold switch as a presence_sensor
-        if self.has_feature(CONF_FEATURE_PRESENCE_HOLD):
+        if self.has_feature(Features.PRESENCE_HOLD):
             presence_hold_switch_id = (
                 f"{SWITCH_DOMAIN}.magic_areas_presence_hold_{self.slug}"
             )
             sensors.append(presence_hold_switch_id)
 
         # Append BLE Tracker monitor as a presence_sensor
-        if self.has_feature(CONF_FEATURE_BLE_TRACKERS):
+        if self.has_feature(Features.BLE_TRACKERS):
             ble_tracker_sensor_id = f"{BINARY_SENSOR_DOMAIN}.magic_areas_ble_trackers_{self.slug}_ble_tracker_monitor"
             sensors.append(ble_tracker_sensor_id)
 
         # Append Wasp In The Box sensor as presence monitor
-        if self.has_feature(CONF_FEATURE_AGGREGATION) and self.has_feature(
-            CONF_FEATURE_WASP_IN_A_BOX
+        if self.has_feature(Features.AGGREGATION) and self.has_feature(
+            Features.WASP_IN_A_BOX
         ):
             wasp_in_the_box_sensor_id = (
                 f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{self.slug}"
@@ -612,7 +588,7 @@ class MagicMetaArea(MagicArea):
             else:
                 if (
                     self.id == MetaAreaType.GLOBAL
-                    or area.config.get(CONF_TYPE) == self.id
+                    or area.config.get(AreaConfigOptions.TYPE) == self.id
                 ):
                     areas.append(area.slug)
 
@@ -658,7 +634,7 @@ class MagicMetaArea(MagicArea):
 
                     # Skip excluded entities
                     if entity[ATTR_ENTITY_ID] in self.config.get(
-                        CONF_EXCLUDE_ENTITIES, []
+                        AreaConfigOptions.EXCLUDE_ENTITIES
                     ):
                         continue
 
@@ -712,13 +688,6 @@ class MagicMetaArea(MagicArea):
             return await self.reload()
 
         # Handle all non-Global meta-areas including floors
-        self.logger.info(
-            "SS %s, AT %s, AI %s, CA: %s",
-            self.slug,
-            area_type,
-            area_id,
-            str(self.child_areas),
-        )
         if area_type == self.slug or area_id in self.child_areas:
             return await self.reload()
 

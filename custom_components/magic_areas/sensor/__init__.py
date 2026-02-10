@@ -16,13 +16,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_AGGREGATES_SENSOR_DEVICE_CLASSES,
-    CONF_FEATURE_AGGREGATION,
-    DEFAULT_AGGREGATES_MIN_ENTITIES,
-    DEFAULT_AGGREGATES_SENSOR_DEVICE_CLASSES,
+    Features,
     MagicAreasFeatureInfoAggregates,
 )
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.helpers.area import get_area_from_config_entry
 from custom_components.magic_areas.sensor.base import AreaSensorGroupSensor
 from custom_components.magic_areas.util import cleanup_removed_entries
@@ -42,7 +39,7 @@ async def async_setup_entry(
 
     entities_to_add = []
 
-    if area.has_feature(CONF_FEATURE_AGGREGATION):
+    if area.has_feature(Features.AGGREGATION):
         entities_to_add.extend(create_aggregate_sensors(area))
 
     if entities_to_add:
@@ -65,7 +62,7 @@ def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
     if SENSOR_DOMAIN not in area.entities:
         return []
 
-    if not area.has_feature(CONF_FEATURE_AGGREGATION):
+    if not area.has_feature(Features.AGGREGATION):
         return []
 
     for entity in area.entities[SENSOR_DOMAIN]:
@@ -110,15 +107,10 @@ def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
 
     # Create aggregates
     for device_class, entities in eligible_entities.items():
-        if len(entities) < area.feature_config(CONF_FEATURE_AGGREGATION).get(
-            CONF_AGGREGATES_MIN_ENTITIES, DEFAULT_AGGREGATES_MIN_ENTITIES
-        ):
+        if len(entities) < area.config.get(AggregateOptions.MIN_ENTITIES):
             continue
 
-        if device_class not in area.feature_config(CONF_FEATURE_AGGREGATION).get(
-            CONF_AGGREGATES_SENSOR_DEVICE_CLASSES,
-            DEFAULT_AGGREGATES_SENSOR_DEVICE_CLASSES,
-        ):
+        if device_class not in area.config.get(AggregateOptions.SENSOR_DEVICE_CLASSES):
             continue
 
         _LOGGER.debug(

@@ -14,14 +14,8 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    CONF_AGGREGATES_MIN_ENTITIES,
-    CONF_ENABLED_FEATURES,
-    CONF_FEATURE_AGGREGATION,
-    CONF_TYPE,
-    DOMAIN,
-    AreaType,
-)
+from custom_components.magic_areas.const import DOMAIN, AreaConfigOptions, AreaType
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 
 from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
 from tests.helpers import (
@@ -67,7 +61,7 @@ def patch_async_call_later(hass):
 async def mock_config_entry() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    return MockConfigEntry(domain=DOMAIN, data=data)
+    return MockConfigEntry(domain=DOMAIN, title=DEFAULT_MOCK_AREA.title(), data=data)
 
 
 @pytest.fixture(name="all_areas_with_meta_config_entry")
@@ -77,14 +71,10 @@ async def mock_config_entry_all_areas_with_meta_config_entry() -> list[MockConfi
     config_entries: list[MockConfigEntry] = []
     for area_entry in MockAreaIds:
         data = get_basic_config_entry_data(area_entry)
-        data.update(
-            {
-                CONF_ENABLED_FEATURES: {
-                    CONF_FEATURE_AGGREGATION: {CONF_AGGREGATES_MIN_ENTITIES: 1}
-                }
-            }
+        data.update(AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}))
+        config_entries.append(
+            MockConfigEntry(domain=DOMAIN, title=area_entry.title(), data=data)
         )
-        config_entries.append(MockConfigEntry(domain=DOMAIN, data=data))
 
     return config_entries
 
@@ -143,7 +133,7 @@ async def setup_entities_binary_sensor_motion_all_areas_with_meta(
         assert area is not None
         area_object = MOCK_AREAS[area]
         assert area_object is not None
-        if area_object[CONF_TYPE] == AreaType.META:
+        if area_object[AreaConfigOptions.TYPE.key] == AreaType.META:
             continue
 
         mock_sensor = MockBinarySensor(
@@ -188,7 +178,7 @@ async def setup_integration_all_areas_with_meta(
     for area in MockAreaIds:
         area_object = MOCK_AREAS[area]
         assert area_object is not None
-        if area_object[CONF_TYPE] == AreaType.META:
+        if area_object[AreaConfigOptions.TYPE.key] == AreaType.META:
             continue
         non_meta_areas.append(area)
 

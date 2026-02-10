@@ -31,30 +31,22 @@ from custom_components.magic_areas.const import (
     ATTR_PRESENCE_SENSORS,
     ATTR_STATES,
     ATTR_TYPE,
-    CONF_CLEAR_TIMEOUT,
-    CONF_EXTENDED_TIME,
-    CONF_EXTENDED_TIMEOUT,
-    CONF_KEEP_ONLY_ENTITIES,
-    CONF_SECONDARY_STATES,
-    CONF_SECONDARY_STATES_CALCULATION_MODE,
-    CONF_SLEEP_TIMEOUT,
-    CONF_TYPE,
-    CONFIGURABLE_AREA_STATE_MAP,
-    DEFAULT_CLEAR_TIMEOUT,
-    DEFAULT_EXTENDED_TIME,
-    DEFAULT_EXTENDED_TIMEOUT,
-    DEFAULT_SECONDARY_STATES_CALCULATION_MODE,
-    DEFAULT_SLEEP_TIMEOUT,
     EMPTY_STRING,
     INVALID_STATES,
     ONE_MINUTE,
     PRESENCE_SENSOR_VALID_ON_STATES,
     UPDATE_INTERVAL,
+    AreaConfigOptions,
     AreaStates,
     CalculationMode,
     MagicAreasEvents,
     MagicAreasFeatureInfo,
     MagicAreasFeatureInfoPresenceTracking,
+    PresenceTrackingOptions,
+)
+from custom_components.magic_areas.const.secondary_states import (
+    CONFIGURABLE_AREA_STATE_MAP,
+    SecondaryStateOptions,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,7 +91,10 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         for configurable_state in configurable_states:
             configurable_state_entity = CONFIGURABLE_AREA_STATE_MAP[configurable_state]
-            tracked_entity = self.area.config.get(CONF_SECONDARY_STATES, {}).get(
+            secondary_states_config = self.area.config.get_raw(
+                SecondaryStateOptions.CONFIG_DOMAIN.value, {}
+            )
+            tracked_entity = secondary_states_config.get(
                 configurable_state_entity, None
             )
             if not tracked_entity:
@@ -168,9 +163,12 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             configurable_state,
             configurable_state_entity,
         ) in CONFIGURABLE_AREA_STATE_MAP.items():
-            secondary_state_entity = self.area.config.get(
-                CONF_SECONDARY_STATES, {}
-            ).get(configurable_state_entity, None)
+            secondary_states_config = self.area.config.get_raw(
+                SecondaryStateOptions.CONFIG_DOMAIN.value, {}
+            )
+            secondary_state_entity = secondary_states_config.get(
+                configurable_state_entity, None
+            )
 
             if not secondary_state_entity:
                 continue
@@ -348,9 +346,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             datetime.now(UTC) - self.area.last_changed
         ).total_seconds()
 
-        extended_time = self.area.config.get(CONF_SECONDARY_STATES, {}).get(
-            CONF_EXTENDED_TIME, DEFAULT_EXTENDED_TIME
-        )
+        extended_time = self.area.config.get(SecondaryStateOptions.EXTENDED_TIME)
 
         if (
             AreaStates.OCCUPIED in states
@@ -376,9 +372,12 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         for configurable_state in configurable_states:
             configurable_state_entity = CONFIGURABLE_AREA_STATE_MAP[configurable_state]
 
-            secondary_state_entity = self.area.config.get(
-                CONF_SECONDARY_STATES, {}
-            ).get(configurable_state_entity, None)
+            secondary_states_config = self.area.config.get_raw(
+                SecondaryStateOptions.CONFIG_DOMAIN.value, {}
+            )
+            secondary_state_entity = secondary_states_config.get(
+                configurable_state_entity, None
+            )
 
             if not secondary_state_entity:
                 continue
@@ -459,7 +458,9 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         # Filter out keep-only sensors if the area isn't occupied
         if not self.area.is_occupied():
-            keep_only_entities = self.area.config.get(CONF_KEEP_ONLY_ENTITIES, [])
+            keep_only_entities = self.area.config.get(
+                PresenceTrackingOptions.KEEP_ONLY_ENTITIES
+            )
             available_sensors = [
                 sensor for sensor in self._sensors if sensor not in keep_only_entities
             ]
@@ -532,23 +533,16 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         """Return configured clear timeout value."""
         if self.area.has_state(AreaStates.SLEEP):
             return (
-                self.area.config.get(CONF_SECONDARY_STATES, {}).get(
-                    CONF_SLEEP_TIMEOUT, DEFAULT_SLEEP_TIMEOUT
-                )
-                * ONE_MINUTE
+                self.area.config.get(SecondaryStateOptions.SLEEP_TIMEOUT) * ONE_MINUTE
             )
 
         if self.area.has_state(AreaStates.EXTENDED):
             return (
-                self.area.config.get(CONF_SECONDARY_STATES, {}).get(
-                    CONF_EXTENDED_TIMEOUT, DEFAULT_EXTENDED_TIMEOUT
-                )
+                self.area.config.get(SecondaryStateOptions.EXTENDED_TIMEOUT)
                 * ONE_MINUTE
             )
 
-        return (
-            self.area.config.get(CONF_CLEAR_TIMEOUT, DEFAULT_CLEAR_TIMEOUT) * ONE_MINUTE
-        )
+        return self.area.config.get(PresenceTrackingOptions.CLEAR_TIMEOUT) * ONE_MINUTE
 
     def _remove_clear_timeout(self) -> None:
         if not self._clear_timeout_callback:
@@ -637,7 +631,7 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
                 ATTR_ACTIVE_SENSORS: [],
                 ATTR_LAST_ACTIVE_SENSORS: [],
                 ATTR_PRESENCE_SENSORS: [],
-                ATTR_TYPE: self.area.config.get(CONF_TYPE),
+                ATTR_TYPE: self.area.config.get(AreaConfigOptions.TYPE),
                 ATTR_CLEAR_TIMEOUT: 0,
             }
         )
@@ -693,10 +687,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
 
         states: list[AreaStates] = []
         mode: CalculationMode = CalculationMode(
-            self.area.config.get(CONF_SECONDARY_STATES, {}).get(
-                CONF_SECONDARY_STATES_CALCULATION_MODE,
-                DEFAULT_SECONDARY_STATES_CALCULATION_MODE,
-            )
+            self.area.config.get(SecondaryStateOptions.CALCULATION_MODE)
         )
 
         child_areas: list[str] = self.area.get_child_areas()

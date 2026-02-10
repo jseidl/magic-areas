@@ -22,14 +22,8 @@ from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    CONF_CLIMATE_CONTROL_ENTITY_ID,
-    CONF_CLIMATE_CONTROL_PRESET_CLEAR,
-    CONF_CLIMATE_CONTROL_PRESET_OCCUPIED,
-    CONF_ENABLED_FEATURES,
-    DOMAIN,
-    MagicAreasFeatures,
-)
+from custom_components.magic_areas.const import DOMAIN
+from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -62,15 +56,13 @@ def mock_config_entry_climate_control() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
     data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                MagicAreasFeatures.CLIMATE_CONTROL: {
-                    CONF_CLIMATE_CONTROL_ENTITY_ID: MOCK_CLIMATE_ENTITY_ID,
-                    CONF_CLIMATE_CONTROL_PRESET_OCCUPIED: PRESET_NONE,
-                    CONF_CLIMATE_CONTROL_PRESET_CLEAR: PRESET_AWAY,
-                },
+        ClimateControlOptions.to_config(
+            {
+                ClimateControlOptions.ENTITY_ID.key: MOCK_CLIMATE_ENTITY_ID,
+                ClimateControlOptions.PRESET_OCCUPIED.key: PRESET_NONE,
+                ClimateControlOptions.PRESET_CLEAR.key: PRESET_AWAY,
             }
-        }
+        )
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 

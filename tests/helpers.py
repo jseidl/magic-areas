@@ -13,7 +13,7 @@ import voluptuous as vol
 
 from homeassistant import loader
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import ATTR_FLOOR_ID, ATTR_NAME, CONF_PLATFORM
+from homeassistant.const import ATTR_FLOOR_ID, CONF_PLATFORM
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,
@@ -32,17 +32,13 @@ from homeassistant.setup import async_setup_component
 from homeassistant.util.dt import utcnow
 
 from custom_components.magic_areas.const import (
-    CONF_CLEAR_TIMEOUT,
-    CONF_ENABLED_FEATURES,
-    CONF_EXCLUDE_ENTITIES,
-    CONF_EXTENDED_TIMEOUT,
-    CONF_ID,
-    CONF_INCLUDE_ENTITIES,
-    CONF_PRESENCE_SENSOR_DEVICE_CLASS,
-    CONF_TYPE,
-    DEFAULT_PRESENCE_DEVICE_SENSOR_CLASS,
+    CONF_AREA_ID,
     DOMAIN,
+    AreaConfigOptions,
+    ConfigDomains,
+    PresenceTrackingOptions,
 )
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
 
 from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
 from tests.mocks import MockModule, MockPlatform
@@ -217,7 +213,11 @@ async def init_integration(
                 floor_entry = floor_registry.async_create(floor_name)
             assert floor_entry is not None
             floor_id = floor_entry.floor_id
-        area_registry.async_create(name=area.value, floor_id=floor_id)
+
+        # Check if area already exists before creating
+        existing_area = area_registry.async_get_area_by_name(area.value)
+        if not existing_area:
+            area_registry.async_create(name=area.value, floor_id=floor_id)
 
     for config_entry in config_entries:
         config_entry.add_to_hass(hass)
@@ -331,6 +331,25 @@ class VirtualClock:
 # Helpers
 
 
+def merge_feature_config(data: dict, *feature_configs: dict) -> None:
+    """Merge one or more feature configs into existing data dict.
+
+    Args:
+        data: Base config dict with ConfigDomains.FEATURES key
+        *feature_configs: One or more dicts from FeatureOptionSet.to_config()
+
+    """
+
+    features_key = ConfigDomains.FEATURES.value
+
+    if features_key not in data:
+        data[features_key] = {}
+
+    for feature_config in feature_configs:
+        # feature_config is guaranteed to have the features_key from to_config()
+        data[features_key].update(feature_config[features_key])
+
+
 def get_basic_config_entry_data(area_id: MockAreaIds) -> dict[str, Any]:
     """Return config entry data for given area id."""
 
@@ -338,17 +357,40 @@ def get_basic_config_entry_data(area_id: MockAreaIds) -> dict[str, Any]:
 
     assert area_data is not None
 
+    # Build config with nested structure using OptionSet classes
     data = {
-        ATTR_NAME: area_id.title(),
-        CONF_ID: area_id.value,
-        CONF_CLEAR_TIMEOUT: 0,
-        CONF_EXTENDED_TIMEOUT: 5,
-        CONF_TYPE: area_data[CONF_TYPE],
-        CONF_EXCLUDE_ENTITIES: [],
-        CONF_INCLUDE_ENTITIES: [],
-        CONF_PRESENCE_SENSOR_DEVICE_CLASS: DEFAULT_PRESENCE_DEVICE_SENSOR_CLASS,
-        CONF_ENABLED_FEATURES: {},
+        CONF_AREA_ID: area_id.value,
+        ConfigDomains.FEATURES: {},
     }
+
+    data.update(
+        AreaConfigOptions.to_config(
+            {
+                AreaConfigOptions.TYPE.key: area_data[AreaConfigOptions.TYPE.key],
+                AreaConfigOptions.EXCLUDE_ENTITIES.key: [],
+                AreaConfigOptions.INCLUDE_ENTITIES.key: [],
+            }
+        )
+    )
+
+    # Add presence tracking config (nested under "presence_tracking" domain)
+    data.update(
+        PresenceTrackingOptions.to_config(
+            {
+                PresenceTrackingOptions.CLEAR_TIMEOUT.key: 0,
+                PresenceTrackingOptions.SENSOR_DEVICE_CLASS.key: PresenceTrackingOptions.SENSOR_DEVICE_CLASS.default,
+            }
+        )
+    )
+
+    # Add secondary states config (nested under "secondary_states" domain)
+    data.update(
+        SecondaryStateOptions.to_config(
+            {
+                SecondaryStateOptions.EXTENDED_TIMEOUT.key: 5,
+            }
+        )
+    )
 
     return data
 

@@ -383,22 +383,25 @@ class MockLight(MockToggleEntity, LightEntity):
         """Initialize the mock light."""
         super().__init__(name, state, unique_id)
         if dimmable:
-            self.color_mode = ColorMode.RGBWW
+            self._attr_supported_color_modes = {ColorMode.RGBWW}
+            self._attr_color_mode = ColorMode.RGBWW
+            self._attr_brightness = 255
             self.hs_color = None  # Should be ignored
             self.rgb_color = None  # Should be ignored
             self.rgbw_color = None  # Should be ignored
             self.rgbww_color = (1, 2, 3, 4, 5)
             self.xy_color = None  # Should be ignored
-            self.brightness = 255
         else:
-            self.color_mode = ColorMode.ONOFF
+            self._attr_supported_color_modes = {ColorMode.ONOFF}
+            self._attr_color_mode = ColorMode.ONOFF
 
     def turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
         super().turn_on(**kwargs)
         for key, value in kwargs.items():
-            if key in [
-                "brightness",
+            if key == "brightness":
+                self._attr_brightness = value
+            elif key in [
                 "hs_color",
                 "xy_color",
                 "rgb_color",
@@ -408,9 +411,10 @@ class MockLight(MockToggleEntity, LightEntity):
             ]:
                 setattr(self, key, value)
             if key == "white":
-                setattr(self, "brightness", value)
+                self._attr_brightness = value
             if key in TURN_ON_ARG_TO_COLOR_MODE:
                 self._attr_color_mode = TURN_ON_ARG_TO_COLOR_MODE[key]
+        self.schedule_update_ha_state()
 
 
 class MockBinarySensor(MockEntity, BinarySensorEntity):

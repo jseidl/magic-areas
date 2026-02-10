@@ -13,11 +13,7 @@ from homeassistant.components.cover.const import DOMAIN as COVER_DOMAIN
 from homeassistant.const import ATTR_DEVICE_CLASS, ATTR_ENTITY_ID, STATE_OPEN
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    CONF_ENABLED_FEATURES,
-    CONF_FEATURE_COVER_GROUPS,
-    DOMAIN,
-)
+from custom_components.magic_areas.const import DOMAIN, Features
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -38,7 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 def mock_config_entry_cover_groups() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update({CONF_ENABLED_FEATURES: {CONF_FEATURE_COVER_GROUPS: {}}})
+    data.update({"features": {Features.COVER_GROUPS: {}}})
     return MockConfigEntry(domain=DOMAIN, data=data)
 
 

@@ -11,12 +11,11 @@ from homeassistant.components.sensor.const import (
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.const import (
-    AGGREGATE_MODE_SUM,
-    AGGREGATE_MODE_TOTAL_INCREASING_SENSOR,
-    AGGREGATE_MODE_TOTAL_SENSOR,
-    DEFAULT_SENSOR_PRECISION,
-    EMPTY_STRING,
+from custom_components.magic_areas.const import DEFAULT_SENSOR_PRECISION, EMPTY_STRING
+from custom_components.magic_areas.const.aggregates import (
+    SENSOR_SUM_MODE_CLASSES,
+    SENSOR_TOTAL_INCREASING_STATE_CLASSES,
+    SENSOR_TOTAL_STATE_CLASSES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,9 +55,9 @@ class AreaSensorGroupSensor(MagicEntity, SensorGroup):
 
         state_class = SensorStateClass.MEASUREMENT
 
-        if device_class in AGGREGATE_MODE_TOTAL_INCREASING_SENSOR:
+        if device_class in SENSOR_TOTAL_INCREASING_STATE_CLASSES:
             state_class = SensorStateClass.TOTAL_INCREASING
-        elif device_class in AGGREGATE_MODE_TOTAL_SENSOR:
+        elif device_class in SENSOR_TOTAL_STATE_CLASSES:
             state_class = SensorStateClass.TOTAL
 
         SensorGroup.__init__(
@@ -67,7 +66,9 @@ class AreaSensorGroupSensor(MagicEntity, SensorGroup):
             device_class=sensor_device_class,
             entity_ids=entity_ids,
             ignore_non_numeric=True,
-            sensor_type=ATTR_SUM if device_class in AGGREGATE_MODE_SUM else ATTR_MEAN,
+            sensor_type=(
+                ATTR_SUM if device_class in SENSOR_SUM_MODE_CLASSES else ATTR_MEAN
+            ),
             state_class=state_class,
             unit_of_measurement=final_unit_of_measurement,
             name=EMPTY_STRING,

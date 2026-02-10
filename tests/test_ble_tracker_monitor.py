@@ -14,11 +14,9 @@ from homeassistant.core import HomeAssistant
 from custom_components.magic_areas.const import (
     ATTR_ACTIVE_SENSORS,
     ATTR_PRESENCE_SENSORS,
-    CONF_BLE_TRACKER_ENTITIES,
-    CONF_ENABLED_FEATURES,
-    CONF_FEATURE_BLE_TRACKERS,
     DOMAIN,
 )
+from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -39,13 +37,11 @@ def mock_config_entry_ble_tracker() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
     data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                CONF_FEATURE_BLE_TRACKERS: {
-                    CONF_BLE_TRACKER_ENTITIES: ["sensor.ble_tracker_1"],
-                }
+        BleTrackerOptions.to_config(
+            {
+                BleTrackerOptions.ENTITIES.key: ["sensor.ble_tracker_1"],
             }
-        }
+        )
     )
     return MockConfigEntry(domain=DOMAIN, data=data)
 

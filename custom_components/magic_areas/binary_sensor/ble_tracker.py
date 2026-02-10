@@ -16,10 +16,9 @@ from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     ATTR_ACTIVE_SENSORS,
-    CONF_BLE_TRACKER_ENTITIES,
     MagicAreasFeatureInfoBLETrackers,
-    MagicAreasFeatures,
 )
+from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,9 +35,7 @@ class AreaBLETrackerBinarySensor(MagicEntity, BinarySensorEntity):
         MagicEntity.__init__(self, area, domain=BINARY_SENSOR_DOMAIN)
         BinarySensorEntity.__init__(self)
 
-        self._sensors = self.area.feature_config(MagicAreasFeatures.BLE_TRACKER).get(
-            CONF_BLE_TRACKER_ENTITIES, []
-        )
+        self._sensors = self.area.config.get(BleTrackerOptions.ENTITIES)
 
         self._attr_device_class = BinarySensorDeviceClass.OCCUPANCY
         self._attr_extra_state_attributes = {
