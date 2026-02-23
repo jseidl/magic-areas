@@ -1,16 +1,13 @@
 """Presence hold feature handler."""
 
-from custom_components.magic_areas.const import Features
-from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
     StepResult,
 )
-from custom_components.magic_areas.config_flow.helpers import (
-    SchemaBuilder,
-    SelectorBuilder,
-)
+from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
+from custom_components.magic_areas.const import Features
+from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
 
 
 @register_feature
@@ -19,10 +16,12 @@ class PresenceHoldFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.PRESENCE_HOLD
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Presence Hold"
 
     async def handle_step(self, step_id, user_input):

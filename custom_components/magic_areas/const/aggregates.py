@@ -1,6 +1,5 @@
 """Aggregates feature constants."""
 
-import voluptuous as vol
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.helpers import config_validation as cv
@@ -20,7 +19,7 @@ class AggregateOptions(FeatureOptionSet):
 
     MIN_ENTITIES = ConfigOption(
         key="aggregates_min_entities",
-        default=2,
+        default=1,
         title="Minimum Entities",
         description="Minimum number of entities required to create an aggregate sensor",
         translation_key="aggregates_min_entities",
@@ -36,25 +35,10 @@ class AggregateOptions(FeatureOptionSet):
     BINARY_SENSOR_DEVICE_CLASSES = ConfigOption(
         key="aggregates_binary_sensor_device_classes",
         default=[
-            BinarySensorDeviceClass.CONNECTIVITY,
             BinarySensorDeviceClass.DOOR,
-            BinarySensorDeviceClass.GARAGE_DOOR,
-            BinarySensorDeviceClass.GAS,
-            BinarySensorDeviceClass.HEAT,
             BinarySensorDeviceClass.LIGHT,
-            BinarySensorDeviceClass.LOCK,
-            BinarySensorDeviceClass.MOISTURE,
             BinarySensorDeviceClass.MOTION,
-            BinarySensorDeviceClass.MOVING,
             BinarySensorDeviceClass.OCCUPANCY,
-            BinarySensorDeviceClass.PRESENCE,
-            BinarySensorDeviceClass.PROBLEM,
-            BinarySensorDeviceClass.SAFETY,
-            BinarySensorDeviceClass.SMOKE,
-            BinarySensorDeviceClass.SOUND,
-            BinarySensorDeviceClass.TAMPER,
-            BinarySensorDeviceClass.UPDATE,
-            BinarySensorDeviceClass.VIBRATION,
             BinarySensorDeviceClass.WINDOW,
         ],
         title="Binary Sensor Device Classes",
@@ -62,41 +46,28 @@ class AggregateOptions(FeatureOptionSet):
         translation_key="aggregates_binary_sensor_device_classes",
         validator=cv.ensure_list,
         selector_type="select",
-        selector_config={"multiple": True},
+        selector_config={
+            "options": [cls.value for cls in BinarySensorDeviceClass],
+            "multiple": True,
+        },
     )
 
     SENSOR_DEVICE_CLASSES = ConfigOption(
         key="aggregates_sensor_device_classes",
         default=[
-            SensorDeviceClass.AQI,
-            SensorDeviceClass.ATMOSPHERIC_PRESSURE,
-            SensorDeviceClass.CO,
-            SensorDeviceClass.CO2,
-            SensorDeviceClass.CURRENT,
-            SensorDeviceClass.ENERGY,
-            SensorDeviceClass.ENERGY_STORAGE,
-            SensorDeviceClass.GAS,
             SensorDeviceClass.HUMIDITY,
             SensorDeviceClass.ILLUMINANCE,
-            SensorDeviceClass.IRRADIANCE,
-            SensorDeviceClass.MOISTURE,
-            SensorDeviceClass.NITROGEN_DIOXIDE,
-            SensorDeviceClass.NITROGEN_MONOXIDE,
-            SensorDeviceClass.NITROUS_OXIDE,
-            SensorDeviceClass.OZONE,
-            SensorDeviceClass.POWER,
-            SensorDeviceClass.PRESSURE,
-            SensorDeviceClass.SULPHUR_DIOXIDE,
             SensorDeviceClass.TEMPERATURE,
-            SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
-            SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         ],
         title="Sensor Device Classes",
         description="Sensor device classes to aggregate",
         translation_key="aggregates_sensor_device_classes",
         validator=cv.ensure_list,
         selector_type="select",
-        selector_config={"multiple": True},
+        selector_config={
+            "options": [cls.value for cls in SensorDeviceClass],
+            "multiple": True,
+        },
     )
 
     ILLUMINANCE_THRESHOLD = ConfigOption(

@@ -1,9 +1,9 @@
 """Base classes for config flow."""
 
 import logging
-from typing import Any, Optional
 
 import voluptuous as vol
+
 from homeassistant.helpers.selector import (
     BooleanSelector,
     BooleanSelectorConfig,
@@ -37,15 +37,15 @@ class ConfigBase:
 
     config_entry = None
 
-    # Selector builders
-    def _build_selector_boolean(self):
+    # Selector builders - Public API for feature handlers
+    def build_selector_boolean(self):
         """Build a boolean toggle selector."""
         return BooleanSelector(BooleanSelectorConfig())
 
-    def _build_selector_select(
+    def build_selector_select(
         self, options=None, multiple=False, translation_key=EMPTY_STRING
     ):
-        """Build a <select> selector."""
+        """Build a select dropdown selector."""
         if not options:
             options = []
 
@@ -58,17 +58,17 @@ class ConfigBase:
             )
         )
 
-    def _build_selector_entity_simple(
+    def build_selector_entity_simple(
         self, options=None, multiple=False, force_include=False
     ):
-        """Build a <select> selector with predefined settings."""
+        """Build an entity selector with predefined entity list."""
         if not options:
             options = []
         return NullableEntitySelector(
             EntitySelectorConfig(include_entities=options, multiple=multiple)
         )
 
-    def _build_selector_number(
+    def build_selector_number(
         self,
         *,
         min_value: float = 0,
@@ -77,7 +77,7 @@ class ConfigBase:
         step: float = 1,
         unit_of_measurement: str = "seconds",
     ):
-        """Build a number selector."""
+        """Build a number input selector."""
         return NumberSelector(
             NumberSelectorConfig(
                 min=min_value,
@@ -88,7 +88,7 @@ class ConfigBase:
             )
         )
 
-    def _build_options_schema(
+    def build_options_schema(
         self,
         options,
         *,
@@ -96,7 +96,7 @@ class ConfigBase:
         dynamic_validators=None,
         selectors=None,
     ) -> vol.Schema:
-        """Build schema for configuration options."""
+        """Build voluptuous schema for configuration options."""
         _LOGGER.debug(
             "ConfigFlow: Building schema from options: %s - dynamic_validators: %s",
             str(options),
@@ -116,24 +116,29 @@ class ConfigBase:
             "ConfigFlow: Data for pre-populating fields: %s", str(saved_options)
         )
 
-        schema = {
-            vol.Optional(
-                name,
-                description={
-                    "suggested_value": (
-                        saved_options.get(name)
-                        if saved_options and saved_options.get(name) is not None
-                        else default
-                    )
-                },
-                default=default,
-            ): (
+        schema = {}
+        for name, default, validation in options:
+            # Convert enum to string value if needed (defensive handling)
+            if hasattr(name, "value"):
+                name = name.value
+
+            schema[
+                vol.Optional(
+                    name,
+                    description={
+                        "suggested_value": (
+                            saved_options.get(name)
+                            if saved_options and saved_options.get(name) is not None
+                            else default
+                        )
+                    },
+                    default=default,
+                )
+            ] = (
                 selectors[name]
                 if name in selectors
                 else dynamic_validators.get(name, validation)
             )
-            for name, default, validation in options
-        }
 
         _LOGGER.debug("ConfigFlow: Built schema: %s", str(schema))
 

@@ -1,8 +1,6 @@
 """Fan groups feature constants."""
 
-import voluptuous as vol
 from homeassistant.components.sensor.const import SensorDeviceClass
-from homeassistant.helpers import config_validation as cv
 
 from custom_components.magic_areas.const import (
     AreaStates,

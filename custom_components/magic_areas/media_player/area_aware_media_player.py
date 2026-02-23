@@ -128,7 +128,7 @@ class AreaAwareMediaPlayer(MagicEntity, MediaPlayerEntity):
 
             # Check notification states
             notification_states = area.config.get(
-                AreaAwareMediaPlayerOptions.NOTIFY_STATES
+                AreaAwareMediaPlayerOptions.NOTIFICATION_STATES
             )
 
             # Check sleep

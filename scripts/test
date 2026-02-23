@@ -6,30 +6,59 @@ cd "$(dirname "$0")/.."
 # Which version(s) to run: default = stable
 CHOICE="${1:-stable}"
 
+# Shift the first argument and capture remaining args for pytest
+shift 2>/dev/null || true
+PYTEST_ARGS=("$@")
+
 # Fetch latest HA stable + beta versions from PyPI
 VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
 
-HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-HA_BETA_VERSION=$(echo "$VERSIONS" | grep 'b' | sort -Vr | head -n1)
+#HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
+#HA_BETA_VERSION=$(echo "$VERSIONS" | grep 'b' | sort -Vr | head -n1)
+
+HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n1)
+
+# For beta: extract major version from stable, then find latest beta for that major
+MAJOR_VERSION=$(echo "$HA_STABLE_VERSION" | sed -E 's/\.[0-9]+$//')
+HA_BETA_VERSION=$(echo "$VERSIONS" | grep "^${MAJOR_VERSION}\..*b" | sort -Vr | head -n1)
 
 export HA_STABLE_VERSION
 export HA_BETA_VERSION
 
+# Build tox command with optional pytest args
+build_tox_cmd() {
+  local env=$1
+  if [ ${#PYTEST_ARGS[@]} -gt 0 ]; then
+    echo "tox -e $env -- ${PYTEST_ARGS[*]}"
+  else
+    echo "tox -e $env"
+  fi
+}
+
 case "$CHOICE" in
   stable)
     echo "Running tests against Home Assistant stable: $HA_STABLE_VERSION"
-    tox -e ha-stable
+    [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
+    eval "$(build_tox_cmd ha-stable)"
     ;;
   beta)
     echo "Running tests against Home Assistant beta: $HA_BETA_VERSION"
-    tox -e ha-beta
+    [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
+    eval "$(build_tox_cmd ha-beta)"
     ;;
   both)
     echo "Running tests against both stable ($HA_STABLE_VERSION) and beta ($HA_BETA_VERSION)"
-    tox -e ha-stable,ha-beta
+    [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
+    eval "$(build_tox_cmd ha-stable,ha-beta)"
     ;;
   *)
-    echo "Usage: $0 [stable|beta|both]"
+    echo "Usage: $0 [stable|beta|both] [pytest-args...]"
+    echo ""
+    echo "Examples:"
+    echo "  $0 stable                              # Run all tests"
+    echo "  $0 stable tests/test_wasp_in_a_box.py  # Run specific test file"
+    echo "  $0 stable tests/test_presence.py::test_area_state_changes -v  # Run specific test with verbose"
+    echo "  $0 stable tests/ -k wasp               # Run tests matching 'wasp'"
     exit 1
     ;;
 esac

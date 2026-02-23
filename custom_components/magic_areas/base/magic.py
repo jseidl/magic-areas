@@ -2,16 +2,19 @@
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+from functools import cached_property
 import logging
 import random
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.sun.const import STATE_BELOW_HORIZON
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
     ATTR_ENTITY_ID,
     EVENT_HOMEASSISTANT_STARTED,
+    STATE_OFF,
     STATE_ON,
     EntityCategory,
 )
@@ -30,6 +33,7 @@ from homeassistant.util import Throttle, slugify
 
 from custom_components.magic_areas.const import (
     DATA_AREA_OBJECT,
+    INVALID_STATES,
     MAGIC_AREAS_COMPONENTS,
     MAGIC_AREAS_COMPONENTS_GLOBAL,
     MAGIC_AREAS_COMPONENTS_META,
@@ -48,8 +52,11 @@ from custom_components.magic_areas.const import (
     MetaAreaType,
     PresenceTrackingOptions,
 )
-from custom_components.magic_areas.const.secondary_states import (
-    CONFIGURABLE_AREA_STATE_MAP,
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
+from custom_components.magic_areas.const.user_defined_states import (
+    UserDefinedStateEntryOptions,
+    UserDefinedStateOptions,
+    slugify_state_name,
 )
 
 # Classes
@@ -112,10 +119,16 @@ class MagicArea:
 
         self.loaded_platforms: list[str] = []
 
+        # Light sensor resolution (set during finalize_init)
+        self.area_light_sensor: str | None = None
+
         self.logger.debug("%s: Primed for initialization.", self.name)
 
     def finalize_init(self):
         """Finalize initialization of the area."""
+        # Resolve light entity before marking as initialized
+        self.area_light_sensor = self.resolve_light_entity()
+
         self.initialized = True
         self.logger.debug(
             "%s (%s) initialized.", self.name, "Meta-Area" if self.is_meta() else "Area"
@@ -148,24 +161,6 @@ class MagicArea:
     def has_state(self, state) -> bool:
         """Check if area has a given state."""
         return state in self.states
-
-    def has_user_defined_state(self, state) -> bool:
-        """Check if user has defined an entity for a given state."""
-
-        # Check if this state is user-configurable
-        state_entity_key = CONFIGURABLE_AREA_STATE_MAP.get(state, None)
-
-        if not state_entity_key:
-            return False
-
-        # Get the secondary states config
-        secondary_states_config = self.config.get_raw(
-            ConfigDomains.SECONDARY_STATES, {}
-        )
-
-        # Check if user has configured an entity for this state (non-empty string)
-        entity_id = secondary_states_config.get(state_entity_key, "")
-        return bool(entity_id and entity_id.strip())
 
     def has_feature(self, feature) -> bool:
         """Check if area has a given feature."""
@@ -476,6 +471,156 @@ class MagicArea:
             return False
 
         return _entity_registry_filter
+
+    def resolve_light_entity(self) -> str | None:
+        """Resolve which entity to use for darkness detection.
+
+        Resolution order:
+        1. Area's threshold sensor (if conditions warrant creation)
+        2. Area's light aggregate (if conditions warrant creation)
+        3. Windowless check (return None if true)
+        4. Exterior meta-area threshold sensor (if available)
+        5. Exterior meta-area light aggregate (if available)
+        6. sun.sun fallback
+
+        Returns:
+            Entity ID to monitor (binary sensor or sun.sun), or None for windowless
+
+        """
+        # Import here to avoid circular dependency
+        from custom_components.magic_areas.helpers.aggregates import (  # pylint: disable=import-outside-toplevel
+            should_create_light_aggregate,
+            should_create_threshold_sensor,
+        )
+
+        # 1. Check if threshold sensor should be created for this area
+        if should_create_threshold_sensor(self):
+            threshold_entity = f"{BINARY_SENSOR_DOMAIN}.magic_areas_threshold_{self.slug}_threshold_light"
+            self.logger.debug(
+                "%s: Will use threshold sensor for dark detection: %s",
+                self.name,
+                threshold_entity,
+            )
+            return threshold_entity
+
+        # 2. Check if light aggregate should be created for this area
+        if should_create_light_aggregate(self):
+            light_aggregate = f"{BINARY_SENSOR_DOMAIN}.magic_areas_aggregates_{self.slug}_aggregate_light"
+            self.logger.debug(
+                "%s: Will use light aggregate for dark detection: %s",
+                self.name,
+                light_aggregate,
+            )
+            return light_aggregate
+
+        # 3. Check windowless flag
+        if self.config.get(AreaConfigOptions.WINDOWLESS):
+            self.logger.debug("%s: Windowless area - always dark", self.name)
+            return None  # Always dark
+
+        # 4. Check exterior meta-area
+        exterior_area = self._get_exterior_meta_area()
+        if exterior_area:
+            # Try exterior threshold sensor
+            if should_create_threshold_sensor(exterior_area):
+                ext_threshold = f"{BINARY_SENSOR_DOMAIN}.magic_areas_threshold_exterior_threshold_light"
+                self.logger.debug(
+                    "%s: Will use exterior threshold sensor for dark detection: %s",
+                    self.name,
+                    ext_threshold,
+                )
+                return ext_threshold
+
+            # Fall back to exterior light aggregate
+            if should_create_light_aggregate(exterior_area):
+                ext_light_aggregate = f"{BINARY_SENSOR_DOMAIN}.magic_areas_aggregates_exterior_aggregate_light"
+                self.logger.debug(
+                    "%s: Will use exterior light aggregate for dark detection: %s",
+                    self.name,
+                    ext_light_aggregate,
+                )
+                return ext_light_aggregate
+
+        # 6. Final fallback: sun.sun
+        self.logger.debug("%s: Using sun.sun for dark detection", self.name)
+        return "sun.sun"
+
+    def _get_exterior_meta_area(self) -> "MagicArea | None":
+        """Get the exterior meta-area if it exists."""
+        data = self.hass.data.get(MODULE_DATA, {})
+        exterior_id = MetaAreaType.EXTERIOR
+
+        if exterior_id in data:
+            return data[exterior_id][DATA_AREA_OBJECT]
+
+        return None
+
+    def is_area_dark(self) -> bool:
+        """Check if area is currently dark based on resolved light sensor.
+
+        Returns:
+            True if area is dark, False if bright
+
+        """
+        # Special case: windowless = no light entity = always dark
+        if not hasattr(self, "area_light_sensor") or self.area_light_sensor is None:
+            return True
+
+        # Get entity state
+        entity = self.hass.states.get(self.area_light_sensor)
+        if not entity or entity.state in INVALID_STATES:
+            self.logger.debug(
+                "%s: Light sensor '%s' unavailable, assuming dark",
+                self.name,
+                self.area_light_sensor,
+            )
+            return True  # Assume dark if unavailable
+
+        # Check state (handles both binary sensors OFF and sun.sun below_horizon)
+        is_dark = entity.state.lower() in [STATE_OFF, STATE_BELOW_HORIZON]
+
+        self.logger.debug(
+            "%s: Light sensor '%s' state: %s -> dark=%s",
+            self.name,
+            self.area_light_sensor,
+            entity.state,
+            is_dark,
+        )
+
+        return is_dark
+
+    @cached_property
+    def secondary_state_entities(self) -> dict[str, str]:
+        """Get map of state_name -> entity_id for secondary states.
+
+        Returns map of configurable secondary states (sleep + user-defined):
+            {
+                "sleep": "binary_sensor.sleep_mode",
+                "movie": "input_boolean.movie_mode",
+                "gaming": "switch.gaming_mode",
+            }
+
+        Cached for the lifetime of this MagicArea instance.
+        Automatically cleared on config reload (new instance created).
+
+        """
+
+        entities = {}
+
+        # Add sleep state if configured
+        sleep_entity = self.config.get(SecondaryStateOptions.SLEEP_ENTITY)
+        if sleep_entity:
+            entities["sleep"] = sleep_entity
+
+        # Add user-defined states
+        user_defined_states = self.config.get(UserDefinedStateOptions.STATES)
+        for state_entry in user_defined_states:
+            state_name = state_entry.get(UserDefinedStateEntryOptions.NAME.key)
+            entity_id = state_entry.get(UserDefinedStateEntryOptions.ENTITY.key)
+            if state_name and entity_id:
+                entities[slugify_state_name(state_name)] = entity_id
+
+        return entities
 
     def make_device_registry_filter(self):
         """Create device register filter for this area."""

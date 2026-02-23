@@ -49,7 +49,19 @@ _LOGGER = logging.getLogger(__name__)
 def mock_config_entry_aggregates() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update(AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}))
+    data.update(
+        AggregateOptions.to_config(
+            {
+                AggregateOptions.MIN_ENTITIES.key: 1,
+                AggregateOptions.BINARY_SENSOR_DEVICE_CLASSES.key: [
+                    cls.value for cls in BinarySensorDeviceClass
+                ],
+                AggregateOptions.SENSOR_DEVICE_CLASSES.key: [
+                    cls.value for cls in SensorDeviceClass
+                ],
+            }
+        )
+    )
     return MockConfigEntry(domain=DOMAIN, data=data)
 
 

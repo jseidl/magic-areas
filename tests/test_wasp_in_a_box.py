@@ -20,11 +20,7 @@ from custom_components.magic_areas.binary_sensor.wasp_in_a_box import (
     ATTR_BOX,
     ATTR_WASP,
 )
-from custom_components.magic_areas.const import (
-    ATTR_ACTIVE_SENSORS,
-    ATTR_PRESENCE_SENSORS,
-    DOMAIN,
-)
+from custom_components.magic_areas.const import DOMAIN, AreaAttributes, CommonAttributes
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.wasp_in_a_box import WaspInABoxOptions
 
@@ -238,7 +234,9 @@ async def test_wasp_in_a_box_as_presence(
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
     assert_in_attribute(
-        area_sensor_state, ATTR_PRESENCE_SENSORS, wasp_in_a_box_entity_id
+        area_sensor_state,
+        AreaAttributes.PRESENCE_SENSORS.value,
+        wasp_in_a_box_entity_id,
     )
 
     # Test presence tracking
@@ -250,7 +248,11 @@ async def test_wasp_in_a_box_as_presence(
 
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_ON)
-    assert_in_attribute(area_sensor_state, ATTR_ACTIVE_SENSORS, wasp_in_a_box_entity_id)
+    assert_in_attribute(
+        area_sensor_state,
+        CommonAttributes.ACTIVE_SENSORS.value,
+        wasp_in_a_box_entity_id,
+    )
 
     hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
     await hass.async_block_till_done()

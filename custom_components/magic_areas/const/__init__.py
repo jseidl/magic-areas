@@ -30,7 +30,6 @@ from homeassistant.const import (
     STATE_ON,
     STATE_OPEN,
     STATE_PLAYING,
-    STATE_PROBLEM,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
@@ -50,7 +49,6 @@ CONF_AREA_ID = "id"  # Area identifier stored in config_entry.data
 
 # Legacy Config Keys (for backward compatibility during migration)
 CONF_TYPE = "type"  # Area type (stored at root level in old configs)
-CONF_ENABLED_FEATURES = "features"  # Legacy key for enabled features
 CONF_EXCLUDE_ENTITIES = "exclude_entities"  # Legacy key
 
 # Additional Constants
@@ -91,6 +89,7 @@ class ConfigDomains(StrEnum):
     AREA = "area"  # Basic area settings
     PRESENCE = "presence_tracking"  # Presence tracking settings
     SECONDARY_STATES = "secondary_states"  # Secondary state configuration
+    USER_DEFINED_STATES = "user_defined_states"  # User-defined custom states
     FEATURES = "features"  # Feature-specific configuration
 
 
@@ -152,6 +151,8 @@ class ConfigOption:
 
     def __set_name__(self, owner: type["OptionSet"], name: str):
         """Set the parent class when used as a class attribute."""
+        # pylint: disable=protected-access
+        # Intentional internal API for ConfigOption/OptionSet system
         object.__setattr__(self, "_parent", owner)
 
     def get_from(self, config: dict) -> Any:
@@ -176,6 +177,31 @@ class OptionSet:
 
         """
         return {cls.CONFIG_DOMAIN.value: config}
+
+    @classmethod
+    def from_user_input(cls, user_input: dict) -> dict:
+        """Build config dict from user input, applying defaults for missing keys.
+
+        Example:
+            LightGroupEntryOptions.from_user_input({
+                LightGroupEntryOptions.NAME.key: "My Group",
+                LightGroupEntryOptions.LIGHTS.key: ["light.1"]
+            })
+            # Returns dict with NAME and LIGHTS from input, rest from defaults
+
+        Args:
+            user_input: Partial or complete user input dict
+
+        Returns:
+            Complete config dict with all keys, using defaults where not provided
+
+        """
+        result = {}
+        for attr_name in dir(cls):
+            attr = getattr(cls, attr_name)
+            if isinstance(attr, ConfigOption):
+                result[attr.key] = user_input.get(attr.key, attr.default)
+        return result
 
 
 class FeatureOptionSet(OptionSet):
@@ -225,10 +251,6 @@ class FeatureOptionSet(OptionSet):
         return False
 
 
-# Backward compatibility aliases
-FeatureOption = ConfigOption  # For existing code that uses FeatureOption
-
-
 class ConfigHelper:
     """Helper class for accessing area configuration with ConfigOption support."""
 
@@ -251,6 +273,8 @@ class ConfigHelper:
             ValueError: If the option has no parent class
 
         """
+        # pylint: disable=protected-access
+        # Accessing internal _parent attribute is intentional part of ConfigOption API
         if option._parent is None:
             raise ValueError(f"ConfigOption '{option.key}' has no parent class")
 
@@ -315,6 +339,15 @@ class AreaConfigOptions(OptionSet):
         selector_config={"multiple": True},
     )
 
+    WINDOWLESS = ConfigOption(
+        key="windowless",
+        default=False,
+        validator=cv.boolean,
+        selector_type="boolean",
+        title="Windowless Area",
+        description="Enable for areas with no natural light (bathrooms, closets, basements). Skips exterior brightness checks.",
+    )
+
     RELOAD_ON_REGISTRY_CHANGE = ConfigOption(
         key="reload_on_registry_change",
         default=True,
@@ -343,13 +376,21 @@ class PresenceTrackingOptions(OptionSet):
 
     DEVICE_PLATFORMS = ConfigOption(
         key="presence_device_platforms",
-        default=["media_player", "binary_sensor"],
+        default=[MEDIA_PLAYER_DOMAIN, BINARY_SENSOR_DOMAIN],
         title="Device Platforms",
         description="Device types to use for presence detection",
         translation_key="presence_device_platforms",
         validator=cv.ensure_list,
         selector_type="select",
-        selector_config={"multiple": True},
+        selector_config={
+            "options": [
+                MEDIA_PLAYER_DOMAIN,
+                BINARY_SENSOR_DOMAIN,
+                REMOTE_DOMAIN,
+                DEVICE_TRACKER_DOMAIN,
+            ],
+            "multiple": True,
+        },
     )
 
     SENSOR_DEVICE_CLASS = ConfigOption(
@@ -360,7 +401,10 @@ class PresenceTrackingOptions(OptionSet):
         translation_key="presence_sensor_device_class",
         validator=cv.ensure_list,
         selector_type="select",
-        selector_config={"multiple": True},
+        selector_config={
+            "options": [cls.value for cls in BinarySensorDeviceClass],
+            "multiple": True,
+        },
     )
 
     KEEP_ONLY_ENTITIES = ConfigOption(
@@ -419,21 +463,40 @@ class MagicConfigEntryVersion(IntEnum):
 class AreaStates(StrEnum):
     """Magic area states."""
 
-    CLEAR = "clear"
-    OCCUPIED = "occupied"
-    EXTENDED = "extended"
-    DARK = "dark"
-    BRIGHT = "bright"
-    SLEEP = "sleep"
-    ACCENT = "accented"
+    CLEAR = auto()
+    OCCUPIED = auto()
+    EXTENDED = auto()
+    DARK = auto()
+    BRIGHT = auto()
+    SLEEP = auto()
 
 
 class AreaType(StrEnum):
     """Regular area types."""
 
-    INTERIOR = "interior"
-    EXTERIOR = "exterior"
-    META = "meta"
+    INTERIOR = auto()
+    EXTERIOR = auto()
+    META = auto()
+
+
+class CommonAttributes(StrEnum):
+    """Attribute names shared by multiple entities."""
+
+    STATES = auto()
+    ACTIVE_SENSORS = auto()
+
+
+class AreaAttributes(StrEnum):
+    """Attributes for area state sensor."""
+
+    AREAS = auto()
+    ACTIVE_AREAS = auto()
+    TYPE = auto()
+    LIGHT_SENSOR = auto()
+    CLEAR_TIMEOUT = auto()
+    LAST_ACTIVE_SENSORS = auto()
+    FEATURES = auto()
+    PRESENCE_SENSORS = auto()
 
 
 class MetaAreaType(StrEnum):
@@ -496,9 +559,11 @@ class FeatureIcons(StrEnum):
 
 
 # Area State Constants
-AREA_PRIORITY_STATES = [AreaStates.SLEEP, AreaStates.ACCENT]
-BUILTIN_AREA_STATES = [AreaStates.OCCUPIED, AreaStates.EXTENDED]
-CONFIGURABLE_AREA_STATES = [AreaStates.DARK, AreaStates.ACCENT, AreaStates.SLEEP]
+# All states defined in AreaStates enum (built into the integration)
+BUILTIN_AREA_STATES = [state.value for state in AreaStates]
+
+# Basic occupancy states (for config flow UI showing base states)
+BASIC_OCCUPANCY_STATES = [AreaStates.OCCUPIED.value, AreaStates.EXTENDED.value]
 
 # Meta Areas
 META_AREA_GLOBAL = "Global"
@@ -515,17 +580,6 @@ PRESENCE_SENSOR_VALID_ON_STATES = [STATE_ON, STATE_OPEN, STATE_PLAYING]
 # Data Items
 DATA_AREA_OBJECT = "area_object"
 DATA_TRACKED_LISTENERS = "tracked_listeners"
-
-# Attributes
-ATTR_STATES = "states"
-ATTR_AREAS = "areas"
-ATTR_ACTIVE_AREAS = "active_areas"
-ATTR_TYPE = "type"
-ATTR_CLEAR_TIMEOUT = "clear_timeout"
-ATTR_ACTIVE_SENSORS = "active_sensors"
-ATTR_LAST_ACTIVE_SENSORS = "last_active_sensors"
-ATTR_FEATURES = "features"
-ATTR_PRESENCE_SENSORS = "presence_sensors"
 
 # Device Class Lists
 ALL_BINARY_SENSOR_DEVICE_CLASSES = [cls.value for cls in BinarySensorDeviceClass]
@@ -653,7 +707,10 @@ class MagicAreasFeatureInfoLightGroups(MagicAreasFeatureInfo):
         LIGHT_DOMAIN: None,  # let light category be appended to it
         SWITCH_DOMAIN: "light_control",
     }
-    icons = {SWITCH_DOMAIN: "mdi:lightbulb-auto-outline"}
+    icons = {
+        LIGHT_DOMAIN: "mdi:lightbulb-group",
+        SWITCH_DOMAIN: "mdi:lightbulb-auto-outline",
+    }
 
 
 class MagicAreasFeatureInfoClimateControl(MagicAreasFeatureInfo):

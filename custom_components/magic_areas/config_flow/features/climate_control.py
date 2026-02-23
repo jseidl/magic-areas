@@ -1,60 +1,62 @@
 """Climate control feature handler with 2-step configuration."""
 
 import logging
-from typing import Optional
 
 import voluptuous as vol
+
 from homeassistant.components.climate.const import (
     ATTR_PRESET_MODES,
     DOMAIN as CLIMATE_DOMAIN,
 )
-from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.entity_registry import async_get as entityreg_async_get
 
-from custom_components.magic_areas.const import (
-    Features,
-    EMPTY_ENTRY,
-    MAGICAREAS_UNIQUEID_PREFIX,
-)
-from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
     StepResult,
 )
+from custom_components.magic_areas.const import (
+    EMPTY_ENTRY,
+    MAGICAREAS_UNIQUEID_PREFIX,
+    Features,
+)
+from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
 _LOGGER = logging.getLogger(__name__)
 
 
 @register_feature
 class ClimateControlFeature(FeatureHandler):
-    """
-    2-step climate control configuration.
-    Step 1: Select climate entity
-    Step 2: Select presets for each area state
+    """2-step climate control configuration.
+
+    Step 1: Select climate entity.
+    Step 2: Select presets for each area state.
     """
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.CLIMATE_CONTROL
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Climate Control"
 
     def get_initial_step(self) -> str:
+        """Return the first step ID."""
         return "select_entity"
 
-    async def handle_step(self, step_id: str, user_input: Optional[dict]) -> StepResult:
+    async def handle_step(self, step_id: str, user_input: dict | None) -> StepResult:
         """Route to appropriate step."""
         if step_id == "select_entity":
             return await self._step_select_entity(user_input)
-        elif step_id == "select_presets":
+        if step_id == "select_presets":
             return await self._step_select_presets(user_input)
 
         return await self._step_select_entity(user_input)
 
-    async def _step_select_entity(self, user_input: Optional[dict]) -> StepResult:
+    async def _step_select_entity(self, user_input: dict | None) -> StepResult:
         """Step 1: Select the climate entity."""
         if user_input is not None:
             entity_id = user_input[ClimateControlOptions.ENTITY_ID.key]
@@ -74,6 +76,7 @@ class ClimateControlFeature(FeatureHandler):
             if (
                 not entity_object.capabilities
                 or ATTR_PRESET_MODES not in entity_object.capabilities
+                or not entity_object.capabilities[ATTR_PRESET_MODES]
             ):
                 return StepResult(
                     type="form",
@@ -99,7 +102,7 @@ class ClimateControlFeature(FeatureHandler):
             data_schema=self._build_entity_schema(),
         )
 
-    async def _step_select_presets(self, user_input: Optional[dict]) -> StepResult:
+    async def _step_select_presets(self, user_input: dict | None) -> StepResult:
         """Step 2: Select presets for each area state."""
         entity_id = self._state.get("entity_id")
         preset_modes = self._state.get("preset_modes", [])
@@ -173,11 +176,9 @@ class ClimateControlFeature(FeatureHandler):
 
         return vol.Schema(
             {
-                vol.Required(ClimateControlOptions.ENTITY_ID.key): vol.In(
-                    climate_entities
-                )
-                if climate_entities
-                else vol.In([]),
+                vol.Required(ClimateControlOptions.ENTITY_ID.key): (
+                    vol.In(climate_entities) if climate_entities else vol.In([])
+                ),
             }
         )
 

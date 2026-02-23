@@ -1,9 +1,5 @@
 """Area aware media player feature handler."""
 
-from custom_components.magic_areas.const import Features
-from custom_components.magic_areas.const.area_aware_media_player import (
-    AreaAwareMediaPlayerOptions,
-)
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
@@ -14,6 +10,10 @@ from custom_components.magic_areas.config_flow.helpers import (
     SelectorBuilder,
     StateOptionsBuilder,
 )
+from custom_components.magic_areas.const import Features
+from custom_components.magic_areas.const.area_aware_media_player import (
+    AreaAwareMediaPlayerOptions,
+)
 
 
 @register_feature
@@ -22,10 +22,12 @@ class AreaAwareMediaPlayerFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.AREA_AWARE_MEDIA_PLAYER
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Area Aware Media Player"
 
     async def handle_step(self, step_id, user_input):
@@ -38,18 +40,19 @@ class AreaAwareMediaPlayerFeature(FeatureHandler):
 
         # Override 1: Filtered media player entities
         selectors[AreaAwareMediaPlayerOptions.NOTIFICATION_DEVICES.key] = (
-            self.flow._build_selector_entity_simple(
+            self.flow.build_selector_entity_simple(
                 self.all_media_players, multiple=True
             )
         )
 
-        # Override 2: Dynamic state options (based on configured secondary states)
-        secondary_states = self.area_options.get("secondary_states", {})
+        # Override 2: Build available states using helper
+        available_states = StateOptionsBuilder.build_available_states(self.flow.area)
         available_states = StateOptionsBuilder.for_area_aware_media_player(
-            secondary_states
+            available_states
         )
-        selectors[AreaAwareMediaPlayerOptions.NOTIFY_STATES.key] = (
-            self.flow._build_selector_select(available_states, multiple=True)
+
+        selectors[AreaAwareMediaPlayerOptions.NOTIFICATION_STATES.key] = (
+            self.flow.build_selector_select(available_states, multiple=True)
         )
 
         # Auto-generate schema with overrides
@@ -78,8 +81,8 @@ class AreaAwareMediaPlayerFeature(FeatureHandler):
             AreaAwareMediaPlayerOptions.NOTIFICATION_DEVICES.default,
         )
         states = config.get(
-            AreaAwareMediaPlayerOptions.NOTIFY_STATES.key,
-            AreaAwareMediaPlayerOptions.NOTIFY_STATES.default,
+            AreaAwareMediaPlayerOptions.NOTIFICATION_STATES.key,
+            AreaAwareMediaPlayerOptions.NOTIFICATION_STATES.default,
         )
 
         return f"{len(devices)} device(s), {len(states)} state(s)"

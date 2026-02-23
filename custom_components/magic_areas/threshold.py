@@ -6,12 +6,8 @@ from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
-from homeassistant.components.sensor.const import (
-    DOMAIN as SENSOR_DOMAIN,
-    SensorDeviceClass,
-)
+from homeassistant.components.sensor.const import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.threshold.binary_sensor import ThresholdSensor
-from homeassistant.const import ATTR_DEVICE_CLASS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
@@ -19,10 +15,12 @@ from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     EMPTY_STRING,
-    Features,
     MagicAreasFeatureInfoThrehsold,
 )
 from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.helpers.aggregates import (
+    should_create_threshold_sensor,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,31 +28,11 @@ _LOGGER = logging.getLogger(__name__)
 def create_illuminance_threshold(hass: HomeAssistant, area: MagicArea) -> Entity | None:
     """Create threhsold light binary sensor based off illuminance aggregate."""
 
-    if not area.has_feature(Features.AGGREGATION):
+    # Use shared validation helper
+    if not should_create_threshold_sensor(area):
         return None
 
     illuminance_threshold = area.config.get(AggregateOptions.ILLUMINANCE_THRESHOLD)
-
-    if illuminance_threshold == 0:
-        return None
-
-    if SensorDeviceClass.ILLUMINANCE not in area.config.get(
-        AggregateOptions.SENSOR_DEVICE_CLASSES
-    ):
-        return None
-
-    if SENSOR_DOMAIN not in area.entities:
-        return None
-
-    illuminance_sensors = [
-        sensor
-        for sensor in area.entities[SENSOR_DOMAIN]
-        if ATTR_DEVICE_CLASS in sensor
-        and sensor[ATTR_DEVICE_CLASS] == SensorDeviceClass.ILLUMINANCE
-    ]
-
-    if not illuminance_sensors:
-        return None
 
     illuminance_threshold_hysteresis_percentage = area.config.get(
         AggregateOptions.ILLUMINANCE_THRESHOLD_HYSTERESIS

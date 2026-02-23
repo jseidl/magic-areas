@@ -1,6 +1,5 @@
 """BLE trackers feature constants."""
 
-import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from custom_components.magic_areas.const import (

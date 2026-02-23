@@ -33,6 +33,7 @@ from tests.helpers import (
     init_integration,
     setup_mock_entities,
     shutdown_integration,
+    trigger_occupancy,
 )
 from tests.mocks import MockBinarySensor, MockClimate
 
@@ -182,8 +183,7 @@ async def test_climate_control_logic(
     await hass.async_block_till_done()
 
     # Area occupied, preset should be PRESET_NONE
-    hass.states.async_set(motion_sensor_entity_id, STATE_ON)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, motion_sensor_entity_id, occupied=True)
 
     motion_sensor_state = hass.states.get(motion_sensor_entity_id)
     assert_state(motion_sensor_state, STATE_ON)
@@ -195,21 +195,13 @@ async def test_climate_control_logic(
     assert_attribute(climate_state, ATTR_PRESET_MODE, PRESET_NONE)
 
     # Area clear, preset should be PRESET_AWAY
-    hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, motion_sensor_entity_id, occupied=False)
 
     motion_sensor_state = hass.states.get(motion_sensor_entity_id)
     assert_state(motion_sensor_state, STATE_OFF)
 
     area_sensor_state = hass.states.get(AREA_SENSOR_ENTITY_ID)
     assert_state(area_sensor_state, STATE_OFF)
-
-    # A bit of voodoo waiting for the climate group to act
-    # I know this is lame and kinda hail-mary but hey! if you know
-    # how to fix it, let me know!
-    for _i in range(100):
-        await asyncio.sleep(0.1)
-        await hass.async_block_till_done()
 
     climate_state = hass.states.get(MOCK_CLIMATE_ENTITY_ID)
     assert_attribute(climate_state, ATTR_PRESET_MODE, PRESET_AWAY)

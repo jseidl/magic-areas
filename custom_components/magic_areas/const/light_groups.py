@@ -1,10 +1,8 @@
 """Light groups feature constants."""
 
+from enum import StrEnum, auto
 import logging
-import uuid
-from enum import StrEnum
 
-import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import slugify
 
@@ -21,20 +19,52 @@ _LOGGER = logging.getLogger(__name__)
 # Constants
 # ============================================================================
 
-LIGHT_GROUP_ALL = "all_lights"
-LIGHT_GROUP_ALL_ICON = "mdi:infinity"
+LIGHT_GROUP_CONTEXT_PREFIX = "MAGICAREAS_LG_CTX"
+
+
+class LightGroupAttributes(StrEnum):
+    """Attributes for Magic Light group."""
+
+    MODE = auto()
+
+
+class LightGroupOperationMode(StrEnum):
+    """Operating modes for Magic light group."""
+
+    MANUAL = auto()
+    MAGIC = auto()
+
+
+class LightGroupAllLightsConfig(StrEnum):
+    """Attributes for the All Lights group."""
+
+    NAME = "all_lights"
+    ICON = "mdi:infinity"
 
 
 # ============================================================================
-# Enums
+# Config Enums
 # ============================================================================
 
 
-class LightGroupActOn(StrEnum):
-    """When light groups should act on area state changes."""
+class LightGroupTurnOnWhen(StrEnum):
+    """When light groups should turn on lights."""
 
-    OCCUPANCY = "occupancy"  # Only turns on if area just changed from clear to occupied
-    STATE = "state"  # Turn on at state change regardless if area was already occupied
+    AREA_OCCUPIED = auto()  # Turn on when area transitions from clear to occupied
+    STATE_GAIN = (
+        auto()
+    )  # Turn on when area gains a configured state while already occupied
+    AREA_DARK = auto()  # Turn on when area gains dark state while occupied
+
+
+class LightGroupTurnOffWhen(StrEnum):
+    """When light groups should turn off lights."""
+
+    AREA_CLEAR = auto()  # Turn off when area becomes unoccupied
+    STATE_LOSS = auto()  # Turn off when area loses all configured states
+    EXTERIOR_BRIGHT = (
+        auto()
+    )  # Turn off when exterior becomes bright (exterior area → sun.sun fallback)
 
 
 # ============================================================================
@@ -60,19 +90,13 @@ class LightGroupEntryOptions(OptionSet):
 
     CONFIG_DOMAIN = ConfigDomains.FEATURES
 
-    UUID = ConfigOption(
-        key="uuid",
-        default="",
-        required=True,
-        validator=cv.string,
-        internal=True,  # Never show to user - auto-generated
-    )
-
     NAME = ConfigOption(
         key="name",
         default="",
         required=True,
         validator=cv.string,
+        selector_type="text",
+        selector_config={},
         title="Group Name",
         description="Name for this light group",
     )
@@ -82,6 +106,8 @@ class LightGroupEntryOptions(OptionSet):
         default=[],
         required=True,
         validator=cv.entity_ids,
+        selector_type="select",
+        selector_config={"options": [], "multiple": True},
         title="Lights",
         description="Light entities in this group",
     )
@@ -91,36 +117,62 @@ class LightGroupEntryOptions(OptionSet):
         default=["occupied"],
         required=True,
         validator=cv.ensure_list,
+        selector_type="select",
+        selector_config={"options": [], "multiple": True},
         title="Active States",
         description="Area states when this group should be active",
     )
 
-    ACT_ON = ConfigOption(
-        key="act_on",
-        default=["occupancy", "state"],
+    TURN_ON_WHEN = ConfigOption(
+        key="turn_on_when",
+        default=[
+            LightGroupTurnOnWhen.AREA_OCCUPIED.value,
+            LightGroupTurnOnWhen.STATE_GAIN.value,
+            LightGroupTurnOnWhen.AREA_DARK.value,
+        ],
         required=True,
         validator=cv.ensure_list,
-        title="Act On",
-        description="When to act on state changes",
+        selector_type="select",
+        selector_config={
+            "options": [cls.value for cls in LightGroupTurnOnWhen],
+            "multiple": True,
+        },
+        title="Turn On When",
+        description="When to turn on lights",
     )
 
-    ICON = ConfigOption(
-        key="icon",
-        default="mdi:lightbulb-group",
-        validator=cv.icon,
-        title="Icon",
-        description="Icon for this group",
+    TURN_OFF_WHEN = ConfigOption(
+        key="turn_off_when",
+        default=[
+            LightGroupTurnOffWhen.AREA_CLEAR.value,
+            LightGroupTurnOffWhen.STATE_LOSS.value,
+            LightGroupTurnOffWhen.EXTERIOR_BRIGHT.value,
+        ],
+        required=True,
+        validator=cv.ensure_list,
+        selector_type="select",
+        selector_config={
+            "options": [cls.value for cls in LightGroupTurnOffWhen],
+            "multiple": True,
+        },
+        title="Turn Off When",
+        description="When to turn off lights. Leave empty to never turn off automatically (lights stay on until manually turned off).",
+    )
+
+    REQUIRE_DARK = ConfigOption(
+        key="require_dark",
+        default=True,
+        required=True,
+        validator=cv.boolean,
+        selector_type="boolean",
+        title="Require Dark",
+        description="Only turn on if area is dark. Uses area light sensor, falling back to exterior area and sun.sun. Disable for windowless areas or lights that should turn on regardless of brightness.",
     )
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
-
-
-def generate_group_uuid() -> str:
-    """Generate a new UUID for a group."""
-    return str(uuid.uuid4())
 
 
 def slugify_group_name(name: str) -> str:
@@ -136,25 +188,29 @@ def validate_group_name(name: str) -> bool:
 
     Returns:
         True if name is valid, False if it conflicts with reserved names
+
     """
-    return slugify_group_name(name) != slugify_group_name(LIGHT_GROUP_ALL)
+    return slugify_group_name(name) != slugify_group_name(
+        LightGroupAllLightsConfig.NAME.value
+    )
 
 
 def validate_group_name_unique(
-    name: str, existing_groups: list[dict], exclude_uuid: str | None = None
+    name: str, existing_groups: list[dict], exclude_index: int | None = None
 ) -> bool:
     """Check if group name is unique.
 
     Args:
         name: Group name to validate
         existing_groups: List of existing groups
-        exclude_uuid: UUID to exclude from check (for editing)
+        exclude_index: Index to exclude from check (for editing)
 
     Returns:
         True if name is unique, False otherwise
+
     """
-    for group in existing_groups:
-        if exclude_uuid and group.get("uuid") == exclude_uuid:
+    for idx, group in enumerate(existing_groups):
+        if exclude_index is not None and idx == exclude_index:
             continue
         if group.get("name", "").lower() == name.lower():
             return False

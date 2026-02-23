@@ -1,16 +1,16 @@
 """Base feature handler for config flow."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
-from custom_components.magic_areas.const import CONF_ENABLED_FEATURES
 from custom_components.magic_areas.config_flow.helpers import (
     ConfigValidator,
     SchemaBuilder,
 )
+from custom_components.magic_areas.const import ConfigDomains
 
 if TYPE_CHECKING:
     from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
@@ -21,33 +21,37 @@ class StepResult:
     """Result from a feature step handler."""
 
     type: str  # "form", "menu", "create_entry", "abort"
-    step_id: Optional[str] = None  # Next step to call
-    data_schema: Optional[vol.Schema] = None
-    errors: Optional[Dict[str, str]] = None
-    description_placeholders: Optional[Dict[str, str]] = None
-    menu_options: Optional[List[str]] = None
-    save_data: Optional[Dict[str, Any]] = None  # Data to save to config
+    step_id: str | None = None  # Next step to call
+    data_schema: vol.Schema | None = None
+    errors: dict[str, str] | None = None
+    description_placeholders: dict[str, str] | None = None
+    menu_options: list[str] | None = None
+    save_data: dict[str, Any] | None = None  # Data to save to config
 
 
 class FeatureHandler(ABC):
     """Base class for feature configuration handlers."""
 
     def __init__(self, flow: "OptionsFlowHandler"):
+        """Initialize feature handler.
+
+        Args:
+            flow: The parent OptionsFlowHandler instance
+
+        """
         self.flow = flow
-        self._state: Dict[str, Any] = {}
+        self._state: dict[str, Any] = {}
         self._validator = ConfigValidator(self.feature_id)
 
     @property
     @abstractmethod
     def feature_id(self) -> str:
         """Unique identifier for this feature."""
-        pass
 
     @property
     @abstractmethod
     def feature_name(self) -> str:
         """Human-readable name for menus."""
-        pass
 
     @property
     def is_available(self) -> bool:
@@ -64,9 +68,8 @@ class FeatureHandler(ABC):
         return "main"
 
     @abstractmethod
-    async def handle_step(self, step_id: str, user_input: Optional[dict]) -> StepResult:
+    async def handle_step(self, step_id: str, user_input: dict | None) -> StepResult:
         """Handle a configuration step. Must be implemented by subclasses."""
-        pass
 
     def get_summary(self, config: dict) -> str:
         """Return a summary of current configuration for the menu."""
@@ -93,41 +96,41 @@ class FeatureHandler(ABC):
         return self.flow.area
 
     @property
-    def all_lights(self) -> List[str]:
+    def all_lights(self) -> list[str]:
         """Access all lights list."""
         return self.flow.all_lights
 
     @property
-    def all_entities(self) -> List[str]:
+    def all_entities(self) -> list[str]:
         """Access all entities list."""
         return self.flow.all_entities
 
     @property
-    def all_media_players(self) -> List[str]:
+    def all_media_players(self) -> list[str]:
         """Access all media players list."""
         return self.flow.all_media_players
 
     @property
-    def all_binary_entities(self) -> List[str]:
+    def all_binary_entities(self) -> list[str]:
         """Access all binary entities list."""
         return self.flow.all_binary_entities
 
     def get_config(self) -> dict:
         """Get current feature config from area options."""
-        return self.flow.area_options.get(CONF_ENABLED_FEATURES, {}).get(
+        return self.flow.area_options.get(ConfigDomains.FEATURES, {}).get(
             self.feature_id, {}
         )
 
     def save_config(self, config: dict):
         """Save feature config to area options."""
-        if CONF_ENABLED_FEATURES not in self.flow.area_options:
-            self.flow.area_options[CONF_ENABLED_FEATURES] = {}
-        self.flow.area_options[CONF_ENABLED_FEATURES][self.feature_id] = config
+        if ConfigDomains.FEATURES not in self.flow.area_options:
+            self.flow.area_options[ConfigDomains.FEATURES] = {}
+        self.flow.area_options[ConfigDomains.FEATURES][self.feature_id] = config
 
     def build_schema(
         self,
-        options: List[tuple],
-        selectors: Optional[Dict[str, Any]] = None,
+        options: list[tuple],
+        selectors: dict[str, Any] | None = None,
     ) -> vol.Schema:
         """Build schema using helper."""
         builder = SchemaBuilder(self.get_config())
@@ -137,7 +140,7 @@ class FeatureHandler(ABC):
         self,
         schema: vol.Schema,
         user_input: dict,
-    ) -> tuple[bool, Optional[Dict[str, str]]]:
+    ) -> tuple[bool, dict[str, str] | None]:
         """Validate and save if valid."""
 
         async def on_save(validated):

@@ -1,7 +1,5 @@
 """Fan groups feature handler."""
 
-from custom_components.magic_areas.const import AreaType, Features
-from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
@@ -12,6 +10,8 @@ from custom_components.magic_areas.config_flow.helpers import (
     SelectorBuilder,
     StateOptionsBuilder,
 )
+from custom_components.magic_areas.const import AreaConfigOptions, AreaType, Features
+from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 
 
 @register_feature
@@ -20,16 +20,18 @@ class FanGroupsFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.FAN_GROUPS
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Fan Groups"
 
     @property
     def is_available(self) -> bool:
         """Not available for meta areas."""
-        return self.area.config.get("type") != AreaType.META
+        return self.area.config.get(AreaConfigOptions.TYPE) != AreaType.META
 
     async def handle_step(self, step_id, user_input):
         """Handle configuration with selective override."""
@@ -41,8 +43,8 @@ class FanGroupsFeature(FeatureHandler):
 
         # Override: Dynamic state options (only occupied/extended for fans)
         available_states = StateOptionsBuilder.for_fan_groups()
-        selectors[FanGroupOptions.REQUIRED_STATE.key] = (
-            self.flow._build_selector_select(available_states)
+        selectors[FanGroupOptions.REQUIRED_STATE.key] = self.flow.build_selector_select(
+            available_states
         )
 
         # Auto-generate schema with overrides

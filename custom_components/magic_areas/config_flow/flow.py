@@ -4,23 +4,31 @@ import logging
 from typing import Any
 
 import voluptuous as vol
+
 from homeassistant import config_entries
-from homeassistant.components.binary_sensor import (
-    DOMAIN as BINARY_SENSOR_DOMAIN,
-    BinarySensorDeviceClass,
-)
-from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
-from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
-from homeassistant.const import ATTR_DEVICE_CLASS, CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers.area_registry import async_get as areareg_async_get
 from homeassistant.helpers.floor_registry import async_get as floorreg_async_get
 from homeassistant.util import slugify
 
+from custom_components.magic_areas.config_flow.area_config import AreaConfigHandler
+from custom_components.magic_areas.config_flow.base import ConfigBase
+from custom_components.magic_areas.config_flow.features import (
+    get_available_features,
+    get_configurable_features,
+)
+from custom_components.magic_areas.config_flow.helpers import FlowEntityContext
+from custom_components.magic_areas.config_flow.presence_tracking import (
+    PresenceTrackingHandler,
+)
+from custom_components.magic_areas.config_flow.secondary_states_handler import (
+    SecondaryStatesHandler,
+)
+from custom_components.magic_areas.config_flow.user_defined_states import (
+    UserDefinedStatesHandler,
+)
 from custom_components.magic_areas.const import (
-    AreaType,
     CONF_AREA_ID,
-    CONF_ENABLED_FEATURES,
     CONF_TYPE,
     DATA_AREA_OBJECT,
     DOMAIN,
@@ -29,36 +37,14 @@ from custom_components.magic_areas.const import (
     FEATURE_LIST_META,
     META_AREA_GLOBAL,
     MODULE_DATA,
-    NON_CONFIGURABLE_FEATURES_META,
+    AreaConfigOptions,
+    AreaType,
+    ConfigDomains,
 )
-from custom_components.magic_areas.const.aggregates import AggregateOptions
-from custom_components.magic_areas.const.area_aware_media_player import (
-    AreaAwareMediaPlayerOptions,
-)
-from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
-from custom_components.magic_areas.const.climate_control import ClimateControlOptions
-from custom_components.magic_areas.const.fan_groups import FanGroupOptions
-from custom_components.magic_areas.const.health import HealthOptions
-from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
-from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
-from custom_components.magic_areas.const.wasp_in_a_box import WaspInABoxOptions
-from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.helpers.area import (
     basic_area_from_floor,
     basic_area_from_meta,
     basic_area_from_object,
-)
-from custom_components.magic_areas.config_flow.base import (
-    ConfigBase,
-    NullableEntitySelector,
-)
-from custom_components.magic_areas.config_flow.features import (
-    get_available_features,
-    get_feature_handler,
-)
-from custom_components.magic_areas.config_flow.helpers import (
-    ConfigValidator,
-    FlowEntityContext,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -118,18 +104,9 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
             areas.append(area)
 
         if user_input is not None:
-            # Look up area object by name
-            area_object = None
-            area_name = user_input[CONF_NAME]
-
-            # Handle meta area name prefix
-            if area_name.startswith("(Meta)"):
-                area_name = " ".join(area_name.split(" ")[1:])
-
-            for area in areas:
-                if area.name == area_name:
-                    area_object = area
-                    break
+            # Look up area object by ID (from dropdown selection)
+            area_id = user_input[CONF_AREA_ID]
+            area_object = next((a for a in areas if a.id == area_id), None)
 
             if not area_object:
                 return self.async_abort(reason="invalid_area")
@@ -158,21 +135,16 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
         if not available_areas:
             return self.async_abort(reason="no_more_areas")
 
-        # Sort: regular areas first, then meta areas
-        available_area_names = sorted(
-            [area.name for area in available_areas if area.id not in reserved_names]
-        )
-        available_area_names.extend(
-            sorted(
-                [
-                    f"(Meta) {area.name}"
-                    for area in available_areas
-                    if area.id in reserved_names
-                ]
-            )
-        )
+        # Build dropdown: {area_id: display_name}
+        # Regular areas show name, meta areas show "(Meta) name"
+        area_choices = {}
+        for area in sorted(available_areas, key=lambda a: a.name):
+            if area.id in reserved_names:
+                area_choices[area.id] = f"(Meta) {area.name}"
+            else:
+                area_choices[area.id] = area.name
 
-        schema = vol.Schema({vol.Required(CONF_NAME): vol.In(available_area_names)})
+        schema = vol.Schema({vol.Required(CONF_AREA_ID): vol.In(area_choices)})
 
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
@@ -189,6 +161,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
         super().__init__()
+        self.area: Any = None  # MagicArea instance, set in async_step_init
         self.data: dict[str, Any] = {}
         self.all_entities: list[str] = []
         self.area_entities: list[str] = []
@@ -206,8 +179,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     def _get_feature_list(self) -> list:
         """Return list of available features for area type."""
-        from custom_components.magic_areas.const import AreaConfigOptions
-
         feature_list = FEATURE_LIST
         area_type = self.area.config.get(AreaConfigOptions.TYPE)
         if area_type == AreaType.META:
@@ -218,30 +189,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     def _get_configurable_features(self) -> list:
         """Return configurable features for area type using introspection."""
-        # Map feature keys to their OptionSet classes
-        feature_option_sets = {
-            "aggregates": AggregateOptions,
-            "health": HealthOptions,
-            "presence_hold": PresenceHoldOptions,
-            "ble_trackers": BleTrackerOptions,
-            "wasp_in_a_box": WaspInABoxOptions,
-            "area_aware_media_player": AreaAwareMediaPlayerOptions,
-            "climate_control": ClimateControlOptions,
-            "fan_groups": FanGroupOptions,
-        }
-
-        configurable = []
-        for feature_key, option_set in feature_option_sets.items():
-            # Check if feature has configuration options
-            if option_set.has_configuration():
-                # Check if available for this area type
-                if self.area.is_meta() and feature_key in [
-                    f.value for f in NON_CONFIGURABLE_FEATURES_META
-                ]:
-                    continue
-                configurable.append(feature_key)
-
-        return configurable
+        return get_configurable_features(self)
 
     async def _update_options(self):
         """Update config entry options."""
@@ -296,11 +244,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             "area_config",
             "presence_tracking",
             "secondary_states",
+            "user_defined_states",
             "select_features",
         ]
 
         # Add configured features to menu
-        enabled = self.area_options.get(CONF_ENABLED_FEATURES, {})
+        enabled = self.area_options.get(ConfigDomains.FEATURES, {})
         configurable = self._get_configurable_features()
 
         for feature_id in sorted(enabled.keys()):
@@ -315,163 +264,44 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_area_config(self, user_input=None):
         """Configure basic area settings."""
-        from custom_components.magic_areas.const import AreaConfigOptions
-        from custom_components.magic_areas.config_flow.helpers import (
-            SelectorBuilder,
-            SchemaBuilder,
-        )
+        handler = AreaConfigHandler(self)
+        result = await handler.handle_step("main", user_input)
 
-        # Auto-generate selectors from AreaConfigOptions
-        selectors = SelectorBuilder.from_option_set(AreaConfigOptions)
-
-        # Override selectors with dynamic entity lists
-        selectors[AreaConfigOptions.INCLUDE_ENTITIES.key] = (
-            self._build_selector_entity_simple(self.all_entities, multiple=True)
-        )
-        selectors[AreaConfigOptions.EXCLUDE_ENTITIES.key] = (
-            self._build_selector_entity_simple(self.all_area_entities, multiple=True)
-        )
-
-        # Filter selectors for meta areas (they don't have TYPE or INCLUDE_ENTITIES)
-        if self.area.is_meta():
-            selectors.pop(AreaConfigOptions.TYPE.key, None)
-            selectors.pop(AreaConfigOptions.INCLUDE_ENTITIES.key, None)
-            selectors.pop(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES.key, None)
-
-        # Auto-generate schema with current values
-        builder = SchemaBuilder(self.area_options)
-        schema = builder.from_option_set(
-            AreaConfigOptions, selector_overrides=selectors
-        )
-
-        if user_input is not None:
-            validator = ConfigValidator("area_config")
-            success, errors = await validator.validate(
-                schema, user_input, lambda v: self.area_options.update(v)
-            )
-            if success:
-                return await self.async_step_show_menu()
-
-            return self.async_show_form(
-                step_id="area_config",
-                data_schema=schema,
-                errors=errors,
-            )
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
 
         return self.async_show_form(
             step_id="area_config",
-            data_schema=schema,
+            data_schema=result.data_schema,
+            errors=result.errors,
         )
 
     async def async_step_presence_tracking(self, user_input=None):
         """Configure presence tracking settings."""
-        from custom_components.magic_areas.const import PresenceTrackingOptions
-        from custom_components.magic_areas.config_flow.helpers import (
-            SelectorBuilder,
-            SchemaBuilder,
-        )
+        handler = PresenceTrackingHandler(self)
+        result = await handler.handle_step("main", user_input)
 
-        # Auto-generate selectors from PresenceTrackingOptions
-        selectors = SelectorBuilder.from_option_set(PresenceTrackingOptions)
-
-        # Override selector with dynamic presence sensor list
-        selectors[PresenceTrackingOptions.KEEP_ONLY_ENTITIES.key] = (
-            self._build_selector_entity_simple(
-                sorted(self.area.get_presence_sensors()), multiple=True
-            )
-        )
-
-        # Filter selectors for meta areas (they only have CLEAR_TIMEOUT)
-        if self.area.is_meta():
-            selectors = {
-                PresenceTrackingOptions.CLEAR_TIMEOUT.key: selectors.get(
-                    PresenceTrackingOptions.CLEAR_TIMEOUT.key
-                )
-            }
-
-        # Auto-generate schema with current values
-        builder = SchemaBuilder(self.area_options)
-        schema = builder.from_option_set(
-            PresenceTrackingOptions, selector_overrides=selectors
-        )
-
-        if user_input is not None:
-            validator = ConfigValidator("presence_tracking")
-            success, errors = await validator.validate(
-                schema, user_input, lambda v: self.area_options.update(v)
-            )
-            if success:
-                return await self.async_step_show_menu()
-
-            return self.async_show_form(
-                step_id="presence_tracking",
-                data_schema=schema,
-                errors=errors,
-            )
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
 
         return self.async_show_form(
             step_id="presence_tracking",
-            data_schema=schema,
+            data_schema=result.data_schema,
+            errors=result.errors,
         )
 
     async def async_step_secondary_states(self, user_input=None):
         """Configure secondary states settings."""
-        from custom_components.magic_areas.const import SecondaryStateOptions
-        from custom_components.magic_areas.config_flow.helpers import (
-            SelectorBuilder,
-            SchemaBuilder,
-        )
+        handler = SecondaryStatesHandler(self)
+        result = await handler.handle_step("main", user_input)
 
-        # Auto-generate selectors from SecondaryStateOptions
-        selectors = SelectorBuilder.from_option_set(SecondaryStateOptions)
-
-        # Override selectors with dynamic entity lists
-        selectors[SecondaryStateOptions.DARK_ENTITY.key] = (
-            self._build_selector_entity_simple(self.all_light_tracking_entities)
-        )
-        selectors[SecondaryStateOptions.SLEEP_ENTITY.key] = (
-            self._build_selector_entity_simple(self.all_binary_entities)
-        )
-        selectors[SecondaryStateOptions.ACCENT_ENTITY.key] = (
-            self._build_selector_entity_simple(self.all_binary_entities)
-        )
-
-        # Filter selectors for meta areas (no DARK, SLEEP, ACCENT entities)
-        if self.area.is_meta():
-            selectors.pop(SecondaryStateOptions.DARK_ENTITY.key, None)
-            selectors.pop(SecondaryStateOptions.SLEEP_ENTITY.key, None)
-            selectors.pop(SecondaryStateOptions.ACCENT_ENTITY.key, None)
-
-        # Get nested config (secondary_states is nested under this key)
-        saved_options = self.area_options.get("secondary_states", {})
-
-        # Auto-generate schema with current values
-        builder = SchemaBuilder(saved_options)
-        schema = builder.from_option_set(
-            SecondaryStateOptions, selector_overrides=selectors
-        )
-
-        if user_input is not None:
-            validator = ConfigValidator("secondary_states")
-
-            async def on_save(validated):
-                if "secondary_states" not in self.area_options:
-                    self.area_options["secondary_states"] = {}
-                self.area_options["secondary_states"].update(validated)
-
-            success, errors = await validator.validate(schema, user_input, on_save)
-            if success:
-                return await self.async_step_show_menu()
-
-            return self.async_show_form(
-                step_id="secondary_states",
-                data_schema=schema,
-                errors=errors,
-            )
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
 
         return self.async_show_form(
             step_id="secondary_states",
-            data_schema=schema,
+            data_schema=result.data_schema,
+            errors=result.errors,
         )
 
     async def async_step_select_features(self, user_input=None):
@@ -489,26 +319,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
                 str(selected_features),
             )
 
-            if CONF_ENABLED_FEATURES not in self.area_options:
-                self.area_options[CONF_ENABLED_FEATURES] = {}
+            if ConfigDomains.FEATURES not in self.area_options:
+                self.area_options[ConfigDomains.FEATURES] = {}
 
             for feature in feature_list:
                 if feature in selected_features:
-                    if feature not in self.area_options[CONF_ENABLED_FEATURES]:
-                        self.area_options[CONF_ENABLED_FEATURES][feature] = {}
+                    if feature.value not in self.area_options[ConfigDomains.FEATURES]:
+                        self.area_options[ConfigDomains.FEATURES][feature.value] = {}
                 else:
-                    if feature in self.area_options[CONF_ENABLED_FEATURES]:
-                        self.area_options[CONF_ENABLED_FEATURES].pop(feature, None)
+                    if feature.value in self.area_options[ConfigDomains.FEATURES]:
+                        self.area_options[ConfigDomains.FEATURES].pop(
+                            feature.value, None
+                        )
 
             return await self.async_step_show_menu()
 
         return self.async_show_form(
             step_id="select_features",
-            data_schema=self._build_options_schema(
-                options=[(feature, False, bool) for feature in feature_list],
+            data_schema=self.build_options_schema(
+                options=[(feature.value, False, bool) for feature in feature_list],
                 saved_options={
-                    feature: (
-                        feature in self.area_options.get(CONF_ENABLED_FEATURES, {})
+                    feature.value: (
+                        feature in self.area_options.get(ConfigDomains.FEATURES, {})
                     )
                     for feature in feature_list
                 },
@@ -516,7 +348,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
         )
 
     async def async_step_feature(self, user_input=None):
-        """Generic feature configuration dispatcher."""
+        """Dispatch feature configuration to appropriate handler."""
         # Determine which feature we're handling
         # The step_id will be like "feature_light_groups"
         if not self._current_feature:
@@ -541,18 +373,62 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             return await self.async_step_show_menu()
 
         if result.type == "form":
+            # Check if we're transitioning to a new step
+            if result.step_id != step_id:
+                # Step transition - recursively call handler with new step and user_input=None
+                _LOGGER.debug(
+                    "Feature %s: Step transition from '%s' to '%s'",
+                    self._current_feature,
+                    step_id,
+                    result.step_id,
+                )
+                self._current_feature_step = result.step_id
+                return await self.async_step_feature(user_input=None)
+
+            # Same step - show form with schema
             self._current_feature_step = result.step_id
+
+            # Construct proper step_id for Home Assistant to route correctly
+            # and for translation keys to match (e.g., feature_light_groups_add_group)
+            if result.step_id == handler.get_initial_step():
+                form_step_id = f"feature_{self._current_feature}"
+            else:
+                form_step_id = f"feature_{self._current_feature}_{result.step_id}"
+
+            _LOGGER.debug(
+                "Feature %s: Showing form step '%s' with schema having %d fields: %s",
+                self._current_feature,
+                form_step_id,
+                (
+                    len(result.data_schema.schema)
+                    if result.data_schema and hasattr(result.data_schema, "schema")
+                    else 0
+                ),
+                (
+                    list(result.data_schema.schema.keys())
+                    if result.data_schema and hasattr(result.data_schema, "schema")
+                    else "N/A"
+                ),
+            )
+
             return self.async_show_form(
-                step_id="feature",
+                step_id=form_step_id,
                 data_schema=result.data_schema,
                 errors=result.errors,
                 description_placeholders=result.description_placeholders,
             )
 
         if result.type == "menu":
+            # Construct feature-specific step_id for proper translation lookup
+            if result.step_id == handler.get_initial_step():
+                menu_step_id = f"feature_{self._current_feature}"
+            else:
+                menu_step_id = f"feature_{self._current_feature}_{result.step_id}"
+
             return self.async_show_menu(
-                step_id="feature",
+                step_id=menu_step_id,
                 menu_options=result.menu_options or [],
+                description_placeholders=result.description_placeholders,
             )
 
         return await self.async_step_show_menu()
@@ -560,12 +436,44 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
     # Individual feature step handlers - they all delegate to async_step_feature
     async def async_step_feature_light_groups(self, user_input=None):
         """Handle light groups feature config."""
+        _LOGGER.warning("LG MAIN")
         self._current_feature = "light_groups"
+        return await self.async_step_feature(user_input)
+
+    async def async_step_feature_light_groups_add_group(self, user_input=None):
+        """Handle light groups add group step - routes to generic handler."""
+        _LOGGER.warning(
+            "SHOWING LG ADD FORM STEP async_step_feature_light_groups_add_group"
+        )
+        self._current_feature = "light_groups"
+        self._current_feature_step = "add_group"
+        return await self.async_step_feature(user_input)
+
+    async def async_step_feature_light_groups_select_group(self, user_input=None):
+        """Handle light groups select group step - routes to generic handler."""
+        self._current_feature = "light_groups"
+        self._current_feature_step = "select_group"
+        return await self.async_step_feature(user_input)
+
+    async def async_step_feature_light_groups_edit_group(self, user_input=None):
+        """Handle light groups edit group step - routes to generic handler."""
+        self._current_feature = "light_groups"
+        self._current_feature_step = "edit_group"
+        return await self.async_step_feature(user_input)
+
+    async def async_step_feature_light_groups_delete_group(self, user_input=None):
+        """Handle light groups delete group - routes to generic handler."""
+        self._current_feature = "light_groups"
+        self._current_feature_step = "delete_group"
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_climate_control(self, user_input=None):
         """Handle climate control feature config."""
         self._current_feature = "climate_control"
+        return await self.async_step_feature(user_input)
+
+    async def async_step_feature_climate_control_select_presets(self, user_input=None):
+        """Handle climate control preset selection - routes to generic handler."""
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_aggregates(self, user_input=None):
@@ -603,6 +511,104 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
         self._current_feature = "area_aware_media_player"
         return await self.async_step_feature(user_input)
 
+    # User-defined states domain handlers
+    async def async_step_user_defined_states(self, user_input=None):
+        """Handle user-defined states configuration."""
+        handler = UserDefinedStatesHandler(self)
+        result = await handler.handle_step("main", user_input)
+
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
+
+        if result.type == "form":
+            return self.async_show_form(
+                step_id=f"user_defined_states_{result.step_id}",
+                data_schema=result.data_schema,
+                errors=result.errors,
+                description_placeholders=result.description_placeholders,
+            )
+
+        if result.type == "menu":
+            return self.async_show_menu(
+                step_id="user_defined_states",
+                menu_options=result.menu_options or [],
+                description_placeholders=result.description_placeholders,
+            )
+
+        return await self.async_step_show_menu()
+
+    async def async_step_user_defined_states_add_state(self, user_input=None):
+        """Handle adding a user-defined state."""
+        handler = UserDefinedStatesHandler(self)
+        result = await handler.handle_step("add_state", user_input)
+
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
+
+        if result.type == "form":
+            return self.async_show_form(
+                step_id="user_defined_states_add_state",
+                data_schema=result.data_schema,
+                errors=result.errors,
+            )
+
+        return await self.async_step_user_defined_states(None)
+
+    async def async_step_user_defined_states_select_state(self, user_input=None):
+        """Handle selecting a state to edit."""
+        handler = UserDefinedStatesHandler(self)
+        result = await handler.handle_step("select_state", user_input)
+
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
+
+        if result.type == "form":
+            if result.step_id == "edit_state":
+                # Transition to edit step
+                return await self.async_step_user_defined_states_edit_state(None)
+
+            return self.async_show_form(
+                step_id="user_defined_states_select_state",
+                data_schema=result.data_schema,
+                errors=result.errors,
+            )
+
+        return await self.async_step_user_defined_states(None)
+
+    async def async_step_user_defined_states_edit_state(self, user_input=None):
+        """Handle editing a user-defined state."""
+        handler = UserDefinedStatesHandler(self)
+        result = await handler.handle_step("edit_state", user_input)
+
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
+
+        if result.type == "form":
+            return self.async_show_form(
+                step_id="user_defined_states_edit_state",
+                data_schema=result.data_schema,
+                errors=result.errors,
+            )
+
+        return await self.async_step_user_defined_states(None)
+
+    async def async_step_user_defined_states_delete_state(self, user_input=None):
+        """Handle deleting a user-defined state."""
+        handler = UserDefinedStatesHandler(self)
+        result = await handler.handle_step("delete_state", user_input)
+
+        if result.type == "create_entry":
+            return await self.async_step_show_menu()
+
+        if result.type == "form":
+            return self.async_show_form(
+                step_id="user_defined_states_delete_state",
+                data_schema=result.data_schema,
+                errors=result.errors,
+            )
+
+        return await self.async_step_user_defined_states(None)
+
     async def async_step_finish(self, user_input=None):
         """Save options and exit."""
         _LOGGER.debug(
@@ -610,4 +616,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             self.area.name,
             str(self.area_options),
         )
-        return await self._update_options()
+        # return await self._update_options()
+        return self.async_create_entry(title="", data=dict(self.area_options))

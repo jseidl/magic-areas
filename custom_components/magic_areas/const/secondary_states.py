@@ -1,43 +1,16 @@
 """Secondary states configuration constants."""
 
 import voluptuous as vol
+
 from homeassistant.helpers import config_validation as cv
 
-from custom_components.magic_areas.const import (
-    AreaStates,
-    CalculationMode,
-    ConfigDomains,
-    ConfigOption,
-    OptionSet,
-)
+from custom_components.magic_areas.const import ConfigDomains, ConfigOption, OptionSet
 
 
 class SecondaryStateOptions(OptionSet):
     """Secondary state configuration options."""
 
     CONFIG_DOMAIN = ConfigDomains.SECONDARY_STATES
-
-    DARK_ENTITY = ConfigOption(
-        key="dark_entity",
-        default="",
-        title="Dark Entity",
-        description="Binary sensor or illuminance sensor to determine if area is dark",
-        translation_key="dark_entity",
-        validator=cv.entity_id,
-        selector_type="entity",
-        selector_config={"domain": ["binary_sensor", "sensor"]},
-    )
-
-    ACCENT_ENTITY = ConfigOption(
-        key="accent_entity",
-        default="",
-        title="Accent Entity",
-        description="Binary sensor to determine if accent/entertainment mode is active",
-        translation_key="accent_entity",
-        validator=cv.entity_id,
-        selector_type="entity",
-        selector_config={"domain": ["binary_sensor", "switch", "input_boolean"]},
-    )
 
     SLEEP_ENTITY = ConfigOption(
         key="sleep_entity",
@@ -108,11 +81,3 @@ class SecondaryStateOptions(OptionSet):
             "translation_key": "calculation_mode",
         },
     )
-
-
-# Map area states to their entity config keys
-CONFIGURABLE_AREA_STATE_MAP = {
-    AreaStates.SLEEP: SecondaryStateOptions.SLEEP_ENTITY.key,
-    AreaStates.DARK: SecondaryStateOptions.DARK_ENTITY.key,
-    AreaStates.ACCENT: SecondaryStateOptions.ACCENT_ENTITY.key,
-}

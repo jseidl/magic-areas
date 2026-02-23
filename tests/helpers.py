@@ -1,5 +1,6 @@
 """Common code for running the tests."""
 
+import asyncio
 from asyncio import get_running_loop
 from collections.abc import Sequence
 import functools
@@ -429,6 +430,57 @@ def assert_in_attribute(
         assert expected_value not in entity_state.attributes[attribute_key]
     else:
         assert expected_value in entity_state.attributes[attribute_key]
+
+
+# State Change Helpers
+
+
+async def safe_set_state(hass: HomeAssistant, sensor, active: bool = True) -> None:
+    """Set sensor state and wait for propagation.
+
+    Args:
+        hass: Home Assistant instance
+        sensor: MockBinarySensor object or entity_id string
+        active: True for STATE_ON, False for STATE_OFF
+
+    """
+    from homeassistant.const import STATE_OFF, STATE_ON
+
+    state = STATE_ON if active else STATE_OFF
+    # Handle both MockBinarySensor objects and entity_id strings
+    entity_id = sensor.entity_id if hasattr(sensor, "entity_id") else sensor
+    hass.states.async_set(entity_id, state)
+    await hass.async_block_till_done()
+    await asyncio.sleep(0.5)  # Wait for event propagation
+
+
+async def trigger_occupancy(
+    hass: HomeAssistant, motion_sensor, occupied: bool = True
+) -> None:
+    """Trigger area occupancy change and wait for propagation.
+
+    Args:
+        hass: Home Assistant instance
+        motion_sensor: MockBinarySensor object or entity_id string
+        occupied: True for occupied (ON), False for clear (OFF)
+    """
+
+    await safe_set_state(hass, motion_sensor, occupied)
+
+
+async def trigger_secondary_state(
+    hass: HomeAssistant, sensor, active: bool = True
+) -> None:
+    """Trigger secondary state (sleep, dark, accent, etc.) and wait for propagation.
+
+    Args:
+        hass: Home Assistant instance
+        sensor: MockBinarySensor object or entity_id string
+        active: True for active (ON), False for inactive (OFF)
+
+    """
+
+    await safe_set_state(hass, sensor, active)
 
 
 # Timer helper

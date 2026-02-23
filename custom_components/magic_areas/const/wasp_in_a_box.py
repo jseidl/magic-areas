@@ -1,6 +1,5 @@
 """Wasp in a box feature constants."""
 
-import voluptuous as vol
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.helpers import config_validation as cv
 
@@ -9,7 +8,6 @@ from custom_components.magic_areas.const import (
     ConfigOption,
     FeatureOptionSet,
 )
-
 
 # Wasp in a box device class lists
 WASP_IN_A_BOX_WASP_DEVICE_CLASSES = [

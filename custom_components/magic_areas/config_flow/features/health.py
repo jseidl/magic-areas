@@ -1,13 +1,13 @@
 """Health sensor feature handler."""
 
-from custom_components.magic_areas.const import Features
-from custom_components.magic_areas.const.health import HealthOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
     StepResult,
 )
 from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
+from custom_components.magic_areas.const import Features
+from custom_components.magic_areas.const.health import HealthOptions
 
 
 @register_feature
@@ -16,10 +16,12 @@ class HealthFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.HEALTH
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Health Sensor"
 
     async def handle_step(self, step_id, user_input):

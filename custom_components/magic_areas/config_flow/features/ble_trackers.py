@@ -2,11 +2,6 @@
 
 from homeassistant.components.sensor.const import DOMAIN as SENSOR_DOMAIN
 
-from custom_components.magic_areas.const import (
-    Features,
-    MAGICAREAS_UNIQUEID_PREFIX,
-)
-from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
@@ -16,6 +11,8 @@ from custom_components.magic_areas.config_flow.helpers import (
     SchemaBuilder,
     SelectorBuilder,
 )
+from custom_components.magic_areas.const import MAGICAREAS_UNIQUEID_PREFIX, Features
+from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
 
 
 @register_feature
@@ -24,10 +21,12 @@ class BLETrackersFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.BLE_TRACKERS
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "BLE Trackers"
 
     async def handle_step(self, step_id, user_input):
@@ -49,7 +48,7 @@ class BLETrackersFeature(FeatureHandler):
         ]
 
         selectors[BleTrackerOptions.ENTITIES.key] = (
-            self.flow._build_selector_entity_simple(sensor_entities, multiple=True)
+            self.flow.build_selector_entity_simple(sensor_entities, multiple=True)
         )
 
         # Auto-generate schema with overrides

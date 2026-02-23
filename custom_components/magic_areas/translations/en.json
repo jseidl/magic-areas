@@ -41,35 +41,46 @@
         "menu_options": {
           "area_config": "Basic area options",
           "secondary_states": "Advanced area state tracking",
+          "user_defined_states": "User-defined states",
           "presence_tracking": "Presence tracking options",
           "select_features": "Feature selection",
           "finish": "Save & Exit",
-          "feature_conf_health": "Configure health sensor",
-          "feature_conf_fan_groups": "Configure fan groups",
-          "feature_conf_climate_control": "Configure climate control",
-          "feature_conf_light_groups": "Configure light groups",
-          "feature_conf_area_aware_media_player": "Configure area-aware media player",
-          "feature_conf_aggregates": "Configure aggregate sensors",
-          "feature_conf_presence_hold": "Configure presence hold switch",
-          "feature_conf_ble_trackers": "Configure BLE Tracker monitoring",
-          "feature_conf_wasp_in_a_box": "Configure Wasp in a Box"
+          "feature_health": "Configure health sensor",
+          "feature_fan_groups": "Configure fan groups",
+          "feature_climate_control": "Configure climate control",
+          "feature_light_groups": "Configure light groups",
+          "feature_area_aware_media_player": "Configure area-aware media player",
+          "feature_aggregates": "Configure aggregate sensors",
+          "feature_presence_hold": "Configure presence hold switch",
+          "feature_ble_trackers": "Configure BLE Tracker monitoring",
+          "feature_wasp_in_a_box": "Configure Wasp in a Box"
         }
       },
-      "feature_conf_health": {
+      "feature_health": {
         "title": "Health sensor",
         "description": "You can choose a set of `binary sensor` device classes that will be tracked by this health sensor that can be used in automations.",
         "data": {
           "health_binary_sensor_device_classes": "Device classes to track"
         }
       },
-      "feature_conf_light_groups": {
-        "title": "Light Groups - Manage Groups",
-        "description": "Create custom light groups for this area. Each group can have its own set of lights, area states that trigger them, and control behavior. You currently have {group_count} group(s) with {total_lights} total light(s). Groups can be automatically controlled if you assign them to area states and enable the light control switch.",
-        "data": {
-          "action": "Select an action"
+      "feature_light_groups": {
+        "title": "Light Groups - Main Menu",
+        "description": "Manage light groups for this area. You have {group_count} group(s) with {total_lights} total light(s). Groups can be automatically controlled if you assign them to area states and enable the light control switch.",
+        "menu_options": {
+          "feature_light_groups_add_group": "➕ Add New Group",
+          "feature_light_groups_select_group": "✏️  Edit a Group",
+          "feature_light_groups_delete_group": "🗑️  Delete a Group",
+          "show_menu": "Return to menu"
         }
       },
-      "feature_conf_light_groups_add_group": {
+      "feature_light_groups_select_group": {
+        "title": "Select Group to Edit",
+        "description": "Choose which light group you want to edit.",
+        "data": {
+          "group_index": "Group"
+        }
+      },
+      "feature_light_groups_add_group": {
         "title": "Add Light Group",
         "description": "Create a new light group for this area. The name will generate the entity ID (e.g., 'Reading Nook' → light.kitchen_reading_nook).",
         "data": {
@@ -87,7 +98,7 @@
           "icon": "MDI icon (e.g., mdi:ceiling-light, mdi:lamp). See https://mdi.bessarabov.com/ for all icons. Leave default for lightbulb."
         }
       },
-      "feature_conf_light_groups_edit_group": {
+      "feature_light_groups_edit_group": {
         "title": "Edit Light Group",
         "description": "Modify your light group configuration. Note: Renaming will update the entity ID but preserve history.",
         "data": {
@@ -105,21 +116,22 @@
           "icon": "MDI icon (e.g., mdi:ceiling-light, mdi:lamp). See https://mdi.bessarabov.com/ for all icons. Leave default for lightbulb."
         }
       },
-      "feature_conf_light_groups_delete_confirm": {
+      "feature_light_groups_delete_group": {
         "title": "Delete Light Group",
-        "description": "Are you sure you want to delete '{group_name}'? This action cannot be undone.",
+        "description": "Select a group to delete. This action cannot be undone.",
         "data": {
+          "group_index": "Group to delete",
           "confirm": "Confirm deletion"
         }
       },
-      "feature_conf_presence_hold": {
+      "feature_presence_hold": {
         "title": "Presence Hold",
         "description": "Creates a switch that will hold an area occupied while it's on. You can configure a timeout to have the switch automatically turn off after a certain period of time, if you often see yourself leaving it on.",
         "data": {
           "presence_hold_timeout": "Time after the switch will be automatically turned `off`. (0 = timeout disabled)."
         }
       },
-      "feature_conf_area_aware_media_player": {
+      "feature_area_aware_media_player": {
         "title": "Feature: Area-aware media player",
         "description": "Creates a media player device that will forward play calls to other media players in occupied areas only. This is useful if you want to use TTS notifications but only want to notify areas that are occupied to avoid notifying media players in vacant areas. This feature has configuration options in each area but it is only created if you have a `Global` meta area.",
         "data": {
@@ -130,7 +142,7 @@
           "notification_states": "Notifications will only be played when an area is on this state. Using `extended` will ensure you don't get notified in rooms you just passed by and not selecting `sleep` will prevent notifications while on this mode."
         }
       },
-      "feature_conf_aggregates": {
+      "feature_aggregates": {
         "title": "Feature: Sensor aggregates",
         "description": "If you have multiple `sensors` (or `binary sensors`) of the same type, Magic Areas can group then into a single entity allowing you to have averages (or sums) of sensors or combined state of binary sensors. It's even useful if you only currently have one sensor of each kind as it allows you to use the aggregate in automations and expand in the future without having to re-write your automations.",
         "data": {
@@ -145,7 +157,7 @@
           "aggregates_illuminance_threshold_hysteresis": "[Hysteresis](https://www.home-assistant.io/integrations/threshold/#hysteresis) defines how sensitive the sensor is to changes on its value. A value of zero will flip the sensor state whenever the illuminance crosses the threshold above. Positive values means that the sensor will only change state if the threshold is surpassed by a given amount, expressed in percentage of the threshold set above. Ramping up this value might be useful if you're trying to use this sensor as its own area's light sensor."
         }
       },
-      "feature_conf_fan_groups": {
+      "feature_fan_groups": {
         "title": "Feature: Fan Groups",
         "description": "Group and control all fan entities in an area. This feature allows fan entities to be controlled automatically according to an area's state and wether the aggregate sensor value crosses a setpoint. Fan control requires the aggregates feature to be enable and corresponding device classses selected.",
         "data": {
@@ -159,7 +171,7 @@
           "setpoint": "Number which the tracked aggregate sensor must be equal or greater in order to turn on the fan group."
         }
       },
-      "feature_conf_climate_control": {
+      "feature_climate_control_select_entity": {
         "title": "Feature: Climate Control > Entity Selection",
         "description": "Select the climate entity that you would like to be controlled through area states.",
         "data": {
@@ -169,7 +181,7 @@
           "entity_id": "Climate entity to be controlled."
         }
       },
-      "feature_conf_climate_control_select_presets": {
+      "feature_climate_control_select_presets": {
         "title": "Feature: Climate Control > Preset Mapping",
         "description": "Control a climate entity by mapping presets to the area state. `extended` state takes priority over `occupied` and `sleep` state takes priority over `extended` and `occupied`. Map a state to an empty preset to disable changing presets for that state.",
         "data": {
@@ -185,7 +197,7 @@
           "preset_extended": "Preset to be changed when on `extended` state."
         }
       },
-      "feature_conf_ble_trackers": {
+      "feature_ble_trackers": {
         "title": "BLE Tracker Integration",
         "description": "Tracks sensors from BLE Trackers and creates a corresponding `occupancy` binary sensor for the area that is turned on when the BLE tracker sensor has a state equals to the area's name or ID. **This feature does _NOT_ perform BLE Tracking itself.**",
         "data": {
@@ -195,7 +207,7 @@
           "ble_tracker_entities": "BLE Trackers such as [room-assistant](https://github.com/mKeRix/room-assistant), [Bermuda](https://github.com/agittins/bermuda) and [ESPresence](https://github.com/ESPresense/ESPresense) creates sensors which changes state to whatever area the device was closer to."
         }
       },
-      "feature_conf_wasp_in_a_box": {
+      "feature_wasp_in_a_box": {
         "title": "Wasp in a Box",
         "description": "If we see a wasp, then there is a wasp in the box. If we close the box while there is a wasp in the box, then the wasp remains in the box. If the box remains closed when there is a wasp in the box, and the wasp stops moving, we assume it's still in the box. If the box is opened, and the wasp is not moving, we assume that the wasp has escaped (there is no wasp in the box). This feature monitors your `door` aggregates as the box and your `motion` (default) aggregates as your wasp. A new `binary_sensor` will be created and automatically tracked for presence.",
         "data": {
@@ -264,6 +276,55 @@
           "keep_only_entities": "Select presence-tracking entities that will only be considered when the room is already occupied. This is useful for preventing over-sensitive sensors such as mmWave sensors and BLE trackers false-triggering an area's presence.",
           "clear_timeout": "How long since last presence event should it wait before clearing the area"
         }
+      },
+      "user_defined_states": {
+        "title": "User-Defined States - Main Menu",
+        "description": "Create custom states for this area that can be used in light groups and automations. You have {state_count} state(s) configured. States are automatically tracked by presence detection and available in feature state selectors.",
+        "menu_options": {
+          "user_defined_states_add_state": "➕ Add New State",
+          "user_defined_states_select_state": "✏️  Edit a State",
+          "user_defined_states_delete_state": "🗑️  Delete a State",
+          "show_menu": "Return to menu"
+        }
+      },
+      "user_defined_states_add_state": {
+        "title": "Add User-Defined State",
+        "description": "Create a custom state for this area (e.g., 'Movie Time', 'Gaming', 'Party Mode'). The state name will be slugified for use in automations.",
+        "data": {
+          "name": "State Name",
+          "entity": "Tracking Entity"
+        },
+        "data_description": {
+          "name": "Enter a unique name for this state (e.g., 'Movie Time'). The name will be converted to a slug (e.g., 'movie_time') for use in automations.",
+          "entity": "Binary sensor, switch, or input_boolean that tracks when this state is active. When this entity is ON, the area will have this state."
+        }
+      },
+      "user_defined_states_select_state": {
+        "title": "Select State to Edit",
+        "description": "Choose which user-defined state you want to edit.",
+        "data": {
+          "state_index": "State"
+        }
+      },
+      "user_defined_states_edit_state": {
+        "title": "Edit User-Defined State",
+        "description": "Modify your custom state configuration. Note: Renaming will change the state value in automations.",
+        "data": {
+          "name": "State Name",
+          "entity": "Tracking Entity"
+        },
+        "data_description": {
+          "name": "Enter a unique name for this state. Renaming will change the slugified state value used in automations.",
+          "entity": "Binary sensor, switch, or input_boolean that tracks when this state is active."
+        }
+      },
+      "user_defined_states_delete_state": {
+        "title": "Delete User-Defined State",
+        "description": "Select a state to delete. This will remove it from the area and all feature configurations. This action cannot be undone.",
+        "data": {
+          "state_index": "State to delete",
+          "confirm": "Confirm deletion"
+        }
       }
     },
     "error": {
@@ -273,6 +334,8 @@
       "invalid_entity": "Invalid entity selected",
       "climate_no_preset_support": "Climate entity does not support preset modes",
       "duplicate_group_name": "A group with this name already exists",
+      "duplicate_state_name": "A state with this name already exists",
+      "reserved_state_name": "This state name is reserved and cannot be used (conflicts with built-in states like 'occupied', 'dark', etc.)",
       "no_lights_selected": "You must select at least one light",
       "invalid_icon": "Invalid icon format. Use MDI format (e.g., mdi:ceiling-light)",
       "reserved_name": "This name is reserved and cannot be used. Please choose a different name."

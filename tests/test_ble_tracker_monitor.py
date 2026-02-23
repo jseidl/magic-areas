@@ -1,5 +1,6 @@
 """Tests for the BLE Tracker feature."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -11,11 +12,7 @@ from homeassistant.components.sensor.const import DOMAIN as SENSOR_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    ATTR_ACTIVE_SENSORS,
-    ATTR_PRESENCE_SENSORS,
-    DOMAIN,
-)
+from custom_components.magic_areas.const import DOMAIN, AreaAttributes, CommonAttributes
 from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
 
 from tests.const import DEFAULT_MOCK_AREA
@@ -109,7 +106,10 @@ async def test_ble_tracker_presence_sensor(
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert area_sensor_state is not None
     assert area_sensor_state.state == STATE_OFF
-    assert ble_tracker_entity_id in area_sensor_state.attributes[ATTR_PRESENCE_SENSORS]
+    assert (
+        ble_tracker_entity_id
+        in area_sensor_state.attributes[AreaAttributes.PRESENCE_SENSORS.value]
+    )
 
     # Set BLE sensor to DEFAULT_MOCK_AREA
     hass.states.async_set(ble_sensor_entity_id, DEFAULT_MOCK_AREA.value)
@@ -123,11 +123,14 @@ async def test_ble_tracker_presence_sensor(
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_ON)
-    assert_in_attribute(area_sensor_state, ATTR_ACTIVE_SENSORS, ble_tracker_entity_id)
+    assert_in_attribute(
+        area_sensor_state, CommonAttributes.ACTIVE_SENSORS.value, ble_tracker_entity_id
+    )
 
     # Set BLE sensor to something else
     hass.states.async_set(ble_sensor_entity_id, STATE_UNKNOWN)
     await hass.async_block_till_done()
+    await asyncio.sleep(0.5)
 
     ble_sensor_state = hass.states.get(ble_sensor_entity_id)
     assert_state(ble_sensor_state, STATE_UNKNOWN)

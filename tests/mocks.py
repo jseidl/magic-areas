@@ -650,6 +650,19 @@ class MockClimate(MockEntity, ClimateEntity):
     ]
     _attr_preset_mode = PRESET_NONE
 
+    def __init__(
+        self,
+        name: str,
+        unique_id: str | None = None,
+        preset_modes: list[str] | None = None,
+    ) -> None:
+        """Initialize the mock climate."""
+        super().__init__()
+        self._attr_name = name
+        self._attr_unique_id = unique_id
+        if preset_modes is not None:
+            self._attr_preset_modes = preset_modes
+
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode."""
         self._attr_preset_mode = preset_mode

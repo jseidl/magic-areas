@@ -1,13 +1,13 @@
 """Aggregates feature handler."""
 
-from custom_components.magic_areas.const import Features
-from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.config_flow.features import register_feature
 from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
     StepResult,
 )
 from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
+from custom_components.magic_areas.const import Features
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 
 
 @register_feature
@@ -16,10 +16,12 @@ class AggregatesFeature(FeatureHandler):
 
     @property
     def feature_id(self) -> str:
+        """Return feature identifier."""
         return Features.AGGREGATION
 
     @property
     def feature_name(self) -> str:
+        """Return feature display name."""
         return "Aggregates"
 
     async def handle_step(self, step_id, user_input):

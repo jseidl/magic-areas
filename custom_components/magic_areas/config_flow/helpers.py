@@ -1,17 +1,16 @@
 """Helper functions for config flow."""
 
+from collections.abc import Callable
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-from homeassistant.components.binary_sensor import (
-    DOMAIN as BINARY_SENSOR_DOMAIN,
-    BinarySensorDeviceClass,
-)
+
+from homeassistant import config_entries
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.const import ATTR_DEVICE_CLASS
-from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import (
@@ -29,8 +28,18 @@ from homeassistant.helpers.selector import (
     TextSelectorConfig,
 )
 
+from custom_components.magic_areas.const import (
+    ADDITIONAL_LIGHT_TRACKING_ENTITIES,
+    BASIC_OCCUPANCY_STATES,
+    CONF_EXCLUDE_ENTITIES,
+    CONFIG_FLOW_ENTITY_FILTER_BOOL,
+    CONFIG_FLOW_ENTITY_FILTER_EXT,
+    AreaStates,
+    ConfigOption,
+    OptionSet,
+)
+
 if TYPE_CHECKING:
-    from custom_components.magic_areas.const import ConfigOption
     from custom_components.magic_areas.base.magic import MagicArea
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,8 +92,6 @@ class FlowEntityContext:
     @property
     def all_area_entities(self) -> list[str]:
         """Area entities + excluded entities."""
-        from custom_components.magic_areas.const import CONF_EXCLUDE_ENTITIES
-
         return sorted(
             self.area_entities
             + self.config_entry.options.get(CONF_EXCLUDE_ENTITIES, [])
@@ -112,8 +119,6 @@ class FlowEntityContext:
 
     def _build_all_entities(self) -> list[str]:
         """Build list of all relevant entities."""
-        from custom_components.magic_areas.const import CONFIG_FLOW_ENTITY_FILTER_EXT
-
         return sorted(
             self.resolve_groups(
                 entity_id
@@ -124,8 +129,6 @@ class FlowEntityContext:
 
     def _build_area_entities(self) -> list[str]:
         """Build list of entities in this area."""
-        from custom_components.magic_areas.const import CONFIG_FLOW_ENTITY_FILTER_EXT
-
         filtered_area_entities = []
         for domain in CONFIG_FLOW_ENTITY_FILTER_EXT:
             filtered_area_entities.extend(
@@ -139,8 +142,6 @@ class FlowEntityContext:
 
     def _build_binary_entities(self) -> list[str]:
         """Build list of binary sensor entities."""
-        from custom_components.magic_areas.const import CONFIG_FLOW_ENTITY_FILTER_BOOL
-
         return sorted(
             self.resolve_groups(
                 entity_id
@@ -171,10 +172,6 @@ class FlowEntityContext:
 
     def _build_light_tracking_entities(self) -> list[str]:
         """Build list of entities for light tracking (binary sensors with LIGHT device class)."""
-        from custom_components.magic_areas.const import (
-            ADDITIONAL_LIGHT_TRACKING_ENTITIES,
-        )
-
         eligible_light_tracking = []
         for entity_id in self._all_entities:
             if entity_id.startswith("binary_sensor."):
@@ -193,6 +190,12 @@ class ConfigValidator:
     """Handles validation with consistent error handling."""
 
     def __init__(self, flow_name: str):
+        """Initialize validator.
+
+        Args:
+            flow_name: Name of the flow for logging purposes
+
+        """
         self.flow_name = flow_name
 
     async def validate(
@@ -201,9 +204,8 @@ class ConfigValidator:
         user_input: dict,
         on_success: Callable[[dict], Any],
         error_prefix: str = "",
-    ) -> tuple[bool, Optional[Dict[str, str]]]:
-        """
-        Validate user input against schema.
+    ) -> tuple[bool, dict[str, str] | None]:
+        """Validate user input against schema.
 
         Returns: (success, errors_dict)
         If success is True, on_success was called and returned value can be used.
@@ -221,7 +223,8 @@ class ConfigValidator:
                 "ConfigFlow (%s): Validation errors: %s", self.flow_name, errors
             )
             return False, errors
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            # Catch all exceptions to prevent config flow crashes
             _LOGGER.warning(
                 "ConfigFlow (%s): Unexpected error: %s", self.flow_name, exc
             )
@@ -231,15 +234,22 @@ class ConfigValidator:
 class EntityListBuilder:
     """Builds filtered entity lists."""
 
-    def __init__(self, hass, all_entities: List[str]):
+    def __init__(self, hass, all_entities: list[str]):
+        """Initialize entity list builder.
+
+        Args:
+            hass: Home Assistant instance
+            all_entities: List of all entity IDs to filter from
+
+        """
         self.hass = hass
         self.all_entities = all_entities
 
-    def by_domain(self, domains: List[str]) -> List[str]:
+    def by_domain(self, domains: list[str]) -> list[str]:
         """Filter entities by domain(s)."""
         return [e for e in self.all_entities if e.split(".")[0] in domains]
 
-    def by_device_class(self, domain: str, device_class: str) -> List[str]:
+    def by_device_class(self, domain: str, device_class: str) -> list[str]:
         """Filter entities by domain and device class."""
         result = []
         for entity_id in self.all_entities:
@@ -251,8 +261,8 @@ class EntityListBuilder:
         return result
 
     def by_area_entities(
-        self, area_entities: Dict[str, List[dict]], domains: List[str]
-    ) -> List[str]:
+        self, area_entities: dict[str, list[dict]], domains: list[str]
+    ) -> list[str]:
         """Get entities from area that match domains."""
         result = []
         for domain in domains:
@@ -264,48 +274,68 @@ class EntityListBuilder:
 
 
 class StateOptionsBuilder:
-    """Builds available state options for features."""
+    """Filters available states to what each feature supports."""
 
     @staticmethod
-    def for_light_groups(
-        secondary_states: dict, exclude_dark: bool = True
-    ) -> List[str]:
-        """Build available states for light groups."""
-        from ..const import (
-            AreaStates,
-            BUILTIN_AREA_STATES,
-            CONFIGURABLE_AREA_STATE_MAP,
-        )
+    def build_available_states(area: "MagicArea") -> list[str]:
+        """Build list of all available states for an area.
 
-        states = [str(s) for s in BUILTIN_AREA_STATES]  # occupied, extended
+        Single source of truth using MagicArea.secondary_state_entities.
 
-        for state, entity_key in CONFIGURABLE_AREA_STATE_MAP.items():
-            if exclude_dark and state == AreaStates.DARK:
-                continue
-            if secondary_states.get(entity_key):
-                states.append(str(state))
+        Args:
+            area: MagicArea instance
 
-        return states
+        Returns:
+            List of state names (strings) including built-in + secondary states
 
-    @staticmethod
-    def for_fan_groups() -> List[str]:
-        """Fan groups only use occupied/extended."""
-        from ..const import AreaStates
+        """
 
-        return [str(AreaStates.OCCUPIED), str(AreaStates.EXTENDED)]
+        # Start with basic occupancy states
+        available_states = list(BASIC_OCCUPANCY_STATES)
+
+        # Add secondary states (sleep + user-defined) from cached source
+        available_states.extend(area.secondary_state_entities.keys())
+
+        return available_states
 
     @staticmethod
-    def for_area_aware_media_player(secondary_states: dict) -> List[str]:
-        """Area aware media player states."""
-        from ..const import (
-            AreaStates,
-            CONFIGURABLE_AREA_STATE_MAP,
-        )
+    def for_light_groups(available_states: list[str]) -> list[str]:
+        """Light groups support all available states.
 
-        states = [str(AreaStates.OCCUPIED), str(AreaStates.EXTENDED)]
-        if secondary_states.get(CONFIGURABLE_AREA_STATE_MAP[AreaStates.SLEEP]):
-            states.append(str(AreaStates.SLEEP))
-        return states
+        Args:
+            available_states: List of all available state names
+
+        Returns:
+            List of state values (all states for light groups)
+
+        """
+        return available_states
+
+    @staticmethod
+    def for_fan_groups() -> list[str]:
+        """Fan groups only support occupied/extended.
+
+        Args:
+            available_states: List of all available state names
+
+        Returns:
+            Filtered list with only occupied/extended
+
+        """
+        return [AreaStates.OCCUPIED, AreaStates.EXTENDED]
+
+    @staticmethod
+    def for_area_aware_media_player(available_states: list[str]) -> list[str]:
+        """Area aware media player supports all available states.
+
+        Args:
+            available_states: List of all available state names
+
+        Returns:
+            List of state values (all states for media player)
+
+        """
+        return available_states
 
 
 class SelectorBuilder:
@@ -313,8 +343,7 @@ class SelectorBuilder:
 
     @staticmethod
     def from_config_option(option: "ConfigOption") -> Any:
-        """
-        Build selector based on option's selector_type and selector_config.
+        """Build selector based on option's selector_type and selector_config.
 
         Args:
             option: ConfigOption with selector metadata
@@ -324,9 +353,8 @@ class SelectorBuilder:
 
         Raises:
             ValueError: If selector_type is unknown or not specified
-        """
-        from custom_components.magic_areas.const import ConfigOption
 
+        """
         if not isinstance(option, ConfigOption):
             raise TypeError(f"Expected ConfigOption, got {type(option)}")
 
@@ -382,18 +410,16 @@ class SelectorBuilder:
         raise ValueError(f"Unknown selector_type: {selector_type}")
 
     @staticmethod
-    def from_option_set(option_set: type) -> Dict[str, Any]:
-        """
-        Generate all selectors for an OptionSet class.
+    def from_option_set(option_set: type) -> dict[str, Any]:
+        """Generate all selectors for an OptionSet class.
 
         Args:
             option_set: OptionSet or FeatureOptionSet class
 
         Returns:
             Dict mapping option keys to selector instances
-        """
-        from custom_components.magic_areas.const import ConfigOption, OptionSet
 
+        """
         if not issubclass(option_set, OptionSet):
             raise TypeError(f"Expected OptionSet subclass, got {type(option_set)}")
 
@@ -420,14 +446,20 @@ class SelectorBuilder:
 class SchemaBuilder:
     """Builds voluptuous schemas with selectors."""
 
-    def __init__(self, saved_options: Optional[dict] = None):
+    def __init__(self, saved_options: dict | None = None):
+        """Initialize schema builder.
+
+        Args:
+            saved_options: Previously saved configuration values
+
+        """
         self.saved_options = saved_options or {}
 
     def build(
         self,
-        options: List[Tuple[str, Any, Any]],  # (name, default, validator)
-        selectors: Optional[Dict[str, Any]] = None,
-        dynamic_validators: Optional[Dict[str, Any]] = None,
+        options: list[tuple[str, Any, Any]],  # (name, default, validator)
+        selectors: dict[str, Any] | None = None,
+        dynamic_validators: dict[str, Any] | None = None,
     ) -> vol.Schema:
         """Build schema from option definitions."""
         selectors = selectors or {}
@@ -446,9 +478,9 @@ class SchemaBuilder:
 
     def build_feature_schema(
         self,
-        feature_options: List[Tuple[str, Any, Any]],
+        feature_options: list[tuple[str, Any, Any]],
         feature_config: dict,
-        selectors: Dict[str, Any],
+        selectors: dict[str, Any],
     ) -> vol.Schema:
         """Build schema for a feature with current config as defaults."""
         # Temporarily save current options
@@ -468,11 +500,10 @@ class SchemaBuilder:
     def from_option_set(
         self,
         option_set: type,
-        saved_config: Optional[dict] = None,
-        selector_overrides: Optional[Dict[str, Any]] = None,
+        saved_config: dict | None = None,
+        selector_overrides: dict[str, Any] | None = None,
     ) -> vol.Schema:
-        """
-        Auto-generate complete voluptuous schema from an OptionSet class.
+        """Auto-generate complete voluptuous schema from an OptionSet class.
 
         Uses ConfigOption metadata:
         - key: field name
@@ -499,9 +530,8 @@ class SchemaBuilder:
                     "overhead_lights": custom_entity_selector
                 }
             )
-        """
-        from custom_components.magic_areas.const import ConfigOption, OptionSet
 
+        """
         if not issubclass(option_set, OptionSet):
             raise TypeError(f"Expected OptionSet subclass, got {type(option_set)}")
 
@@ -515,7 +545,11 @@ class SchemaBuilder:
         selectors = {**auto_selectors, **selector_overrides}
 
         schema_fields = {}
-        for attr_name in dir(option_set):
+        for attr_name in option_set.__dict__:
+            # Skip private/magic attributes
+            if attr_name.startswith("_"):
+                continue
+
             attr = getattr(option_set, attr_name)
             if not isinstance(attr, ConfigOption):
                 continue
@@ -529,15 +563,31 @@ class SchemaBuilder:
 
             # Determine validator (selector > validator > cv.string)
             field_validator = selectors.get(attr.key)
-            if field_validator is None:
-                field_validator = attr.validator if attr.validator else cv.string
 
-            # Build schema field (required vs optional)
-            if attr.required:
-                schema_fields[vol.Required(attr.key)] = field_validator
-            else:
-                schema_fields[vol.Optional(attr.key, default=current_value)] = (
-                    field_validator
-                )
+            # VALIDATION: Check if we have a valid selector
+            if field_validator is None:
+                if attr.validator and callable(attr.validator):
+                    # Only has a callable validator - this will cause serialization errors
+                    _LOGGER.error(
+                        "SchemaBuilder: Field '%s' in %s has only a callable validator "
+                        "and no selector. This will cause UI serialization errors. "
+                        "Please add selector_type and selector_config to the ConfigOption definition.",
+                        attr.key,
+                        option_set.__name__,
+                    )
+                    # Return empty schema to abort gracefully
+                    return vol.Schema({})
+                if attr.validator:
+                    # Has a non-callable validator (already a selector-like object)
+                    field_validator = attr.validator
+                else:
+                    # No validator at all, use default
+                    field_validator = cv.string
+
+            # Build schema field (always use Optional with default to show current values)
+            # This is important for edit forms to display existing values
+            schema_fields[vol.Optional(attr.key, default=current_value)] = (
+                field_validator
+            )
 
         return vol.Schema(schema_fields, extra=vol.REMOVE_EXTRA)

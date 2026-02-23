@@ -1,6 +1,5 @@
 """Health sensor feature constants."""
 
-import voluptuous as vol
 from homeassistant.components.alarm_control_panel.const import AlarmControlPanelState
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.const import STATE_ON, STATE_PROBLEM
@@ -11,7 +10,6 @@ from custom_components.magic_areas.const import (
     ConfigOption,
     FeatureOptionSet,
 )
-
 
 # Distress sensor classes for health monitoring
 DISTRESS_SENSOR_CLASSES = [

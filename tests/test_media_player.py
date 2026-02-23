@@ -25,7 +25,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import ATTR_STATES, DOMAIN, AreaStates
+from custom_components.magic_areas.const import DOMAIN, AreaStates, CommonAttributes
 from custom_components.magic_areas.const.area_aware_media_player import (
     AreaAwareMediaPlayerOptions,
 )
@@ -64,7 +64,9 @@ def mock_config_entry_area_aware_media_player_area() -> MockConfigEntry:
                 AreaAwareMediaPlayerOptions.NOTIFICATION_DEVICES.key: [
                     "media_player.media_player_1"
                 ],
-                AreaAwareMediaPlayerOptions.NOTIFY_STATES.key: [AreaStates.OCCUPIED],
+                AreaAwareMediaPlayerOptions.NOTIFICATION_STATES.key: [
+                    AreaStates.OCCUPIED
+                ],
             }
         )
     )
@@ -182,7 +184,9 @@ async def test_area_aware_media_player(
 
     assert_state(motion_sensor, STATE_ON)
     assert_state(area_binary_sensor, STATE_ON)
-    assert_in_attribute(area_binary_sensor, ATTR_STATES, AreaStates.OCCUPIED)
+    assert_in_attribute(
+        area_binary_sensor, CommonAttributes.STATES.value, AreaStates.OCCUPIED
+    )
 
     # Send play to AAMP
     service_data = {

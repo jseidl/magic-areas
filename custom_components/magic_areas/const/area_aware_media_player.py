@@ -1,6 +1,5 @@
 """Area aware media player feature constants."""
 
-import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from custom_components.magic_areas.const import (
@@ -28,7 +27,7 @@ class AreaAwareMediaPlayerOptions(FeatureOptionSet):
         selector_config={"domain": "media_player", "multiple": True},
     )
 
-    NOTIFY_STATES = ConfigOption(
+    NOTIFICATION_STATES = ConfigOption(
         key="notification_states",
         default=[AreaStates.EXTENDED],
         title="Notify States",

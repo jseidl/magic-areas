@@ -37,6 +37,7 @@ from tests.helpers import (
     merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
+    trigger_occupancy,
 )
 from tests.mocks import MockBinarySensor, MockFan, MockSensor
 
@@ -220,8 +221,7 @@ async def test_fan_group_logic(
     assert_state(area_sensor_state, STATE_OFF)
 
     # Fan control off, under setpoint
-    hass.states.async_set(motion_sensor_entity_id, STATE_ON)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_ON)
@@ -230,8 +230,7 @@ async def test_fan_group_logic(
     assert_state(fan_group_state, STATE_OFF)
 
     # > Reset
-    hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=False)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
@@ -254,8 +253,7 @@ async def test_fan_group_logic(
     assert_state(tracked_sensor_state, str(SETPOINT_VALUE * 2))
 
     # Fan control off, over setpoint
-    hass.states.async_set(motion_sensor_entity_id, STATE_ON)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_ON)
@@ -264,8 +262,7 @@ async def test_fan_group_logic(
     assert_state(fan_group_state, STATE_OFF)
 
     # > Reset
-    hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=False)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
@@ -286,8 +283,7 @@ async def test_fan_group_logic(
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
 
-    hass.states.async_set(motion_sensor_entity_id, STATE_ON)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_ON)
@@ -296,8 +292,7 @@ async def test_fan_group_logic(
     assert_state(fan_group_state, STATE_ON)
 
     # > Reset
-    hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=False)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
@@ -322,8 +317,7 @@ async def test_fan_group_logic(
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
 
-    hass.states.async_set(motion_sensor_entity_id, STATE_ON)
-    await hass.async_block_till_done()
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_ON)
