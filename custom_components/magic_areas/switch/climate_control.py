@@ -78,6 +78,12 @@ class ClimateControlSwitch(SwitchBase):
             )
             return
 
+        new_states, lost_states = states_tuple
+
+        if new_states == lost_states:
+            self.logger.debug("%s: No state change. Skipping.", self.name)
+            return
+
         priority_states: list[str] = [
             AreaStates.SLEEP,
             AreaStates.EXTENDED,
@@ -85,14 +91,14 @@ class ClimateControlSwitch(SwitchBase):
         ]
 
         # Handle area clear because the other states doesn't matter
-        if self.area.has_state(AreaStates.CLEAR):
+        if AreaStates.CLEAR in new_states:
             if self.preset_map[AreaStates.CLEAR]:
                 await self.apply_preset(AreaStates.CLEAR)
             return
 
         # Handle each state top priority to last, returning early
         for p_state in priority_states:
-            if self.area.has_state(p_state) and self.preset_map[p_state]:
+            if p_state in new_states and self.preset_map[p_state]:
                 return await self.apply_preset(p_state)
 
     async def apply_preset(self, state_name: str):
