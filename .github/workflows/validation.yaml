@@ -34,3 +34,16 @@ jobs:
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
             category: integration
+
+  translations:
+    name: "Translations Sync Check"
+    runs-on: "ubuntu-latest"
+    steps:
+        - name: "Checkout the repository"
+          uses: "actions/checkout@v6"
+
+        - name: "Check translations/en.json is in sync with strings.json"
+          run: |
+            diff custom_components/magic_areas/strings.json \
+                 custom_components/magic_areas/translations/en.json \
+              || (echo "ERROR: translations/en.json is out of sync with strings.json. Run scripts/sync-translations to fix." && exit 1)

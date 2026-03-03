@@ -22,17 +22,17 @@
                 "title": "Funktionen auswählen",
                 "description": "Funktionen auswählen, die für diesen Bereich aktiviert werden sollen. Sofern Einstellungen für diese Funktion vorhanden sind, wird ein weiterer Menüeintrag zum Konfigurieren der Funktion angezeigt.",
                 "data": {
-                    "fan_groups": "Lüftergruppen",
-                    "climate_control": "Klimasteuerung",
-                    "media_player_groups": "Media Player Gruppen",
-                    "light_groups": "Lichtgruppen",
-                    "cover_groups": "Abdeckungsgruppen",
+                    "fan_groups": "Lüftergruppen erstellen",
+                    "climate_control": "Klimasteuerung erstellen",
+                    "media_player_groups": "Media-Player-Gruppen erstellen",
+                    "light_groups": "Lichtgruppen erstellen",
+                    "cover_groups": "Abdeckungsgruppen erstellen",
                     "area_aware_media_player": "Bereichsabhängiger Media Player",
-                    "aggregates": "Aggregierte Sensoren",
-                    "health": "Umweltsensoren",
-                    "presence_hold": "Anwesenheitshalteschalter",
-                    "ble_trackers": "BLE-Tracker-Überwachung",
-                    "wasp_in_a_box": "Wasp in a Box"
+                    "aggregates": "Aggregierte Sensoren erstellen",
+                    "health": "Umweltsensoren erstellen",
+                    "presence_hold": "Anwesenheitshalteschalter erstellen",
+                    "ble_trackers": "BLE-Tracker-Sensoren überwachen",
+                    "wasp_in_a_box": "Wasp-in-a-Box-Sensor erstellen"
                 }
             },
             "show_menu": {
@@ -41,63 +41,101 @@
                 "menu_options": {
                     "area_config": "Allgemeine Bereichsoptionen",
                     "secondary_states": "Erweiterte Statusverfolgung",
+                    "user_defined_states": "Benutzerdefinierte Zustände",
                     "presence_tracking": "Anwesenheitsverfolgung",
                     "select_features": "Funktionen auswählen",
                     "finish": "Speichern und beenden",
-                    "feature_conf_health": "Umweltsensoren konfigurieren",
-                    "feature_conf_fan_groups": "Lüftergruppen konfigurieren",
-                    "feature_conf_climate_control": "Klimasteuerung konfigurieren",
-                    "feature_conf_light_groups": "Lichtgruppen konfigurieren",
-                    "feature_conf_area_aware_media_player": "Bereichsabhängigen Media Player konfigurieren",
-                    "feature_conf_aggregates": "Aggregierte Sensoren konfigurieren",
-                    "feature_conf_presence_hold": "Anwesenheitshalteschalter konfigurieren",
-                    "feature_conf_ble_trackers": "BLE-Tracker-Überwachung konfigurieren",
-                    "feature_conf_wasp_in_a_box": "Wasp in a Box konfigurieren"
+                    "feature_health": "Umweltsensoren konfigurieren",
+                    "feature_fan_groups": "Lüftergruppen konfigurieren",
+                    "feature_climate_control": "Klimasteuerung konfigurieren",
+                    "feature_light_groups": "Lichtgruppen konfigurieren",
+                    "feature_area_aware_media_player": "Bereichsabhängigen Media Player konfigurieren",
+                    "feature_aggregates": "Aggregierte Sensoren konfigurieren",
+                    "feature_presence_hold": "Anwesenheitshalteschalter konfigurieren",
+                    "feature_ble_trackers": "BLE-Tracker-Überwachung konfigurieren",
+                    "feature_wasp_in_a_box": "Wasp in a Box konfigurieren"
                 }
             },
-            "feature_conf_health": {
+            "feature_health": {
                 "title": "Umweltsensor",
                 "description": "Mehrere Geräteklassen vom Typ `Binärsensor` auswählen, die von diesem Umweltsensor verfolgt werden und in Automatisierungen verwendet werden können.",
                 "data": {
                     "health_binary_sensor_device_classes": "Zu verfolgende Geräteklassen"
                 }
             },
-            "feature_conf_light_groups": {
-                "title": "Lichtgruppen",
-                "description": "Magic Areas erstellt diese 4 (plus 1 globale) [Lichtgruppen](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (wenn ihnen Lichter zugewiesen werden). Dies sind standardmäßig einfache Lichtgruppen, die jedoch automatisch gesteuert werden können, wenn sie Bereichszuständen zugewiesen sind und der Lichtsteuerungsschalter eingeschaltet wird (wird mit Aktivieren dieser Funktion erstellt). Alle Lichter werden ausgeschaltet, wenn ein Bereich freigegeben wird. Zusätzliche Zustände können durch Konfigurieren von `Erweiterte Statusverfolgung` freigeschaltet werden.",
-                "data": {
-                    "overhead_lights": "Deckenleuchten",
-                    "overhead_lights_states": "In welchen Zuständen sollen Deckenleuchten eingeschaltet werden",
-                    "overhead_lights_act_on": "Wann sollen die Deckenleuchten gesteuert werden?",
-                    "sleep_lights": "Schlaflichter",
-                    "sleep_lights_states": "In welchen Zuständen sollen Schlaflichter eingeschaltet werden",
-                    "sleep_lights_act_on": "Wann sollen Schlaflichter gesteuert werden?",
-                    "accent_lights": "Akzentlichter",
-                    "accent_lights_states": "In welchen Zuständen sollen Akzentlichter eingeschaltet werden",
-                    "accent_lights_act_on": "Wann sollen die Akzentlichter gesteuert werden?",
-                    "task_lights": "Arbeitslichter",
-                    "task_lights_states": "In welchen Zuständen sollen Arbeitslichter eingeschaltet werden",
-                    "task_lights_act_on": "Wann sollen die Arbeitslichter gesteuert werden?"
-                },
-                "data_description": {
-                    "overhead_lights_states": "Konfigurieren Sie, welche Bereichszustände diese Lichtgruppe auslösen. Lichtgruppen werden eingeschaltet, während sich der Bereich in diesem Zustand befindet, und ausgeschaltet, wenn der Bereich diese Zustände verliert. Wenn das Licht nach einer längeren Zeitspanne eingeschaltet bleiben soll, muss auch der Zustand `erweitert` ausgewählt werden.",
-                    "overhead_lights_act_on": "Soll diese Lichtgruppe nur beim ersten Betreten eines Bereichs, nur bei Zustandsänderungen des Bereichs oder bei beidem gesteuert werden.",
-                    "sleep_lights_states": "Konfigurieren Sie, welche Bereichszustände diese Lichtgruppe auslösen. Lichtgruppen werden eingeschaltet, während sich der Bereich in diesem Zustand befindet, und ausgeschaltet, wenn der Bereich diese Zustände verliert. Wenn das Licht nach einer längeren Zeitspanne eingeschaltet bleiben soll, muss auch der Zustand `erweitert` ausgewählt werden.",
-                    "sleep_lights_act_on": "Soll diese Lichtgruppe nur beim ersten Betreten eines Bereichs, nur bei Zustandsänderungen des Bereichs oder bei beidem gesteuert werden.",
-                    "accent_lights_states": "Konfigurieren Sie, welche Bereichszustände diese Lichtgruppe auslösen. Lichtgruppen werden eingeschaltet, während sich der Bereich in diesem Zustand befindet, und ausgeschaltet, wenn der Bereich diese Zustände verliert. Wenn das Licht nach einer längeren Zeitspanne eingeschaltet bleiben soll, muss auch der Zustand `erweitert` ausgewählt werden.",
-                    "accent_lights_act_on": "Soll diese Lichtgruppe nur beim ersten Betreten eines Bereichs, nur bei Zustandsänderungen des Bereichs oder bei beidem gesteuert werden.",
-                    "task_lights_states": "Konfigurieren Sie, welche Bereichszustände diese Lichtgruppe auslösen. Lichtgruppen werden eingeschaltet, während sich der Bereich in diesem Zustand befindet, und ausgeschaltet, wenn der Bereich diese Zustände verliert. Wenn das Licht nach einer längeren Zeitspanne eingeschaltet bleiben soll, muss auch der Zustand `erweitert` ausgewählt werden.",
-                    "task_lights_act_on": "Soll diese Lichtgruppe nur beim ersten Betreten eines Bereichs, nur bei Zustandsänderungen des Bereichs oder bei beidem gesteuert werden."
+            "feature_light_groups": {
+                "title": "Lichtgruppen - Hauptmenü",
+                "description": "Lichtgruppen für diesen Bereich verwalten. Es gibt {group_count} Gruppe(n) mit insgesamt {total_lights} Licht(ern). Gruppen können automatisch gesteuert werden, wenn sie Bereichszuständen zugewiesen sind und der Lichtsteuerungsschalter aktiviert wird.",
+                "menu_options": {
+                    "feature_light_groups_add_group": "➕ Neue Gruppe hinzufügen",
+                    "feature_light_groups_select_group": "✏️  Gruppe bearbeiten",
+                    "feature_light_groups_delete_group": "🗑️  Gruppe löschen",
+                    "show_menu": "Zurück zum Menü"
                 }
             },
-            "feature_conf_presence_hold": {
+            "feature_light_groups_select_group": {
+                "title": "Zu bearbeitende Gruppe auswählen",
+                "description": "Wähle die Lichtgruppe aus, die bearbeitet werden soll.",
+                "data": {
+                    "group_index": "Gruppe"
+                }
+            },
+            "feature_light_groups_add_group": {
+                "title": "Lichtgruppe hinzufügen",
+                "description": "Neue Lichtgruppe für diesen Bereich erstellen. Der Name generiert die Entitäts-ID (z.B. 'Leseecke' → light.kueche_leseecke).",
+                "data": {
+                    "name": "Gruppenname",
+                    "lights": "Lichter",
+                    "states": "Aktive Zustände",
+                    "turn_on_when": "Lichter einschalten",
+                    "turn_off_when": "Lichter ausschalten",
+                    "require_dark": "Dunkelheit erforderlich"
+                },
+                "data_description": {
+                    "name": "Eindeutigen Namen für diese Lichtgruppe eingeben",
+                    "lights": "Lichter auswählen, die in diese Gruppe aufgenommen werden sollen",
+                    "states": "Bereichszustände auswählen, die diese Lichter einschalten. Lichter werden eingeschaltet, wenn der Bereich diese Zustände erreicht, und ausgeschaltet, wenn diese Zustände verloren gehen.",
+                    "turn_on_when": "Wann die Lichter eingeschaltet werden sollen.",
+                    "turn_off_when": "Wann die Lichter ausgeschaltet werden sollen.",
+                    "require_dark": "Der Bereich muss dunkel sein als Bedingung zum Einschalten der Lichter."
+                }
+            },
+            "feature_light_groups_edit_group": {
+                "title": "Lichtgruppe bearbeiten",
+                "description": "Konfiguration der Lichtgruppe ändern. Hinweis: Umbenennen aktualisiert die Entitäts-ID, behält aber den Verlauf bei.",
+                "data": {
+                    "name": "Gruppenname",
+                    "lights": "Lichter",
+                    "states": "Aktive Zustände",
+                    "turn_on_when": "Lichter einschalten",
+                    "turn_off_when": "Lichter ausschalten",
+                    "require_dark": "Dunkelheit erforderlich"
+                },
+                "data_description": {
+                    "name": "Eindeutigen Namen für diese Lichtgruppe eingeben",
+                    "lights": "Lichter auswählen, die in diese Gruppe aufgenommen werden sollen",
+                    "states": "Bereichszustände auswählen, die diese Lichter einschalten. Lichter werden eingeschaltet, wenn der Bereich diese Zustände erreicht, und ausgeschaltet, wenn diese Zustände verloren gehen.",
+                    "turn_on_when": "Wann die Lichter eingeschaltet werden sollen.",
+                    "turn_off_when": "Wann die Lichter ausgeschaltet werden sollen.",
+                    "require_dark": "Der Bereich muss dunkel sein als Bedingung zum Einschalten der Lichter."
+                }
+            },
+            "feature_light_groups_delete_group": {
+                "title": "Lichtgruppe löschen",
+                "description": "Eine Gruppe zum Löschen auswählen. Diese Aktion kann nicht rückgängig gemacht werden.",
+                "data": {
+                    "group_index": "Zu löschende Gruppe",
+                    "confirm": "Löschung bestätigen"
+                }
+            },
+            "feature_presence_hold": {
                 "title": "Anwesenheitshalteschalter",
                 "description": "Erstellt einen Schalter, der einen Bereich als belegt markiert hält (während der Schalter eingeschaltet ist). Wenn der Schalter häufig eingeschaltet bleibt, kann ein Timeout definiert werden, nach dessen Ablauf der Schalter automatisch ausgeschaltet wird.",
                 "data": {
                     "presence_hold_timeout": "Zeit, nach der der Schalter automatisch ausgeschaltet wird. (0 = Timeout deaktiviert)."
                 }
             },
-            "feature_conf_area_aware_media_player": {
+            "feature_area_aware_media_player": {
                 "title": "Funktion: Bereichsabhängiger Media Player",
                 "description": "Erstellt einen Media Player, der Wiedergabeaufrufe nur an Media Player in besetzten Bereichen weiterleitet. Dies ist nützlich, wenn TTS-Benachrichtigungen nur in belegten Bereichen abgespielt werden sollen. Diese Funktion verfügt über Konfigurationsoptionen in jedem Bereich. Achtung: der Media Player wird nur erstellt, wenn ein `globaler` Metabereich eingerichtet wurde.",
                 "data": {
@@ -108,7 +146,7 @@
                     "notification_states": "Benachrichtigungen werden nur abgespielt, wenn sich ein Bereich in einem dieser Zustände befindet. Die Verwendung von `Erweitert` stellt sicher, dass in Bereichen, die gerade erst passiert wurden, keine Benachrichtungen abgespielt werden."
                 }
             },
-            "feature_conf_aggregates": {
+            "feature_aggregates": {
                 "title": "Funktion: Aggregierte Sensoren",
                 "description": "Wenn mehrere `Sensoren` (oder `binäre Sensoren`) desselben Typs existieren, kann Magic Areas diese zu einer Einheit zusammenfassen, so dass Durchschnittswerte (oder Summen) von Sensoren oder der kombinierte Zustand von binären Sensoren berechnet wird. Dies ist auch dann nützlich, wenn derzeit nur ein Sensor jeder Art existiert, da der Aggregatssensor in Automatisierungen verwendet und in Zukunft erweitert werden kann, ohne Automatisierungen neu erstellen/anpassen zu müssen.",
                 "data": {
@@ -120,16 +158,16 @@
                 },
                 "data_description": {
                     "aggregates_illuminance_threshold": "Magic Areas erstellt einen binären `Licht` Sensor, der erkennt, wenn die Gesamtbeleuchtungsstärke des Bereichs diesen Schwellenwert überschreitet. Erfordert, dass die Geräteklasse `Beleuchtungsstärke` für den aggregierten Sensor ausgewählt ist. Zum Deaktivieren auf 0 setzen.",
-                    "aggregates_illuminance_threshold_hysteresis": "[Hysterese](https://www.home-assistant.io/integrations/threshold/#hysteresis) definiert, wie empfindlich der Sensor auf Änderungen reagiert. Ein Wert von 0 bewirkt, dass der Sensorzustand jedes Mal umschaltet, wenn die Beleuchtungsstärke den festgelegten Schwellenwert überschreitet. Positive Werte bedeuten, dass der Sensor nur dann den Zustand ändert, wenn der Schwellenwert um einen bestimmten Betrag überschritten wird (ausgedrückt als Prozentsatz des zuvor festgelegten Schwellenwertes). Das Erhöhen dieses Werts kann nützlich sein, wenn der Sensor als Lichtsensor für seinen eigenen Bereich verwenden werden soll."
+                    "aggregates_illuminance_threshold_hysteresis": "[Hysterese]({url_threshold_hysteresis}) definiert, wie empfindlich der Sensor auf Änderungen reagiert. Ein Wert von 0 bewirkt, dass der Sensorzustand jedes Mal umschaltet, wenn die Beleuchtungsstärke den festgelegten Schwellenwert überschreitet. Positive Werte bedeuten, dass der Sensor nur dann den Zustand ändert, wenn der Schwellenwert um einen bestimmten Betrag überschritten wird (ausgedrückt als Prozentsatz des zuvor festgelegten Schwellenwertes). Das Erhöhen dieses Werts kann nützlich sein, wenn der Sensor als Lichtsensor für seinen eigenen Bereich verwenden werden soll."
                 }
             },
-            "feature_conf_fan_groups": {
+            "feature_fan_groups": {
                 "title": "Funktion: Lüftergruppen",
-                "description": "Alle Lüfter Entitäten eines Bereichs gruppieren. Mit dieser Funktion lassen sich Lüfter automatisch steuern – abhängig vom Status eines Bereichs und dem Wert eines Aggregatsensors (z. B. Temperatur). Wird ein definierter Schwellenwert überschritten, schaltet sich der Lüfter ein; fällt der Wert darunter, wird der Lüfter wieder ausgeschaltet. Für die Lüftersteuerung muss die Funktion `Aggregierte Sensoren` aktiviert und die passende Gerätekategorien ausgewählt sein.",
+                "description": "Alle Lüfter Entitäten eines Bereichs gruppieren. Mit dieser Funktion lassen sich Lüfter automatisch steuern – abhängig vom Status eines Bereichs und dem Wert eines Aggregatsensors (z. B. Temperatur). Wird ein definierter Schwellenwert überschritten, schaltet sich der Lüfter ein; fällt der Wert darunter, wird der Lüfter wieder ausgeschaltet. Für die Lüftersteuerung muss die Funktion `Aggregierte Sensoren` aktiviert und die passende Gerätekategorien ausgewählt sein.",
                 "data": {
-                    "required_state": "Erforderlicher Zustand",
-                    "tracked_device_class": "Überwachte Gerätekategorie",
-                    "setpoint": "Schwellwert"
+                    "required_state": "Erforderlicher Zustand.",
+                    "tracked_device_class": "Überwachte Gerätekategorie.",
+                    "setpoint": "Schwellwert."
                 },
                 "data_description": {
                     "required_state": "Zustand, den der Bereich haben muss, damit die Lüftergruppe eingeschaltet wird.",
@@ -137,17 +175,17 @@
                     "setpoint": "Wert, den der überwachte Aggregatsensor mindestens erreichen muss, damit die Lüftergruppe eingeschaltet wird."
                 }
             },
-            "feature_conf_climate_control": {
+            "feature_climate_control_select_entity": {
                 "title": "Funktion: Klimasteuerung > Auswahl der Entität",
                 "description": "Wähle die Klimaentität die anhand des Bereichszustands gesteuert werden soll.",
                 "data": {
                     "entity_id": "Klimaentität"
                 },
                 "data_description": {
-                    "entity_id": "Klimaentität die gesteuert werden soll"
+                    "entity_id": "Klimaentität die gesteuert werden soll."
                 }
             },
-            "feature_conf_climate_control_select_presets": {
+            "feature_climate_control_select_presets": {
                 "title": "Funktion: Klimasteuerung > Zuweisung von Presets",
                 "description": "Klimaentität steuern, indem Bereichszustände definierten Presets zugewiesen werden. `Schlaf` hat Vorrang vor `Erweitert`, `Erweitert` vor `Belegt`. Weise einem Bereichszustand ein leeres Preset zu, um Preset-Änderungen für diesen Zustand zu deaktivieren.",
                 "data": {
@@ -157,23 +195,23 @@
                     "preset_extended": "Erweitert"
                 },
                 "data_description": {
-                    "preset_clear": "Preset, das beim Zustand `Frei` gesetzt wird",
-                    "preset_occupied": "Preset, das beim Zustand `Belegt` gesetzt wird",
-                    "preset_sleep": "Preset, das beim Zustand `Schlaf` gesetzt wird",
-                    "preset_extended": "Preset, das beim Zustand `Erweitert` gesetzt wird"
+                    "preset_clear": "Preset, das beim Zustand `Frei` gesetzt wird.",
+                    "preset_occupied": "Preset, das beim Zustand `Belegt` gesetzt wird.",
+                    "preset_sleep": "Preset, das beim Zustand `Schlaf` gesetzt wird.",
+                    "preset_extended": "Preset, das beim Zustand `Erweitert` gesetzt wird."
                 }
             },
-            "feature_conf_ble_trackers": {
+            "feature_ble_trackers": {
                 "title": "BLE-Tracker-Integration",
                 "description": "Verfolgt Sensoren von BLE-Trackern und erstellt einen entsprechenden `occupancy`-Binärsensor für den Bereich, der aktiviert wird, wenn der BLE-Tracker-Sensor einen Zustand hat, der dem Namen oder der ID des Bereichs entspricht. **Diese Funktion führt _KEIN_ BLE-Tracking selbst durch.**",
                 "data": {
                     "ble_tracker_entities": "Zu verfolgende BLE-Tracker Entitäten."
                 },
                 "data_description": {
-                    "ble_tracker_entities": "BLE-Tracker wie [room-assistant](https://github.com/mKeRix/room-assistant), [Bermuda](https://github.com/agittins/bermuda) und [ESPresence](https://github.com/ESPresense/ESPresense) erstellen Sensoren, die ihren Zustand je nach Bereich ändern, dem sich das Gerät näher befand."
+                    "ble_tracker_entities": "BLE-Tracker wie [room-assistant]({url_room_assistant}), [Bermuda]({url_bermuda}) und [ESPresence]({url_espresense}) erstellen Sensoren, die ihren Zustand je nach Bereich ändern, dem sich das Gerät näher befand."
                 }
             },
-            "feature_conf_wasp_in_a_box": {
+            "feature_wasp_in_a_box": {
                 "title": "Wasp in a Box",
                 "description": "Wenn eine Wespe erkannt wird, ist sie in der Box. Wird die Box geschlossen, bleibt die Wespe darin. Bleibt die Box geschlossen und die Wespe bewegt sich nicht, wird angenommen, dass sie noch in der Box ist. Öffnet sich die Box und die Wespe bewegt sich nicht, gilt sie als entkommen (nicht mehr in der Box). Diese Funktion überwacht die `Tür`-Aggregatssensoren als Box und die `Bewegung`-Aggregatssensoren als Wespe. Ein neuer Binärsensor wird erstellt und automatisch auf Anwesenheit geprüft.",
                 "data": {
@@ -189,115 +227,173 @@
             },
             "secondary_states": {
                 "title": "Erweiterte Statusverfolgung",
-                "description": "[Sekundäre Zustände](https://github.com/jseidl/hass-magic_areas/wiki/Area-State) für einen magischen Bereich aktivieren. Sekundäre Zustände werden von Funktionen verwendet, um Lichter nur dann einzuschalten, wenn es dunkel ist, oder um Klimaentitäten erst nach einer `längeren` Zeitspanne einzuschalten oder um keine Benachrichtigungen an einen Bereich zu senden, wenn dieser im `Ruhezustand` ist.",
+                "description": "Für einen magischen Bereich können [Sekundäre Zustände]({url_area_states}) durch Zuweisen einer Entität aktiviert werden. Sekundäre Zustände werden von Funktionen verwendet, um Lichter nur dann einzuschalten, wenn es dunkel ist, oder um Klimaentitäten erst nach einer `längeren` Zeitspanne einzuschalten oder um keine Benachrichtigungen an einen Bereich zu senden, wenn dieser im `Ruhezustand` ist.",
                 "data": {
-                    "dark_entity": "Lichtsensor des Bereichs",
                     "sleep_entity": "Entität zur Überwachung des Schlafzustands eines Bereichs",
-                    "sleep_timeout": "Wie lange soll der Bereich warten, bevor sein Status im Schlafzustand freigegeben wird?",
-                    "accent_entity": "Entität zur Verfolgung des akzentuierten Zustands eines Bereichs",
-                    "extended_time": "Der Bereich wird nach einer so langen Belegung als `erweitert` markiert",
-                    "extended_timeout": "Wie lange soll der Bereich warten, bevor sein Status freigegeben wird, wenn er sich im erweiterten Zustand befindet?",
-                    "calculation_mode": "Berechnungsmethode für die erweiterte Statusverfolgung"
+                    "sleep_timeout": "Timeout (Schlaf)",
+                    "extended_time": "Erforderliche Zeit für den erweiterten Zustand",
+                    "extended_timeout": "Timeout (Erweitert)",
+                    "calculation_mode": "Berechnungsmethode für sekundäre Zustände"
                 },
                 "data_description": {
-                    "dark_entity": "Der Lichtsensor des Bereichs wird verwendet, um den Helligkeitsstatus eines Bereichs (hell/dunkel) zu verfolgen. Dieser wird von Funktionen wie Lichtgruppen verwendet, um Lichter je nach helligkeitsabhängig ein-/auszuschalten.\n\n**Die Verwendung von `Licht`-Sensoren im selben Bereich sollte vermieden werden, da dies zu einer Rückkopplung führen kann.** Es wird empfohlen, entweder `sun.sun` oder einen externen `Licht`-Sensor zu verwenden, der von den gesteuerten Lichtern nicht beeinflusst wird.",
                     "sleep_entity": "Entität zur Überwachung des Schlafzustands eines Bereichs",
                     "sleep_timeout": "Wie lange soll der Bereich warten, bevor sein Status im Schlafzustand freigegeben wird?",
-                    "accent_entity": "Entität zur Verfolgung des akzentuierten Zustands eines Bereichs",
                     "extended_time": "Der Bereich wird nach einer so langen Belegung als `erweitert` markiert",
                     "extended_timeout": "Wie lange soll der Bereich warten, bevor sein Status freigegeben wird, wenn er sich im erweiterten Zustand befindet?",
-                    "calculation_mode": "Mode of calculating the meta-area secondary states from their children. 'Any' means if any area has the state, 'All' means all areas have to have the state and 'Majority' means >50% of the areas have to have the state."
+                    "calculation_mode": "Berechnungsmethode für die sekundären Zustände des Metabereichs aus seinen untergeordneten Bereichen. 'Beliebig' bedeutet, wenn ein beliebiger Bereich den Zustand hat, 'Alle' bedeutet, alle Bereiche müssen den Zustand haben, und 'Mehrheit' bedeutet, dass mehr als 50 % der Bereiche den Zustand haben müssen."
                 }
             },
             "area_config": {
                 "title": "Grundlegende Bereichsoptionen",
-                "description": "Grundlegende Optionen des Bereichs konfigurieren. Die Bereichsart wird zur Zuweisung in die [Metabereiche](https://github.com/jseidl/hass-magic_areas/wiki/Meta-Areas) Innenbereich/Außenbereich/Global verwendet. Mithilfe der Optionen zum Ein-/Ausschließen von Entitäten kann genau festgelegt werden, welche Entitäten durch Magic Areas analysiert werden.",
+                "description": "Grundlegende Optionen des Bereichs konfigurieren. Die Bereichsart wird zur Zuweisung in die [Metabereiche]({url_meta_areas}) Innenbereich/Außenbereich/Global verwendet. Mithilfe der Optionen zum Ein-/Ausschließen von Entitäten kann genau festgelegt werden, welche Entitäten durch Magic Areas analysiert werden.",
                 "data": {
                     "include_entities": "Entitäten in die Analyse einschließen",
                     "exclude_entities": "Entitäten von der Analyse ausschließen",
                     "type": "Bereichsart (innen/außen)",
+                    "windowless": "Bereich hat keine Fenster",
                     "reload_on_registry_change": "Bereich bei Registry-Update neu laden",
-                    "ignore_diagnostic_entities": "Ignoriere diagnostische und Konfigurationseinheiten."
+                    "ignore_diagnostic_entities": "Diagnostische und Konfigurationsentitäten ignorieren"
                 },
                 "data_description": {
                     "include_entities": "Magic Areas kann Entitäten aus anderen Bereichen berücksichtigen, einschließlich anderer magischer Entitäten. Dies kann verwendet werden, um den binären Anwesenheitssensor eines Bereichs auch als Anwesenheitssensor eines anderen Bereichs fungieren zu lassen.",
                     "exclude_entities": "Die hier aufgeführten Entitäten werden von Magic Areas vollständig ignoriert. Diese Option verwenden, wenn Entitäten die Daten verfälschen würden, wie z.B. Temperatursensoren von Geräten.",
                     "type": "Durch die Definition einer Bereichsart können Metabereiche für den Innen- und Außenbereich erstellt werden.",
+                    "windowless": "Bereich als fensterlos markieren. Verhindert, dass externe Helligkeit als Lichtsensor betrachtet wird.",
                     "reload_on_registry_change": "Magischen Bereich automatisch neu laden, wenn ein Gerät oder eine Entität einem Bereich zugeordnet wird.",
-                    "ignore_diagnostic_entities": "Magische Bereiche können diagnostische und Konfigurationseinheiten ignorieren, die normalerweise nicht relevant sind."
+                    "ignore_diagnostic_entities": "Magische Bereiche können diagnostische und Konfigurationsentitäten ignorieren, die normalerweise nicht relevant sind."
                 }
             },
             "presence_tracking": {
                 "title": "Anwesenheitsverfolgung",
-                "description": "Konfigurieren, welche Domänen und binären Sensorgeräteklassen für die [Anwesenheitsverfolgung](https://github.com/jseidl/hass-magic_areas/wiki/Presence-Sensing) verwendet werden. In diesem Abschnitt kann ebenfalls konfiguriert werden, wie lange Magic Areas nach dem letzten Anwesenheitsereignis wartet, bis der Bereich freigegeben wird.",
+                "description": "Konfigurieren, welche Domänen und binären Sensorgeräteklassen für die [Anwesenheitsverfolgung]({url_presence_sensing}) verwendet werden. In diesem Abschnitt kann ebenfalls konfiguriert werden, wie lange Magic Areas nach dem letzten Anwesenheitsereignis wartet, bis der Bereich freigegeben wird.",
                 "data": {
                     "presence_sensor_device_class": "Geräteklassen für Anwesenheitssensoren",
                     "presence_device_platforms": "Domänen zur Anwesenheitsverfolgung",
                     "keep_only_entities": "Bestätigende Entitäten",
-                    "clear_timeout": "Timeout"
+                    "clear_timeout": "Timeout",
+                    "enable_debug_attributes": "Debug-Attribute aktivieren"
                 },
                 "data_description": {
                     "presence_device_platforms": "Binäre Sensoren sind die Standardquelle für die Anwesenheitsverfolgung. Es können aber bspw. auch Media Player verwendet werden.",
                     "presence_sensor_device_class": "Welche Geräteklassen von `binären Sensoren` sollen für die Anwesenheitsverfolgung verwendet werden. Übliche aber nicht standardmäßige Optionen sind Tür- und Feuchtigkeitssensoren.",
                     "keep_only_entities": "Entitäten auswählen, die lediglich als Bestätigung dienen und nur dann berücksichtigt werden, wenn der Bereich bereits belegt ist. Dies ist nützlich, um zu verhindern, dass überempfindliche Sensoren wie mmWave-Sensoren und BLE-Tracker die Anwesenheit eines Bereichs fälschlicherweise auslösen.",
-                    "clear_timeout": "Wie lange soll seit dem letzten Anwesenheitsereignis gewartet werden, bevor der Bereich freigegeben wird?"
+                    "clear_timeout": "Wie lange soll seit dem letzten Anwesenheitsereignis gewartet werden, bevor der Bereich freigegeben wird?",
+                    "enable_debug_attributes": "Zusätzliche Entitätsattribute aktivieren zur Diagnose von Problemen."
+                }
+            },
+            "user_defined_states": {
+                "title": "Benutzerdefinierte Zustände - Hauptmenü",
+                "description": "Benutzerdefinierte Zustände für diesen Bereich erstellen, die in Lichtgruppen und Automatisierungen verwendet werden können. Es sind {state_count} Zustand/Zustände konfiguriert. Zustände werden automatisch durch die Anwesenheitserkennung verfolgt und sind in Feature-Zustands-Selektoren verfügbar.",
+                "menu_options": {
+                    "user_defined_states_add_state": "➕ Neuen Zustand hinzufügen",
+                    "user_defined_states_select_state": "✏️  Zustand bearbeiten",
+                    "user_defined_states_delete_state": "🗑️  Zustand löschen",
+                    "show_menu": "Zurück zum Menü"
+                }
+            },
+            "user_defined_states_add_state": {
+                "title": "Benutzerdefinierten Zustand hinzufügen",
+                "description": "Benutzerdefinierten Zustand für diesen Bereich erstellen (z.B. 'Filmabend', 'Gaming', 'Partymodus'). Der Zustandsname wird für die Verwendung in Automatisierungen in einen Slug umgewandelt.",
+                "data": {
+                    "name": "Zustandsname",
+                    "entity": "Verfolgungsentität"
+                },
+                "data_description": {
+                    "name": "Eindeutigen Namen für diesen Zustand eingeben (z.B. 'Filmabend'). Der Name wird in einen Slug umgewandelt (z.B. 'filmabend') für die Verwendung in Automatisierungen.",
+                    "entity": "Binärsensor, Schalter oder input_boolean, der verfolgt, wann dieser Zustand aktiv ist. Wenn diese Entität EIN ist, hat der Bereich diesen Zustand."
+                }
+            },
+            "user_defined_states_select_state": {
+                "title": "Zu bearbeitenden Zustand auswählen",
+                "description": "Wähle den benutzerdefinierten Zustand aus, der bearbeitet werden soll.",
+                "data": {
+                    "state_index": "Zustand"
+                }
+            },
+            "user_defined_states_edit_state": {
+                "title": "Benutzerdefinierten Zustand bearbeiten",
+                "description": "Benutzerdefinierte Zustandskonfiguration ändern. Hinweis: Umbenennen ändert den Zustandswert in Automatisierungen.",
+                "data": {
+                    "name": "Zustandsname",
+                    "entity": "Verfolgungsentität"
+                },
+                "data_description": {
+                    "name": "Eindeutigen Namen für diesen Zustand eingeben. Umbenennen ändert den Slug-Zustandswert in Automatisierungen.",
+                    "entity": "Binärsensor, Schalter oder input_boolean, der verfolgt, wann dieser Zustand aktiv ist."
+                }
+            },
+            "user_defined_states_delete_state": {
+                "title": "Benutzerdefinierten Zustand löschen",
+                "description": "Zustand zum Löschen auswählen. Dieser wird aus dem Bereich und allen Feature-Konfigurationen entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+                "data": {
+                    "state_index": "Zu löschender Zustand",
+                    "confirm": "Löschung bestätigen"
                 }
             }
         },
         "error": {
             "option_error": "Ungültige Option",
-            "malformed_input": "Diese Eingabe ist ungültig",
+            "malformed_input": "Diese Eingabe ist ungültig oder erforderlich",
             "no_entity_selected": "Keine Entität ausgewählt",
             "invalid_entity": "Ungültige Entität ausgewählt",
-            "climate_no_preset_support": "Klimaentität unterstützt keine Preset Modi"
+            "climate_no_preset_support": "Klimaentität unterstützt keine Preset Modi",
+            "duplicate_group_name": "Eine Gruppe mit diesem Namen existiert bereits",
+            "duplicate_state_name": "Ein Zustand mit diesem Namen existiert bereits",
+            "reserved_state_name": "Dieser Zustandsname ist reserviert und kann nicht verwendet werden (Konflikt mit eingebauten Zuständen wie 'occupied', 'dark' usw.)",
+            "no_lights_selected": "Es muss mindestens ein Licht ausgewählt werden",
+            "invalid_icon": "Ungültiges Icon-Format. MDI-Format verwenden (z.B. mdi:ceiling-light)",
+            "reserved_name": "Dieser Name ist reserviert und kann nicht verwendet werden. Bitte einen anderen Namen wählen."
         }
     },
     "entity": {
         "binary_sensor": {
             "area_state": {
-                "name": "Status",
+                "name": "Bereichsstatus",
                 "state": {
-                  "off": "Frei",
-                  "on": "Belegt"
+                    "off": "Frei",
+                    "on": "Belegt"
                 },
                 "state_attributes": {
-                  "areas": {
-                    "name": "Bereiche"
-                  },
-                  "states": {
-                    "name": "Zustände",
-                    "state": {
-                      "clear": "Frei",
-                      "occupied": "Belegt",
-                      "extended": "Erweitert",
-                      "sleep": "Schlaf",
-                      "dark": "Dunkel",
-                      "bright": "Hell"
+                    "areas": {
+                        "name": "Bereiche"
+                    },
+                    "states": {
+                        "name": "Zustände",
+                        "state": {
+                            "clear": "Frei",
+                            "occupied": "Belegt",
+                            "extended": "Erweitert",
+                            "sleep": "Schlaf",
+                            "dark": "Dunkel",
+                            "bright": "Hell"
+                        }
+                    },
+                    "active_sensors": {
+                        "name": "Aktive Sensoren"
+                    },
+                    "last_active_sensors": {
+                        "name": "Zuletzt aktive Sensoren"
+                    },
+                    "light_sensor": {
+                        "name": "Lichtsensor"
+                    },
+                    "presence_sensors": {
+                        "name": "Präsenzsensoren"
+                    },
+                    "type": {
+                        "name": "Typ",
+                        "state": {
+                            "interior": "Innen",
+                            "exterior": "Außen"
+                        }
+                    },
+                    "clear_timeout": {
+                        "name": "Timeout"
                     }
-                  },
-                  "active_sensors": {
-                    "name": "Aktive Sensoren"
-                  },
-                  "last_active_sensors": {
-                    "name": "Zuletzt aktive Sensoren"
-                  },
-                  "presence_sensors": {
-                    "name": "Präsenzsensoren"
-                  },
-                  "type": {
-                    "name": "Type",
-                    "state": {
-                      "interior": "Innen",
-                      "exterior": "Außen"
-                    }
-                  },
-                  "clear_timeout": {
-                    "name": "Timeout"
-                  }
                 }
             },
             "ble_tracker_monitor": {
-              "name": "BLE-Tracker Belegung"
+                "name": "BLE-Tracker Belegung"
             },
             "health_problem": {
                 "name": "Umwelt",
@@ -334,9 +430,9 @@
             }
         },
         "fan": {
-          "fan_group": {
-            "name": "Lüfter"
-          }
+            "fan_group": {
+                "name": "Lüfter"
+            }
         },
         "cover": {
             "cover_group_awning": {
@@ -376,18 +472,6 @@
         "light": {
             "all_lights": {
                 "name": "Alle Lichter"
-            },
-            "overhead_lights": {
-                "name": "Deckenleuchten"
-            },
-            "task_lights": {
-                "name": "Arbeitslichter"
-            },
-            "accent_lights": {
-                "name": "Akzentlichter"
-            },
-            "sleep_lights": {
-                "name": "Schlaflichter"
             }
         },
         "media_player": {
@@ -412,38 +496,45 @@
                 "name": "Klimasteuerung"
             },
             "fan_control": {
-              "name": "Lüftersteuerung"
+                "name": "Lüftersteuerung"
             }
         }
     },
     "selector": {
-      "area_type": {
-        "options": {
-          "interior": "Innen",
-          "exterior": "Außen"
+        "area_type": {
+            "options": {
+                "interior": "Innen",
+                "exterior": "Außen"
+            }
+        },
+        "states": {
+            "options": {
+                "occupied": "Belegt",
+                "extended": "Erweitert",
+                "sleep": "Schlaf"
+            }
+        },
+        "turn_on_when": {
+            "options": {
+                "area_occupied": "Wenn der Bereich von Frei auf Belegt wechselt",
+                "state_gain": "Wenn einer der aktiven Zustände erreicht wird",
+                "area_dark": "Wenn der Bereich dunkel wird"
+            }
+        },
+        "turn_off_when": {
+            "options": {
+                "area_clear": "Wenn der Bereich von Belegt auf Frei wechselt",
+                "state_loss": "Wenn alle aktiven Zustände verloren gehen",
+                "exterior_bright": "Wenn es draußen hell wird"
+            }
+        },
+        "calculation_mode": {
+            "options": {
+                "any": "Beliebig",
+                "all": "Alle",
+                "majority": "Mehrheit"
+            }
         }
-      },
-      "area_states": {
-        "options": {
-          "clear": "Frei",
-          "occupied": "Belegt",
-          "extended": "Erweitert",
-          "sleep": "Schlaf"
-        }
-      },
-      "control_on": {
-        "options": {
-          "occupancy": "Wenn der Bereich von `Frei` auf `Belegt` wechselt",
-          "state": "Wenn sich der sekundäre Zustand ändert"
-        }
-      },
-      "calculation_mode": {
-        "options": {
-          "any": "Beliebig",
-          "all": "Alle",
-          "majority": "Mehrheit"
-        }
-      }
     },
     "device": {
         "global": {

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Syncs strings.json → translations/en.json
+cp custom_components/magic_areas/strings.json custom_components/magic_areas/translations/en.json
+echo "Synced translations/en.json from strings.json"

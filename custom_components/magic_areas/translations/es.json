@@ -4,7 +4,7 @@
         "step": {
             "user": {
                 "title": "Crea un área mágica",
-                "description": "¡Elige el área que te gustaría hacerla mágica!",
+                "description": "¡Elige el área que te gustaría hacer mágica!",
                 "data": {
                     "name": "Área"
                 }
@@ -22,7 +22,8 @@
                 "title": "Selección de características",
                 "description": "Seleccione las funciones que desea habilitar para esta área. Aparecerá una nueva opción de menú para configurar la función si hay opciones de configuración para esa función.",
                 "data": {
-                    "climate_groups": "Crear grupos climáticos",
+                    "fan_groups": "Crear grupos de ventiladores",
+                    "climate_control": "Crear controlador climático",
                     "media_player_groups": "Crear grupos de reproductores multimedia",
                     "light_groups": "Crear grupos de luces",
                     "cover_groups": "Crear grupos de cobertura",
@@ -30,83 +31,124 @@
                     "aggregates": "Crear sensores agregados",
                     "health": "Crear sensores de salud",
                     "presence_hold": "Crear interruptor de retención de presencia",
-                    "ble_trackers": "Monitorizar los sensores del rastreador Bluetooth"
+                    "ble_trackers": "Monitorizar los sensores del rastreador Bluetooth",
+                    "wasp_in_a_box": "Crear sensor Avispa en una caja"
                 }
             },
             "show_menu": {
                 "title": "Opciones de áreas mágicas",
-                "description": "Magic Areas realiza una detección de presencia básica de forma predeterminada, pero puedes liberar todo su poder configurando el seguimiento de estado avanzado, sintonizando tus parámetros de seguimiento de presencia y habilitando nuestras funciones mágicas. Las opciones no se guardan a menos que seleccione \"Guardar y salir\".",
+                "description": "Áreas Mágicas realiza una detección de presencia básica de forma predeterminada, pero puedes liberar todo su poder configurando el seguimiento de estado avanzado, sintonizando tus parámetros de seguimiento de presencia y habilitando nuestras funciones mágicas. Las opciones no se guardan a menos que seleccione `Guardar y salir`.",
                 "menu_options": {
                     "area_config": "Opciones de área básica",
                     "secondary_states": "Seguimiento avanzado del estado del área",
+                    "user_defined_states": "Estados definidos por el usuario",
                     "presence_tracking": "Opciones de seguimiento de presencia",
                     "select_features": "Selección de características",
-                    "finish": "Guardar la salida",
-                    "feature_conf_health": "Configurar sensor de salud",
-                    "feature_conf_climate_groups": "Configurar grupos climáticos",
-                    "feature_conf_light_groups": "Configurar grupos de luces",
-                    "feature_conf_area_aware_media_player": "Configurar el reproductor multimedia con reconocimiento de área",
-                    "feature_conf_aggregates": "Configurar sensores agregados",
-                    "feature_conf_presence_hold": "Configurar el interruptor de retención de presencia",
-                    "feature_conf_ble_trackers": "Configurar la monitorización del rastreador BLE"
+                    "finish": "Guardar y salir",
+                    "feature_health": "Configurar sensor de salud",
+                    "feature_fan_groups": "Configurar grupos de ventiladores",
+                    "feature_climate_control": "Configurar control climático",
+                    "feature_light_groups": "Configurar grupos de luces",
+                    "feature_area_aware_media_player": "Configurar el reproductor multimedia con reconocimiento de área",
+                    "feature_aggregates": "Configurar sensores agregados",
+                    "feature_presence_hold": "Configurar el interruptor de retención de presencia",
+                    "feature_ble_trackers": "Configurar la monitorización del rastreador BLE",
+                    "feature_wasp_in_a_box": "Configurar Avispa en una caja"
                 }
             },
-            "feature_conf_health": {
-                "title": "sensor de salud",
-                "description": "Puede elegir un conjunto de clases de dispositivos de \"sensores binarios\" que serán rastreados por este sensor de salud que se puede utilizar en automatizaciones.",
+            "feature_health": {
+                "title": "Sensor de salud",
+                "description": "Puede elegir un conjunto de clases de dispositivos de `sensores binarios` que serán rastreados por este sensor de salud que se puede utilizar en automatizaciones.",
                 "data": {
                     "health_binary_sensor_device_classes": "Clases de dispositivos para rastrear"
                 }
             },
-            "feature_conf_light_groups": {
-                "title": "Grupos de luces",
-                "description": "Magic Areas crea estos cuatro (más uno global) [grupos de luces](https://github.com/jseidl/hass-magic_areas/wiki/Light-Groups) (si les asigna luces) para que los use. Por defecto, estos son grupos de luces simples, pero se pueden controlar automáticamente si los asigna a estados de área y habilita el interruptor de control de luces (que se creará cuando habilite esta función). Todas las luces se apagarán cuando se despeje un área. Se pueden desbloquear estados adicionales configurando el \"Seguimiento avanzado del estado del área\".",
-                "data": {
-                    "overhead_lights": "luces de techo",
-                    "overhead_lights_states": "Indica qué luces del techo están encendidas",
-                    "overhead_lights_act_on": "¿Cuándo se deben controlar las luces del techo?",
-                    "sleep_lights": "luces para dormir",
-                    "sleep_lights_states": "Indica qué luces para dormir están encendidas",
-                    "sleep_lights_act_on": "¿Cuándo se deben controlar las luces para dormir?",
-                    "accent_lights": "Luces decorativas",
-                    "accent_lights_states": "Indica qué luces decorativas están encendidas",
-                    "accent_lights_act_on": "¿Cuándo se deben controlar las luces decorativas?",
-                    "task_lights": "Luces de tarea",
-                    "task_lights_states": "Indica qué luces de tarea están encendidas",
-                    "task_lights_act_on": "¿Cuándo se deben controlar las luces de trabajo?"
-                },
-                "data_description": {
-                    "overhead_lights_states": "Configure qué estados de área activarán este grupo de luces. Los grupos de luces se encenderán mientras el área esté en este estado y se apagarán si el área pierde estos estados. Por ejemplo, si desea que la luz permanezca \"encendida\" después de un período prolongado de tiempo, también debe seleccionar el estado \"extendido\".",
-                    "overhead_lights_act_on": "Seleccione si este grupo de luces debe controlarse solo cuando un área se ocupa por primera vez, solo cuando cambia el estado del área o ambos.",
-                    "sleep_lights_states": "Configure qué estados de área activarán este grupo de luces. Los grupos de luces se encenderán mientras el área esté en este estado y se apagarán si el área pierde estos estados. Por ejemplo, si desea que la luz permanezca \"encendida\" después de un período prolongado de tiempo, también debe seleccionar el estado \"extendido\".",
-                    "sleep_lights_act_on": "Seleccione si este grupo de luces debe controlarse solo cuando un área se ocupa por primera vez, solo cuando cambia el estado del área o ambos.",
-                    "accent_lights_states": "Configure qué estados de área activarán este grupo de luces. Los grupos de luces se encenderán mientras el área esté en este estado y se apagarán si el área pierde estos estados. Por ejemplo, si desea que la luz permanezca \"encendida\" después de un período prolongado de tiempo, también debe seleccionar el estado \"extendido\".",
-                    "accent_lights_act_on": "Seleccione si este grupo de luces debe controlarse solo cuando un área se ocupa por primera vez, solo cuando cambia el estado del área o ambos.",
-                    "task_lights_states": "Configure qué estados de área activarán este grupo de luces. Los grupos de luces se encenderán mientras el área esté en este estado y se apagarán si el área pierde estos estados. Por ejemplo, si desea que la luz permanezca \"encendida\" después de un período prolongado de tiempo, también debe seleccionar el estado \"extendido\".",
-                    "task_lights_act_on": "Seleccione si este grupo de luces debe controlarse solo cuando un área se ocupa por primera vez, solo cuando cambia el estado del área o ambos."
+            "feature_light_groups": {
+                "title": "Grupos de luces - Menú principal",
+                "description": "Gestione grupos de luces para esta área. Tiene {group_count} grupo(s) con {total_lights} luz/luces en total. Los grupos pueden controlarse automáticamente si los asigna a estados de área y habilita el interruptor de control de luces.",
+                "menu_options": {
+                    "feature_light_groups_add_group": "➕ Añadir nuevo grupo",
+                    "feature_light_groups_select_group": "✏️  Editar un grupo",
+                    "feature_light_groups_delete_group": "🗑️  Eliminar un grupo",
+                    "show_menu": "Volver al menú"
                 }
             },
-            "feature_conf_presence_hold": {
+            "feature_light_groups_select_group": {
+                "title": "Seleccionar grupo para editar",
+                "description": "Elija qué grupo de luces desea editar.",
+                "data": {
+                    "group_index": "Grupo"
+                }
+            },
+            "feature_light_groups_add_group": {
+                "title": "Añadir grupo de luces",
+                "description": "Cree un nuevo grupo de luces para esta área. El nombre generará el ID de entidad (ej.: 'Rincón de lectura' dará lugar a light.salon_rincon_de_lectura).",
+                "data": {
+                    "name": "Nombre del grupo",
+                    "lights": "Luces",
+                    "states": "Estados activos",
+                    "turn_on_when": "Encender luces",
+                    "turn_off_when": "Apagar luces",
+                    "require_dark": "Requerir oscuridad"
+                },
+                "data_description": {
+                    "name": "Ingrese un nombre único para este grupo de luces",
+                    "lights": "Seleccione las luces a incluir en este grupo",
+                    "states": "Seleccione los estados de área que encenderán estas luces. Las luces se encienden cuando el área entra en estos estados y se apagan cuando los estados se pierden.",
+                    "turn_on_when": "Cuándo encender las luces.",
+                    "turn_off_when": "Cuándo apagar las luces.",
+                    "require_dark": "Requiere que el área esté oscura como condición para encender las luces."
+                }
+            },
+            "feature_light_groups_edit_group": {
+                "title": "Editar grupo de luces",
+                "description": "Modifique la configuración de su grupo de luces. Nota: Cambiar el nombre actualizará el ID de entidad pero conservará el historial.",
+                "data": {
+                    "name": "Nombre del grupo",
+                    "lights": "Luces",
+                    "states": "Estados activos",
+                    "turn_on_when": "Encender luces",
+                    "turn_off_when": "Apagar luces",
+                    "require_dark": "Requerir oscuridad"
+                },
+                "data_description": {
+                    "name": "Ingrese un nombre único para este grupo de luces",
+                    "lights": "Seleccione las luces a incluir en este grupo",
+                    "states": "Seleccione los estados de área que encenderán estas luces. Las luces se encienden cuando el área entra en estos estados y se apagan cuando los estados se pierden.",
+                    "turn_on_when": "Cuándo encender las luces.",
+                    "turn_off_when": "Cuándo apagar las luces.",
+                    "require_dark": "Requiere que el área esté oscura como condición para encender las luces."
+                }
+            },
+            "feature_light_groups_delete_group": {
+                "title": "Eliminar grupo de luces",
+                "description": "Seleccione un grupo para eliminar. Esta acción no se puede deshacer.",
+                "data": {
+                    "group_index": "Grupo a eliminar",
+                    "confirm": "Confirmar eliminación"
+                }
+            },
+            "feature_presence_hold": {
                 "title": "Retención de presencia",
                 "description": "Crea un interruptor que mantendrá un área ocupada mientras esté encendido. Puede configurar un tiempo de espera para que el interruptor se apague automáticamente después de un cierto período de tiempo, si a menudo lo deja encendido.",
                 "data": {
                     "presence_hold_timeout": "El tiempo después de que el interruptor se apague automáticamente. (0 = tiempo de espera deshabilitado)."
                 }
             },
-            "feature_conf_area_aware_media_player": {
+            "feature_area_aware_media_player": {
                 "title": "Característica: Reproductor multimedia con reconocimiento de área",
-                "description": "Crea un dispositivo de reproducción multimedia que reenviará llamadas de reproducción a otros reproductores multimedia únicamente en áreas ocupadas. Esto es útil si desea utilizar notificaciones TTS pero solo desea notificar áreas ocupadas para evitar notificar a los reproductores multimedia en áreas vacías. Esta característica tiene opciones de configuración en cada área pero solo se crea si tienes un área metálica `Global`.",
+                "description": "Crea un dispositivo de reproducción multimedia que reenviará llamadas de reproducción a otros reproductores multimedia únicamente en áreas ocupadas. Esto es útil si desea utilizar notificaciones TTS pero solo desea notificar áreas ocupadas para evitar notificar a los reproductores multimedia en áreas vacías. Esta característica tiene opciones de configuración en cada área pero solo se crea si tienes un área meta `Global`.",
                 "data": {
                     "notification_devices": "Dispositivos Media Player utilizados para la transmisión.",
                     "notification_states": "Reproduzca dispositivos de notificaciones solo cuando se encuentre en estos estados"
                 },
                 "data_description": {
-                    "notification_states": "Las notificaciones solo se reproducirán cuando un área esté en este estado. El uso de \"extendido\" garantizará que no reciba notificaciones en las habitaciones por las que acaba de pasar y si no selecciona \"suspensión\" evitará las notificaciones mientras esté en este modo."
+                    "notification_states": "Las notificaciones solo se reproducirán cuando un área esté en este estado. El uso de `extendido` garantizará que no reciba notificaciones en las habitaciones por las que acaba de pasar y si no selecciona `suspensión` evitará las notificaciones mientras esté en este modo."
                 }
             },
-            "feature_conf_aggregates": {
+            "feature_aggregates": {
                 "title": "Característica: Agregados de sensores",
-                "description": "Si tiene varios \"sensores\" (o \"sensores binarios\") del mismo tipo, las Áreas Mágicas pueden agruparse en una sola entidad, lo que le permite tener promedios (o sumas) de sensores o estados combinados de sensores binarios. Incluso es útil si actualmente solo tienes un sensor de cada tipo, ya que te permite usar el agregado en automatizaciones y expandirlo en el futuro sin tener que reescribir tus automatizaciones.",
+                "description": "Si tiene varios `sensores` (o `sensores binarios`) del mismo tipo, las Áreas Mágicas pueden agruparse en una sola entidad, lo que le permite tener promedios (o sumas) de sensores o estados combinados de sensores binarios. Incluso es útil si actualmente solo tienes un sensor de cada tipo, ya que te permite usar el agregado en automatizaciones y expandirlo en el futuro sin tener que reescribir tus automatizaciones.",
                 "data": {
                     "aggregates_min_entities": "Número mínimo de entidades de la misma clase de dispositivo necesarias para crear agregados.",
                     "aggregates_binary_sensor_device_classes": "Clases de dispositivos de sensores binarios que se agregarán.",
@@ -115,103 +157,281 @@
                     "aggregates_illuminance_threshold_hysteresis": "Histéresis para sensor de umbral de iluminancia"
                 },
                 "data_description": {
-                    "aggregates_illuminance_threshold": "Magic Areas creará un sensor binario de \"luz\" que rastreará cuando la iluminancia agregada del área supere este umbral. Requiere que se seleccione la clase de dispositivo \"iluminación\" para la agregación. Establezca en 0 para desactivar.",
-                    "aggregates_illuminance_threshold_hysteresis": "[Histéresis](https://www.home-assistant.io/integrations/threshold/#hysteresis) define la sensibilidad del sensor a los cambios en su valor. Un valor de cero cambiará el estado del sensor cada vez que la iluminancia supere el umbral indicado anteriormente. Los valores positivos significan que el sensor solo cambiará de estado si se supera el umbral en una cantidad determinada, expresada en porcentaje del umbral establecido anteriormente. Aumentar este valor puede ser útil si intentas usar este sensor como sensor de luz de su propia área."
+                    "aggregates_illuminance_threshold": "Áreas Mágicas creará un sensor binario de `luz` que rastreará cuando la iluminancia agregada del área supere este umbral. Requiere que se seleccione la clase de dispositivo `iluminación` para la agregación. Establezca en 0 para desactivar.",
+                    "aggregates_illuminance_threshold_hysteresis": "[Histéresis]({url_threshold_hysteresis}) define la sensibilidad del sensor a los cambios en su valor. Un valor de cero cambiará el estado del sensor cada vez que la iluminancia supere el umbral indicado anteriormente. Los valores positivos significan que el sensor solo cambiará de estado si se supera el umbral en una cantidad determinada, expresada en porcentaje del umbral establecido anteriormente. Aumentar este valor puede ser útil si intentas usar este sensor como sensor de luz de su propia área."
                 }
             },
-            "feature_conf_climate_groups": {
-                "title": "Reportaje: Grupos climáticos",
-                "description": "Agrupar y controlar todas las entidades climáticas de una zona. Esta característica permite que las entidades climáticas se controlen automáticamente según el estado de un área.",
+            "feature_fan_groups": {
+                "title": "Característica: Grupos de ventiladores",
+                "description": "Agrupe y controle todas las entidades de ventilador en un área. Esta característica permite que las entidades de ventilador se controlen automáticamente según el estado de un área y si el valor del sensor agregado supera un punto de ajuste. El control del ventilador requiere que la función de agregados esté habilitada y las clases de dispositivos correspondientes seleccionadas.",
                 "data": {
-                    "turn_on_state": "Estado para activar el grupo climático."
+                    "required_state": "Estado requerido.",
+                    "tracked_device_class": "Clase de dispositivo rastreado.",
+                    "setpoint": "Punto de ajuste."
                 },
                 "data_description": {
-                    "turn_on_state": "Los dispositivos climáticos se encenderán en este estado y se apagarán cuando se despeje el área."
+                    "required_state": "Estado que debe tener el área para considerar encender el grupo de ventiladores.",
+                    "tracked_device_class": "Seleccionar qué clase de dispositivo agregada rastrear para los cambios de valor.",
+                    "setpoint": "Número que el sensor agregado rastreado debe ser igual o mayor para encender el grupo de ventiladores."
+                }
+            },
+            "feature_climate_control_select_entity": {
+                "title": "Característica: Control climático - Selección de entidad",
+                "description": "Seleccione la entidad climática que desea controlar a través de los estados de área.",
+                "data": {
+                    "entity_id": "Entidad climática"
+                },
+                "data_description": {
+                    "entity_id": "Entidad climática a controlar."
+                }
+            },
+            "feature_climate_control_select_presets": {
+                "title": "Característica: Control climático - Mapeo de preajustes",
+                "description": "Controle una entidad climática mapeando preajustes al estado del área. El estado `extendido` tiene prioridad sobre `ocupado` y el estado `suspensión` tiene prioridad sobre `extendido` y `ocupado`. Mapee un estado a un preajuste vacío para deshabilitar el cambio de preajustes para ese estado.",
+                "data": {
+                    "preset_clear": "Libre",
+                    "preset_occupied": "Ocupado",
+                    "preset_sleep": "Suspensión",
+                    "preset_extended": "Extendido"
+                },
+                "data_description": {
+                    "preset_clear": "Preajuste a cambiar cuando está en estado `libre`.",
+                    "preset_occupied": "Preajuste a cambiar cuando está en estado `ocupado`.",
+                    "preset_sleep": "Preajuste a cambiar cuando está en estado `suspensión`.",
+                    "preset_extended": "Preajuste a cambiar cuando está en estado `extendido`."
+                }
+            },
+            "feature_ble_trackers": {
+                "title": "Integración con rastreadores BLE",
+                "description": "Realiza un seguimiento de los sensores de los rastreadores BLE y crea un sensor binario de `ocupación` correspondiente para el área que se activa cuando el sensor del rastreador BLE tiene un estado igual al nombre o ID del área. **Esta función NO realiza el seguimiento BLE por sí misma.**",
+                "data": {
+                    "ble_tracker_entities": "Entidades de los rastreadores BLE a rastrear."
+                },
+                "data_description": {
+                    "ble_tracker_entities": "Los rastreadores BLE como [room-assistant]({url_room_assistant}), [Bermuda]({url_bermuda}) y [ESPresence]({url_espresense}) crean sensores que cambian de estado según el área más cercana a la que se encuentre el dispositivo."
+                }
+            },
+            "feature_wasp_in_a_box": {
+                "title": "Avispa en una caja",
+                "description": "Si vemos una avispa, entonces hay una avispa en la caja. Si cerramos la caja mientras hay una avispa en la caja, la avispa permanece en la caja. Si la caja permanece cerrada cuando hay una avispa en la caja, y la avispa deja de moverse, asumimos que todavía está en la caja. Si la caja se abre y la avispa no se mueve, asumimos que la avispa ha escapado. Esta función monitorea sus agregados `door` como la caja y sus agregados `motion` (por defecto) como su avispa. Se creará un nuevo `sensor binario` y se rastreará automáticamente para la presencia.",
+                "data": {
+                    "delay": "Retraso",
+                    "wasp_timeout": "Tiempo de espera de avispa",
+                    "wasp_device_classes": "Clases de dispositivos del sensor de avispa"
+                },
+                "data_description": {
+                    "delay": "Tiempo de espera antes de comprobar si hay avispas después de que una caja cambie de estado. Establezca en 0 para deshabilitar.",
+                    "wasp_timeout": "Si es mayor que 0, la avispa será olvidada después de estar inactiva durante este tiempo.",
+                    "wasp_device_classes": "Si desea que otros agregados se consideren avispas, selecciónelos de la lista."
                 }
             },
             "secondary_states": {
                 "title": "Seguimiento avanzado del estado del área",
-                "description": "Puede habilitar [estados secundarios](https://github.com/jseidl/hass-magic_areas/wiki/Area-State) para un Área Mágica asignándole una entidad. Los estados secundarios son utilizados por funciones para encender las luces solo cuando está oscuro o solo encender dispositivos climáticos después de un período de tiempo \"extendido\" o no enviar notificaciones a un área si está en \"suspensión\".",
+                "description": "Puede habilitar [estados secundarios]({url_area_states}) para un Área Mágica asignándole una entidad. Los estados secundarios son utilizados por funciones para encender las luces solo cuando está oscuro o solo encender dispositivos climáticos después de un período de tiempo `extendido` o no enviar notificaciones a un área si está en `suspensión`.",
                 "data": {
-                    "dark_entity": "Sensor de luz del área",
-                    "sleep_entity": "Entidad utilizada para rastrear el estado de sueño del área",
-                    "sleep_timeout": "¿Cuánto tiempo esperará el área antes de borrar el estado cuando esté en estado de suspensión?",
-                    "accent_entity": "Entidad utilizada para rastrear el estado acentuado del área",
-                    "extended_time": "El área se marcará como \"ampliada\" después de estar ocupada durante tanto tiempo.",
-                    "extended_timeout": "¿Cuánto tiempo esperará el área antes de borrar el estado cuando esté en estado extendido?"
+                    "sleep_entity": "Entidad de estado de suspensión",
+                    "sleep_timeout": "Tiempo de espera antes de limpiar (Suspensión)",
+                    "extended_time": "Tiempo requerido para estado extendido",
+                    "extended_timeout": "Tiempo de espera antes de limpiar (Extendido)",
+                    "calculation_mode": "Modo de cálculo del estado secundario"
                 },
                 "data_description": {
-                    "dark_entity": "El sensor de luz del área se utilizará para rastrear el estado \"brillante\"/\"oscuro\" de un área que es utilizado por funciones como grupos de luces para encender/apagar las luces de acuerdo con el estado de brillo de la habitación.\n\n**Evite usar un sensor de \"luz\" en la misma área, ya que puede causar un circuito de retroalimentación. ** Se recomienda usar \"sun.sun\" o un sensor de \"luz\" exterior que no se verá afectado por las luces. siendo controlado."
+                    "sleep_entity": "Entidad utilizada para rastrear el estado de suspensión del área",
+                    "sleep_timeout": "Cuánto tiempo esperará el área antes de borrar el estado cuando esté en estado de suspensión",
+                    "extended_time": "El área se marcará como extendida después de estar ocupada durante tanto tiempo",
+                    "extended_timeout": "Cuánto tiempo esperará el área antes de borrar el estado cuando esté en estado extendido",
+                    "calculation_mode": "Modo de calcular los estados secundarios del meta-área a partir de sus hijos. `Cualquiera` significa si cualquier área tiene el estado, `Todos` significa que todas las áreas tienen que tener el estado y `Mayoría` significa que más del 50% de las áreas tienen que tener el estado."
                 }
             },
             "area_config": {
                 "title": "Opciones de área básica",
-                "description": "Configurar opciones básicas para el área. El tipo de área se utiliza para las [Metaáreas] Interior/Exterior/Global (https://github.com/jseidl/hass-magic_areas/wiki/Meta-Areas) y puede ajustar qué entidades se analizan mediante Áreas Mágicas utilizando las opciones de incluir/excluir entidades.",
+                "description": "Configurar opciones básicas para el área. El tipo de área se utiliza para las [Meta-áreas]({url_meta_areas}) Interior/Exterior/Global y puede ajustar qué entidades se analizan mediante Áreas Mágicas utilizando las opciones de incluir/excluir entidades.",
                 "data": {
                     "include_entities": "Incluir entidades en esta área",
                     "exclude_entities": "Excluir entidades del análisis",
                     "type": "Tipo de zona (interior/exterior)",
+                    "windowless": "El área no tiene ventanas",
                     "reload_on_registry_change": "Recargar automáticamente esta Área Mágica en las actualizaciones de registro",
                     "ignore_diagnostic_entities": "Ignorar entidades de diagnóstico y configuración"
                 },
                 "data_description": {
                     "include_entities": "Las Áreas Mágicas pueden considerar entidades de otras áreas, incluidas otras entidades Mágicas. Puede utilizar esto para hacer que el sensor binario de presencia de una habitación actúe también como sensor de presencia de otra habitación.",
-                    "exclude_entities": "Las entidades enumeradas aquí serán completamente ignoradas por Magic Areas. Úselo si tiene entidades que descartan sus datos, como sensores de temperatura de dispositivos.",
+                    "exclude_entities": "Las entidades enumeradas aquí serán completamente ignoradas por Áreas Mágicas. Úselo si tiene entidades que descartan sus datos, como sensores de temperatura de dispositivos.",
                     "type": "La definición de un tipo de área permite crear metaáreas para interior/exterior.",
+                    "windowless": "Marque el área como sin ventanas. Evitará que el brillo exterior se considere como sensor de luz.",
                     "reload_on_registry_change": "Recarga automáticamente esta Área Mágica cuando cualquier entidad o dispositivo se asigna o se mueve a un área.",
                     "ignore_diagnostic_entities": "Las áreas mágicas pueden ignorar entidades de diagnóstico y configuración que normalmente no son relevantes."
                 }
             },
             "presence_tracking": {
                 "title": "Seguimiento de presencia",
-                "description": "Configure qué plataformas y clases de dispositivos de sensores binarios se utilizan para [seguimiento de presencia] (https://github.com/jseidl/hass-magic_areas/wiki/Presence-Sensing). Esta sección también le permite configurar cuánto tiempo esperará el Área Mágica hasta limpiar el área después del último evento de presencia.",
+                "description": "Configure qué plataformas y clases de dispositivos de sensores binarios se utilizan para [seguimiento de presencia]({url_presence_sensing}). Esta sección también le permite configurar cuánto tiempo esperará el Área Mágica hasta limpiar el área después del último evento de presencia.",
                 "data": {
                     "presence_sensor_device_class": "Clases de dispositivos de sensores de presencia",
                     "presence_device_platforms": "Plataformas que se utilizarán para la detección de presencia.",
                     "keep_only_entities": "Entidades de conservación de estado",
-                    "clear_timeout": "Borrar tiempo de espera"
+                    "clear_timeout": "Borrar tiempo de espera",
+                    "enable_debug_attributes": "Habilitar atributos de depuración"
                 },
                 "data_description": {
                     "presence_device_platforms": "Los sensores binarios suelen ser la fuente estándar de presencia, pero también se pueden utilizar dispositivos multimedia.",
-                    "presence_sensor_device_class": "Defina qué clases de dispositivos de \"sensores binarios\" se utilizarán para el seguimiento de presencia. Las opciones no estándar comunes son la puerta y la humedad.",
+                    "presence_sensor_device_class": "Defina qué clases de dispositivos de `sensores binarios` se utilizarán para el seguimiento de presencia. Las opciones no estándar comunes son la puerta y la humedad.",
                     "keep_only_entities": "Seleccione entidades de seguimiento de presencia que solo se tendrán en cuenta cuando la sala ya esté ocupada. Esto es útil para evitar que sensores demasiado sensibles, como sensores de ondas milimétricas y rastreadores BLE, activen falsamente la presencia en un área.",
-                    "clear_timeout": "¿Cuánto tiempo debe esperar desde el último evento de presencia antes de despejar el área?"
+                    "clear_timeout": "¿Cuánto tiempo debe esperar desde el último evento de presencia antes de despejar el área?",
+                    "enable_debug_attributes": "Habilitar atributos de entidad adicionales para ayudar a diagnosticar problemas."
                 }
             },
-            "feature_conf_ble_trackers": {
+            "user_defined_states": {
+                "title": "Estados definidos por el usuario - Menú principal",
+                "description": "Cree estados personalizados para esta área que pueden usarse en grupos de luces y automatizaciones. Tiene {state_count} estado(s) configurado(s). Los estados son rastreados automáticamente por la detección de presencia y están disponibles en los selectores de estado de funciones.",
+                "menu_options": {
+                    "user_defined_states_add_state": "➕ Añadir nuevo estado",
+                    "user_defined_states_select_state": "✏️  Editar un estado",
+                    "user_defined_states_delete_state": "🗑️  Eliminar un estado",
+                    "show_menu": "Volver al menú"
+                }
+            },
+            "user_defined_states_add_state": {
+                "title": "Añadir estado definido por el usuario",
+                "description": "Cree un estado personalizado para esta área (ej.: 'Hora de película', 'Jugando', 'Modo fiesta'). El nombre del estado se convertirá en slug para su uso en automatizaciones.",
                 "data": {
-                    "ble_tracker_entities": "Entidades de los rastreadores BLE a rastrear."
+                    "name": "Nombre del estado",
+                    "entity": "Entidad de seguimiento"
                 },
-                "title": "Integración con rastreadores BLE",
                 "data_description": {
-                    "ble_tracker_entities": "Los rastreadores BLE como [room-assistant](https://github.com/mKeRix/room-assistant), [Bermuda](https://github.com/agittins/bermuda) y [ESPresence](https://github.com/ESPresense/ESPresense) crean sensores que cambian de estado según el área más cercana a la que se encuentre el dispositivo."
+                    "name": "Ingrese un nombre único para este estado (ej.: 'Hora de película'). El nombre se convertirá en slug (ej.: 'hora_de_pelicula') para su uso en automatizaciones.",
+                    "entity": "Sensor binario, interruptor o input_boolean que rastrea cuándo este estado está activo. Cuando esta entidad está ENCENDIDA, el área tendrá este estado."
+                }
+            },
+            "user_defined_states_select_state": {
+                "title": "Seleccionar estado para editar",
+                "description": "Elija qué estado definido por el usuario desea editar.",
+                "data": {
+                    "state_index": "Estado"
+                }
+            },
+            "user_defined_states_edit_state": {
+                "title": "Editar estado definido por el usuario",
+                "description": "Modifique la configuración de su estado personalizado. Nota: Cambiar el nombre cambiará el valor del estado en las automatizaciones.",
+                "data": {
+                    "name": "Nombre del estado",
+                    "entity": "Entidad de seguimiento"
                 },
-                "description": "Realiza un seguimiento de los sensores de los rastreadores BLE y crea un sensor binario de `ocupación` correspondiente para el área que se activa cuando el sensor del rastreador BLE tiene un estado igual al nombre o ID del área. **Esta función NO realiza el seguimiento BLE por sí misma.**"
+                "data_description": {
+                    "name": "Ingrese un nombre único para este estado. Cambiar el nombre cambiará el valor del estado (slug) usado en automatizaciones.",
+                    "entity": "Sensor binario, interruptor o input_boolean que rastrea cuándo este estado está activo."
+                }
+            },
+            "user_defined_states_delete_state": {
+                "title": "Eliminar estado definido por el usuario",
+                "description": "Seleccione un estado para eliminar. Esto lo eliminará del área y de todas las configuraciones de funciones. Esta acción no se puede deshacer.",
+                "data": {
+                    "state_index": "Estado a eliminar",
+                    "confirm": "Confirmar eliminación"
+                }
             }
         },
         "error": {
             "option_error": "Opción inválida",
-            "malformed_input": "Este campo no es válido:"
+            "malformed_input": "Este campo no es válido o es requerido",
+            "no_entity_selected": "No se seleccionó ninguna entidad",
+            "invalid_entity": "Entidad inválida seleccionada",
+            "climate_no_preset_support": "La entidad climática no admite modos de preajuste",
+            "duplicate_group_name": "Ya existe un grupo con este nombre",
+            "duplicate_state_name": "Ya existe un estado con este nombre",
+            "reserved_state_name": "Este nombre de estado está reservado y no puede utilizarse (conflicto con estados integrados como 'occupied', 'dark', etc.)",
+            "no_lights_selected": "Debe seleccionar al menos una luz",
+            "invalid_icon": "Formato de ícono inválido. Use el formato MDI (ej.: mdi:ceiling-light)",
+            "reserved_name": "Este nombre está reservado y no puede utilizarse. Por favor elija un nombre diferente."
         }
     },
     "entity": {
         "binary_sensor": {
             "area_state": {
-                "name": "Estado del área"
+                "name": "Estado del área",
+                "state": {
+                    "off": "Libre",
+                    "on": "Ocupado"
+                },
+                "state_attributes": {
+                    "areas": {
+                        "name": "Áreas"
+                    },
+                    "states": {
+                        "name": "Estados",
+                        "state": {
+                            "clear": "Libre",
+                            "occupied": "Ocupado",
+                            "extended": "Extendido",
+                            "sleep": "Suspensión",
+                            "dark": "Oscuro",
+                            "bright": "Luminoso"
+                        }
+                    },
+                    "active_sensors": {
+                        "name": "Sensores activos"
+                    },
+                    "last_active_sensors": {
+                        "name": "Últimos sensores activos"
+                    },
+                    "light_sensor": {
+                        "name": "Sensor de luz"
+                    },
+                    "presence_sensors": {
+                        "name": "Sensores de presencia"
+                    },
+                    "type": {
+                        "name": "Tipo",
+                        "state": {
+                            "interior": "Interior",
+                            "exterior": "Exterior"
+                        }
+                    },
+                    "clear_timeout": {
+                        "name": "Tiempo de espera para limpiar"
+                    }
+                }
+            },
+            "ble_tracker_monitor": {
+                "name": "Ocupación vía Rastreador BLE"
             },
             "health_problem": {
-                "name": "Área de Salud"
+                "name": "Salud del Área",
+                "state": {
+                    "off": "Saludable",
+                    "on": "No saludable"
+                }
             },
             "threshold_light": {
                 "name": "Luz (calculada)"
             },
-            "ble_tracker_monitor": {
-                "name": "Ocupación via Rastreador BLE"
+            "wasp_in_a_box": {
+                "name": "Avispa en una caja",
+                "state": {
+                    "off": "Sin avispa en la caja",
+                    "on": "Avispa en la caja"
+                },
+                "state_attributes": {
+                    "wasp": {
+                        "name": "Avispa",
+                        "state": {
+                            "off": "No vista",
+                            "on": "Vista"
+                        }
+                    },
+                    "box": {
+                        "name": "Caja",
+                        "state": {
+                            "off": "Cerrada",
+                            "on": "Abierta"
+                        }
+                    }
+                }
             }
         },
-        "climate": {
-            "climate_group": {
-                "name": "Termostatos"
+        "fan": {
+            "fan_group": {
+                "name": "Ventiladores"
             }
         },
         "cover": {
@@ -228,22 +448,22 @@
                 "name": "Amortiguadores"
             },
             "cover_group_door": {
-                "name": "puertas"
+                "name": "Puertas"
             },
             "cover_group_garage": {
                 "name": "Puertas de garaje"
             },
             "cover_group_gate": {
-                "name": "Puertas"
+                "name": "Portones"
             },
             "cover_group_shade": {
-                "name": "Sombras"
+                "name": "Persianas enrollables"
             },
             "cover_group_shutter": {
-                "name": "Persianas"
+                "name": "Contraventanas"
             },
             "cover_group_window": {
-                "name": "ventanas"
+                "name": "Ventanas"
             },
             "cover_group": {
                 "name": "Cubiertas"
@@ -252,18 +472,6 @@
         "light": {
             "all_lights": {
                 "name": "Todas las luces"
-            },
-            "overhead_lights": {
-                "name": "Luces de techo"
-            },
-            "task_lights": {
-                "name": "Luces de tarea"
-            },
-            "accent_lights": {
-                "name": "Luces decorativas"
-            },
-            "sleep_lights": {
-                "name": "Luces para dormir"
             }
         },
         "media_player": {
@@ -285,7 +493,46 @@
                 "name": "Control del reproductor multimedia"
             },
             "climate_control": {
-                "name": "Control climatico"
+                "name": "Control climático"
+            },
+            "fan_control": {
+                "name": "Control de ventiladores"
+            }
+        }
+    },
+    "selector": {
+        "area_type": {
+            "options": {
+                "interior": "Interior",
+                "exterior": "Exterior"
+            }
+        },
+        "states": {
+            "options": {
+                "occupied": "Ocupado",
+                "extended": "Extendido",
+                "sleep": "Suspensión"
+            }
+        },
+        "turn_on_when": {
+            "options": {
+                "area_occupied": "Cuando el área pasa de libre a ocupada",
+                "state_gain": "Cuando gana uno de los estados activos",
+                "area_dark": "Cuando el área se oscurece"
+            }
+        },
+        "turn_off_when": {
+            "options": {
+                "area_clear": "Cuando el área pasa de ocupada a libre",
+                "state_loss": "Cuando pierde todos los estados activos",
+                "exterior_bright": "Cuando se aclara el exterior"
+            }
+        },
+        "calculation_mode": {
+            "options": {
+                "any": "Cualquiera",
+                "all": "Todos",
+                "majority": "Mayoría"
             }
         }
     },
