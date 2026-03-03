@@ -8,12 +8,14 @@ import asyncio
 from homeassistant.const import STATE_OFF, STATE_ON
 
 from custom_components.magic_areas.const import AreaStates
-from tests.features.light_groups.conftest import (
-    create_magic_context,
+
+from tests.features.light_groups.conftest import create_magic_context
+from tests.helpers import (
+    assert_in_attribute,
+    assert_state,
     trigger_occupancy,
     trigger_secondary_state,
 )
-from tests.helpers import assert_in_attribute, assert_state
 
 
 class TestComplexScenarios:

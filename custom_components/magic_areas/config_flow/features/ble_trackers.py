@@ -13,6 +13,12 @@ from custom_components.magic_areas.config_flow.helpers import (
 )
 from custom_components.magic_areas.const import MAGICAREAS_UNIQUEID_PREFIX, Features
 from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
+from custom_components.magic_areas.const.urls import (
+    URL_BERMUDA,
+    URL_ESPRESENSE,
+    URL_ROOM_ASSISTANT,
+    UrlDescriptionPlaceholders,
+)
 
 
 @register_feature
@@ -65,6 +71,11 @@ class BLETrackersFeature(FeatureHandler):
             type="form",
             step_id=step_id,
             data_schema=schema,
+            description_placeholders={
+                UrlDescriptionPlaceholders.ROOM_ASSISTANT: URL_ROOM_ASSISTANT,
+                UrlDescriptionPlaceholders.BERMUDA: URL_BERMUDA,
+                UrlDescriptionPlaceholders.ESPRESENSE: URL_ESPRESENSE,
+            },
         )
 
     def get_summary(self, config: dict) -> str:

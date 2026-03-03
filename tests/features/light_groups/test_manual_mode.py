@@ -2,9 +2,14 @@
 
 import asyncio
 
-import pytest
-
-from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON
+from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
+    STATE_OFF,
+    STATE_ON,
+)
 from homeassistant.core import HomeAssistant
 
 from custom_components.magic_areas.const.light_groups import (
@@ -12,11 +17,12 @@ from custom_components.magic_areas.const.light_groups import (
     LightGroupOperationMode,
 )
 
-from tests.features.light_groups.conftest import (
+from tests.helpers import (
+    assert_attribute,
+    assert_state,
     trigger_occupancy,
     trigger_secondary_state,
 )
-from tests.helpers import assert_attribute, assert_state
 
 
 class TestManualMode:
@@ -27,13 +33,19 @@ class TestManualMode:
     ):
         """Test that user-initiated turn-on enters manual mode."""
         light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor_id = setup_basic_light_group["motion_sensor"]
+
+        await trigger_occupancy(hass, motion_sensor_id, occupied=True)
 
         # User turns on lights directly (no magic context)
         await hass.services.async_call(
-            "light", "turn_on", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)
 
         # Verify manual mode was entered
         light_state = hass.states.get(light_group_id)
@@ -64,7 +76,10 @@ class TestManualMode:
 
         # User turns off lights directly (enters manual mode)
         await hass.services.async_call(
-            "light", "turn_off", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -126,7 +141,10 @@ class TestManualMode:
 
         # Step 5: Call turn_off on light group to trigger manual mode
         await hass.services.async_call(
-            "light", "turn_off", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -170,7 +188,10 @@ class TestManualMode:
 
         # User manually turns on lights again (enters manual mode)
         await hass.services.async_call(
-            "light", "turn_on", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -205,7 +226,10 @@ class TestManualMode:
 
         # Enter manual mode
         await hass.services.async_call(
-            "light", "turn_off", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -243,7 +267,10 @@ class TestManualMode:
 
         # Enter manual mode
         await hass.services.async_call(
-            "light", "turn_off", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -284,10 +311,16 @@ class TestManualMode:
     ):
         """Test that turn_on without context enters manual mode."""
         light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor_id = setup_basic_light_group["motion_sensor"]
+
+        await trigger_occupancy(hass, motion_sensor_id, occupied=True)
 
         # Turn on without any context (user action)
         await hass.services.async_call(
-            "light", "turn_on", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)
@@ -321,7 +354,10 @@ class TestManualMode:
 
         # Enter manual mode via user action
         await hass.services.async_call(
-            "light", "turn_on", {ATTR_ENTITY_ID: light_group_id}, blocking=True
+            LIGHT_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
         )
         await hass.async_block_till_done()
         await asyncio.sleep(0.1)

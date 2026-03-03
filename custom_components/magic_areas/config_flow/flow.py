@@ -21,7 +21,7 @@ from custom_components.magic_areas.config_flow.helpers import FlowEntityContext
 from custom_components.magic_areas.config_flow.presence_tracking import (
     PresenceTrackingHandler,
 )
-from custom_components.magic_areas.config_flow.secondary_states_handler import (
+from custom_components.magic_areas.config_flow.secondary_states import (
     SecondaryStatesHandler,
 )
 from custom_components.magic_areas.config_flow.user_defined_states import (
@@ -29,7 +29,6 @@ from custom_components.magic_areas.config_flow.user_defined_states import (
 )
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
-    CONF_TYPE,
     DATA_AREA_OBJECT,
     DOMAIN,
     FEATURE_LIST,
@@ -40,6 +39,7 @@ from custom_components.magic_areas.const import (
     AreaConfigOptions,
     AreaType,
     ConfigDomains,
+    MagicConfigEntryVersion,
 )
 from custom_components.magic_areas.helpers.area import (
     basic_area_from_floor,
@@ -55,8 +55,8 @@ EMPTY_ENTRY = [""]
 class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
     """Handle a config flow for Magic Areas."""
 
-    VERSION = 2
-    MINOR_VERSION = 1
+    VERSION = MagicConfigEntryVersion.MAJOR
+    MINOR_VERSION = MagicConfigEntryVersion.MINOR
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -120,7 +120,13 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
             # Handle Meta area type
             if slugify(area_object.id) in reserved_names:
                 _LOGGER.debug("ConfigFlow: Meta area %s found", area_object.id)
-                config_entry[CONF_TYPE] = AreaType.META
+                config_entry.update(
+                    AreaConfigOptions.to_config(
+                        {
+                            AreaConfigOptions.TYPE.key: AreaType.META,
+                        }
+                    )
+                )
 
             return self.async_create_entry(title=area_object.name, data=config_entry)
 
@@ -274,6 +280,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             step_id="area_config",
             data_schema=result.data_schema,
             errors=result.errors,
+            description_placeholders=result.description_placeholders,
         )
 
     async def async_step_presence_tracking(self, user_input=None):
@@ -288,6 +295,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             step_id="presence_tracking",
             data_schema=result.data_schema,
             errors=result.errors,
+            description_placeholders=result.description_placeholders,
         )
 
     async def async_step_secondary_states(self, user_input=None):
@@ -302,6 +310,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             step_id="secondary_states",
             data_schema=result.data_schema,
             errors=result.errors,
+            description_placeholders=result.description_placeholders,
         )
 
     async def async_step_select_features(self, user_input=None):

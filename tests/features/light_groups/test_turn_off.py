@@ -2,19 +2,14 @@
 
 import asyncio
 
-import pytest
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
 
 from custom_components.magic_areas.const import AreaStates, MagicAreasEvents
+from custom_components.magic_areas.const.light_groups import LightGroupAttributes
 
-from tests.features.light_groups.conftest import (
-    enable_light_control,
-    trigger_occupancy,
-)
-from tests.helpers import assert_attribute, assert_state
+from tests.helpers import assert_attribute, assert_state, trigger_occupancy
 
 
 class TestTurnOff:
@@ -128,10 +123,6 @@ class TestTurnOff:
         await asyncio.sleep(0.1)
 
         # Verify manual mode
-        from custom_components.magic_areas.const.light_groups import (
-            LightGroupAttributes,
-        )
-
         light_state = hass.states.get(light_group_id)
         assert_attribute(light_state, LightGroupAttributes.MODE.value, "manual")
 

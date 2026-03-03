@@ -47,10 +47,6 @@ MODULE_DATA = f"{DOMAIN}_data"
 # Config Entry Keys
 CONF_AREA_ID = "id"  # Area identifier stored in config_entry.data
 
-# Legacy Config Keys (for backward compatibility during migration)
-CONF_TYPE = "type"  # Area type (stored at root level in old configs)
-CONF_EXCLUDE_ENTITIES = "exclude_entities"  # Legacy key
-
 # Additional Constants
 ADDITIONAL_LIGHT_TRACKING_ENTITIES = ["sun.sun"]
 DEFAULT_SENSOR_PRECISION = 2
@@ -433,6 +429,16 @@ class PresenceTrackingOptions(OptionSet):
         },
     )
 
+    ENABLE_DEBUG_ATTRIBUTES = ConfigOption(
+        key="enable_debug_attributes",
+        default=True,
+        title="Enable Debug Attributes",
+        description="Enable additional attributes on the presence sensor to help diagnose issues. Disable once stable to improve performance.",
+        translation_key="enable_debug_attributes",
+        validator=cv.boolean,
+        selector_type="boolean",
+    )
+
 
 # Enums
 
@@ -440,9 +446,8 @@ class PresenceTrackingOptions(OptionSet):
 class MetaAreaAutoReloadSettings(IntEnum):
     """Settings for Meta-Area Auto Reload functionality."""
 
-    DELAY = 3
-    DELAY_MULTIPLIER = 4
-    THROTTLE = 5
+    DELAY = 2  # Debounce window (seconds) for floor/interior/exterior meta-areas
+    GLOBAL_DELAY = 6  # Debounce window (seconds) for global meta-area (waits for meta-areas to reload first)
 
 
 class CalculationMode(StrEnum):
@@ -457,7 +462,7 @@ class MagicConfigEntryVersion(IntEnum):
     """Magic Area config entry version."""
 
     MAJOR = 2
-    MINOR = 1
+    MINOR = 2
 
 
 class AreaStates(StrEnum):

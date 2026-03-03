@@ -29,6 +29,7 @@ def should_create_threshold_sensor(area: MagicArea) -> bool:
 
     Returns:
         True if threshold sensor should be created, False otherwise
+
     """
     # Must have aggregates enabled
     if not area.has_feature(Features.AGGREGATION):
@@ -70,6 +71,7 @@ def should_create_light_aggregate(area: MagicArea) -> bool:
 
     Returns:
         True if light aggregate should be created, False otherwise
+
     """
     # Must have aggregates enabled
     if not area.has_feature(Features.AGGREGATION):

@@ -4,6 +4,8 @@ Tests the resolve_light_entity() cascade and is_area_dark() behavior using
 real Home Assistant instances with minimal mocking (following light_groups test pattern).
 """
 
+# pylint: disable=redefined-outer-name`
+
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -15,7 +17,7 @@ from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
-from homeassistant.components.sensor import SensorDeviceClass, DOMAIN as SENSOR_DOMAIN
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN, SensorDeviceClass
 from homeassistant.components.sun.const import STATE_ABOVE_HORIZON, STATE_BELOW_HORIZON
 from homeassistant.const import (
     LIGHT_LUX,
@@ -90,7 +92,7 @@ async def set_sun_state(hass: HomeAssistant, above_horizon: bool = True) -> None
 async def setup_area_with_threshold(
     hass: HomeAssistant,
 ) -> AsyncGenerator[dict[str, Any]]:
-    """Setup area with threshold sensor (aggregates enabled)."""
+    """Sets-up area with threshold sensor (aggregates enabled)."""
 
     # Create threshold binary sensor
     illuminance_sensor = MockSensor(
@@ -145,7 +147,7 @@ async def setup_area_with_threshold(
 async def setup_area_with_light_aggregate(
     hass: HomeAssistant,
 ) -> AsyncGenerator[dict[str, Any]]:
-    """Setup area with light aggregate (no threshold)."""
+    """Sets-up area with light aggregate (no threshold)."""
 
     # Create binary light sensor
     light_sensor = MockBinarySensor(
@@ -193,7 +195,7 @@ async def setup_area_with_light_aggregate(
 async def setup_windowless_area(
     hass: HomeAssistant,
 ) -> AsyncGenerator[dict[str, Any]]:
-    """Setup windowless area."""
+    """Sets-up windowless area."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
     # Update area config with windowless flag
     area_config = data.get("area", {})
@@ -218,7 +220,7 @@ async def setup_windowless_area(
 async def setup_basic_area_no_aggregates(
     hass: HomeAssistant,
 ) -> AsyncGenerator[dict[str, Any]]:
-    """Setup basic area without aggregates (sun.sun fallback)."""
+    """Sets-up basic area without aggregates (sun.sun fallback)."""
 
     # Create sun.sun entity
     hass.states.async_set("sun.sun", STATE_BELOW_HORIZON)

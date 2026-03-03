@@ -1,41 +1,36 @@
 """Tests for health sensor feature handler."""
 
 from collections.abc import AsyncGenerator
-from typing import Any
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
+import pytest
 import voluptuous
 
-from custom_components.magic_areas.config_flow.helpers import SelectorBuilder
-import pytest
-from homeassistant import config_entries
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
-from homeassistant.const import ATTR_DEVICE_CLASS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.health import HealthFeature
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
+from custom_components.magic_areas.config_flow.helpers import (
+    SchemaBuilder,
+    SelectorBuilder,
+)
 from custom_components.magic_areas.const import (
     AreaConfigOptions,
-    AreaStates,
     AreaType,
-    CONF_AREA_ID,
     ConfigDomains,
-    CONF_TYPE,
-    DOMAIN,
 )
 from custom_components.magic_areas.const.health import HealthOptions
 
-from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
-from tests.helpers import get_basic_config_entry_data, init_integration
+from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -49,7 +44,6 @@ class TestHealthFeature:
         """Set up health feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -73,8 +67,6 @@ class TestHealthFeature:
                 unique_id="test_media_player",
             ),
         ]
-
-        from tests.helpers import setup_mock_entities
 
         await setup_mock_entities(
             hass,
@@ -198,8 +190,6 @@ class TestHealthFeature:
         feature_config = handler.get_config()
 
         # Auto-generate schema - device class list is in metadata!
-        from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
-
         builder = SchemaBuilder(feature_config)
         schema = builder.from_option_set(HealthOptions)
 
@@ -245,13 +235,9 @@ class TestHealthFeature:
         feature_config = handler.get_config()
 
         # Auto-generate base selectors
-        from custom_components.magic_areas.config_flow.helpers import SelectorBuilder
-
         selectors = SelectorBuilder.from_option_set(HealthOptions)
 
         # Auto-generate schema with no overrides (fully auto-generated)
-        from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
-
         builder = SchemaBuilder(feature_config)
         schema = builder.from_option_set(HealthOptions, selector_overrides=selectors)
 
@@ -263,7 +249,6 @@ class TestHealthFeature:
 
     def test_no_selective_overrides_needed(self, health_feature_setup):
         """Test that no selective overrides are needed for health feature."""
-        handler = health_feature_setup["handler"]
 
         # Get auto-generated selectors
         selectors = SelectorBuilder.from_option_set(HealthOptions)

@@ -31,10 +31,11 @@ from homeassistant.helpers.selector import (
 from custom_components.magic_areas.const import (
     ADDITIONAL_LIGHT_TRACKING_ENTITIES,
     BASIC_OCCUPANCY_STATES,
-    CONF_EXCLUDE_ENTITIES,
     CONFIG_FLOW_ENTITY_FILTER_BOOL,
     CONFIG_FLOW_ENTITY_FILTER_EXT,
+    AreaConfigOptions,
     AreaStates,
+    ConfigDomains,
     ConfigOption,
     OptionSet,
 )
@@ -94,7 +95,9 @@ class FlowEntityContext:
         """Area entities + excluded entities."""
         return sorted(
             self.area_entities
-            + self.config_entry.options.get(CONF_EXCLUDE_ENTITIES, [])
+            + self.config_entry.options.get(ConfigDomains.AREA, {}).get(
+                AreaConfigOptions.EXCLUDE_ENTITIES.key, []
+            )
         )
 
     @property
@@ -502,6 +505,7 @@ class SchemaBuilder:
         option_set: type,
         saved_config: dict | None = None,
         selector_overrides: dict[str, Any] | None = None,
+        exclude_keys: list[str] | None = None,
     ) -> vol.Schema:
         """Auto-generate complete voluptuous schema from an OptionSet class.
 
@@ -517,6 +521,7 @@ class SchemaBuilder:
             option_set: OptionSet or FeatureOptionSet class
             saved_config: Current config values (for defaults)
             selector_overrides: Manual selector overrides (key -> selector)
+            exclude_keys: Keys to be excluded from resulting set
 
         Returns:
             Complete voluptuous schema
@@ -552,6 +557,10 @@ class SchemaBuilder:
 
             attr = getattr(option_set, attr_name)
             if not isinstance(attr, ConfigOption):
+                continue
+
+            # Skip excluded keys
+            if exclude_keys and attr.key in exclude_keys:
                 continue
 
             # Skip internal fields (e.g., auto-generated UUIDs)

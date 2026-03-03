@@ -1,5 +1,7 @@
 """Tests for user-defined states functionality."""
 
+# pylint: disable=redefined-outer-name`
+
 import pytest
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
@@ -16,6 +18,7 @@ from custom_components.magic_areas.const.user_defined_states import (
     UserDefinedStateOptions,
     slugify_state_name,
 )
+
 from tests.conftest import MockConfigEntry
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (

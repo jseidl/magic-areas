@@ -1,17 +1,18 @@
 """Config flow specific fixtures."""
 
+# pylint: disable=redefined-outer-name`
+
 from collections.abc import AsyncGenerator
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.config_flow.base import ConfigBase
 from custom_components.magic_areas.config_flow.features.base import FeatureHandler
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
 from custom_components.magic_areas.config_flow.helpers import (
@@ -20,26 +21,18 @@ from custom_components.magic_areas.config_flow.helpers import (
 )
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
-    ConfigDomains,
-    DOMAIN,
     AreaConfigOptions,
     AreaType,
+    ConfigDomains,
 )
-from custom_components.magic_areas.const.aggregates import AggregateOptions
-from custom_components.magic_areas.const.area_aware_media_player import (
-    AreaAwareMediaPlayerOptions,
-)
-from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
-from custom_components.magic_areas.const.climate_control import ClimateControlOptions
-from custom_components.magic_areas.const.fan_groups import FanGroupOptions
-from custom_components.magic_areas.const.health import HealthOptions
-from custom_components.magic_areas.const.light_groups import LightGroupOptions
-from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
-from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
-from custom_components.magic_areas.const.wasp_in_a_box import WaspInABoxOptions
 
-from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
-from tests.helpers import get_basic_config_entry_data, init_integration
+from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import (
+    get_basic_config_entry_data,
+    init_integration,
+    setup_mock_entities,
+    shutdown_integration,
+)
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -48,7 +41,6 @@ async def mock_flow_entity_context(hass: HomeAssistant) -> FlowEntityContext:
     """Create a mock FlowEntityContext for testing."""
     # Setup basic area and entities
     area_registry = async_get_ar(hass)
-    entity_registry = async_get_er(hass)
 
     # Create test area
     if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
@@ -75,8 +67,6 @@ async def mock_flow_entity_context(hass: HomeAssistant) -> FlowEntityContext:
     ]
 
     # Setup entities
-    from tests.helpers import setup_mock_entities
-
     await setup_mock_entities(
         hass,
         "binary_sensor",
@@ -296,6 +286,4 @@ async def config_flow_integration_setup(
     }
 
     # Cleanup
-    from tests.helpers import shutdown_integration
-
     await shutdown_integration(hass, [config_entry])

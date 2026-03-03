@@ -1,5 +1,7 @@
 """Shared fixtures for light groups tests."""
 
+# pylint: disable=redefined-outer-name`
+
 import asyncio
 from collections.abc import AsyncGenerator
 import logging
@@ -14,10 +16,10 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
-from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF
+from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF, STATE_ON
 from homeassistant.core import Context, HomeAssistant
 
-from custom_components.magic_areas.const import DOMAIN, AreaStates
+from custom_components.magic_areas.const import DOMAIN, AreaStates, ConfigDomains
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.light_groups import (
     LIGHT_GROUP_CONTEXT_PREFIX,
@@ -27,6 +29,10 @@ from custom_components.magic_areas.const.light_groups import (
     LightGroupTurnOnWhen,
 )
 from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
+from custom_components.magic_areas.const.user_defined_states import (
+    UserDefinedStateEntryOptions,
+    UserDefinedStateOptions,
+)
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -35,8 +41,6 @@ from tests.helpers import (
     merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
-    trigger_occupancy,
-    trigger_secondary_state,
 )
 from tests.mocks import MockBinarySensor, MockLight
 
@@ -145,7 +149,7 @@ async def setup_secondary_state_sensors(
 
 @pytest.fixture
 def light_group_basic_config_entry() -> MockConfigEntry:
-    """Basic light group with OCCUPIED state trigger and dark requirement."""
+    """Create Basic light group with OCCUPIED state trigger and dark requirement."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
 
     # Enable aggregates for dark detection
@@ -460,11 +464,6 @@ async def setup_multi_group_occupied_and_sleep(
 @pytest.fixture
 def light_group_user_defined_state_config_entry() -> MockConfigEntry:
     """Config with user-defined state and matching light groups."""
-    from custom_components.magic_areas.const import ConfigDomains
-    from custom_components.magic_areas.const.user_defined_states import (
-        UserDefinedStateEntryOptions,
-        UserDefinedStateOptions,
-    )
 
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
 
@@ -551,12 +550,6 @@ async def setup_user_defined_state_light_group(
 @pytest.fixture
 def light_group_multi_user_defined_config_entry() -> MockConfigEntry:
     """Config with multiple user-defined states."""
-    from custom_components.magic_areas.const import ConfigDomains
-    from custom_components.magic_areas.const.user_defined_states import (
-        UserDefinedStateEntryOptions,
-        UserDefinedStateOptions,
-    )
-
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
 
     # Configure two user-defined states
@@ -654,11 +647,6 @@ async def setup_multi_user_defined_states(
 @pytest.fixture
 def light_group_sleep_and_user_defined_config_entry() -> MockConfigEntry:
     """Config with both sleep and user-defined state groups."""
-    from custom_components.magic_areas.const import ConfigDomains
-    from custom_components.magic_areas.const.user_defined_states import (
-        UserDefinedStateEntryOptions,
-        UserDefinedStateOptions,
-    )
 
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
 
@@ -865,7 +853,6 @@ async def setup_basic_light_group_bright(
     This fixture creates sensors, initializes integration, THEN sets dark sensor to bright.
     This avoids entity initialization overwriting the manually-set state.
     """
-    from homeassistant.const import STATE_ON
 
     # Create sensors
     motion_sensor = MockBinarySensor(

@@ -1,7 +1,5 @@
 """User-defined states configuration constants."""
 
-import voluptuous as vol
-
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import slugify
 

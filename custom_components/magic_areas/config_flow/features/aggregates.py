@@ -8,6 +8,10 @@ from custom_components.magic_areas.config_flow.features.base import (
 from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
 from custom_components.magic_areas.const import Features
 from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.urls import (
+    URL_HA_DOCUMENTATION_THRESHOLD_HYSTERESIS,
+    UrlDescriptionPlaceholders,
+)
 
 
 @register_feature
@@ -41,6 +45,9 @@ class AggregatesFeature(FeatureHandler):
             type="form",
             step_id=step_id,
             data_schema=schema,
+            description_placeholders={
+                UrlDescriptionPlaceholders.THRESHOLD_HYSTERESIS: URL_HA_DOCUMENTATION_THRESHOLD_HYSTERESIS,
+            },
         )
 
     def get_summary(self, config: dict) -> str:

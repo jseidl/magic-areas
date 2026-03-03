@@ -13,6 +13,10 @@ from custom_components.magic_areas.config_flow.helpers import (
 )
 from custom_components.magic_areas.const import ConfigDomains
 from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
+from custom_components.magic_areas.const.urls import (
+    MagicAreasDocumentationUrls,
+    UrlDescriptionPlaceholders,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,9 +51,12 @@ class SecondaryStatesHandler(DomainHandler):
             self.flow.build_selector_entity_simple(self.flow.all_binary_entities)
         )
 
-        # Filter selectors for meta areas (no SLEEP entity)
+        # Filter selectors
+        exclude_keys: list[str] = []
         if self.area.is_meta():
-            selectors.pop(SecondaryStateOptions.SLEEP_ENTITY.key, None)
+            exclude_keys.append(SecondaryStateOptions.SLEEP_ENTITY.key)
+        else:
+            exclude_keys.append(SecondaryStateOptions.CALCULATION_MODE.key)
 
         # Get current config (nested under ConfigDomains.SECONDARY_STATES)
         current_config = self.get_config()
@@ -57,8 +64,14 @@ class SecondaryStatesHandler(DomainHandler):
         # Auto-generate schema with current values
         builder = SchemaBuilder(current_config)
         schema = builder.from_option_set(
-            SecondaryStateOptions, selector_overrides=selectors
+            SecondaryStateOptions,
+            selector_overrides=selectors,
+            exclude_keys=exclude_keys,
         )
+
+        description_placeholders = {
+            UrlDescriptionPlaceholders.AREA_STATES: MagicAreasDocumentationUrls.AREA_STATES,
+        }
 
         if user_input is not None:
             validator = ConfigValidator("secondary_states")
@@ -75,12 +88,14 @@ class SecondaryStatesHandler(DomainHandler):
                 step_id="main",
                 data_schema=schema,
                 errors=errors,
+                description_placeholders=description_placeholders,
             )
 
         return DomainStepResult(
             type="form",
             step_id="main",
             data_schema=schema,
+            description_placeholders=description_placeholders,
         )
 
     def get_config(self) -> dict:

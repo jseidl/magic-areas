@@ -1,9 +1,9 @@
 """Tests for config_flow.helpers module."""
 
+from unittest.mock import Mock
+
 import pytest
 import voluptuous as vol
-
-from unittest.mock import Mock
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -14,7 +14,6 @@ from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_D
 from homeassistant.const import ATTR_DEVICE_CLASS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.helpers import (
@@ -26,6 +25,7 @@ from custom_components.magic_areas.config_flow.helpers import (
     StateOptionsBuilder,
 )
 from custom_components.magic_areas.const import (
+    AreaConfigOptions,
     AreaStates,
     ConfigOption,
 )
@@ -33,6 +33,7 @@ from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
 
 from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -43,7 +44,6 @@ class TestFlowEntityContext:
         """Test FlowEntityContext initialization and entity list building."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         # Create test area
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
@@ -70,8 +70,6 @@ class TestFlowEntityContext:
         ]
 
         # Setup entities
-        from tests.helpers import setup_mock_entities
-
         await setup_mock_entities(
             hass,
             BINARY_SENSOR_DOMAIN,
@@ -135,7 +133,6 @@ class TestFlowEntityContext:
         """Test FlowEntityContext with excluded entities."""
         # Setup similar to above but with excluded entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -148,8 +145,6 @@ class TestFlowEntityContext:
             ),
         ]
 
-        from tests.helpers import setup_mock_entities
-
         await setup_mock_entities(
             hass,
             BINARY_SENSOR_DOMAIN,
@@ -157,7 +152,9 @@ class TestFlowEntityContext:
         )
 
         config_entry = Mock()
-        config_entry.options = {"exclude_entities": ["binary_sensor.excluded_sensor"]}
+        config_entry.options = AreaConfigOptions.to_config(
+            {AreaConfigOptions.EXCLUDE_ENTITIES.key: ["binary_sensor.excluded_sensor"]}
+        )
 
         magic_area = Mock(spec=MagicArea)
         magic_area.id = DEFAULT_MOCK_AREA.value
@@ -239,7 +236,7 @@ class TestConfigValidator:
         schema = vol.Schema({"test_field": str})
 
         async def on_success(validated):
-            raise Exception("Unknown error")
+            raise Exception("Unknown error")  # pylint: disable=broad-exception-raised
 
         success, errors = await validator.validate(
             schema, {"test_field": "test_value"}, on_success
@@ -301,10 +298,11 @@ class TestEntityListBuilder:
         door_state = Mock()
         door_state.attributes = {ATTR_DEVICE_CLASS: BinarySensorDeviceClass.DOOR}
 
-        hass.states.get.side_effect = lambda entity_id: {
+        state_map: dict[str, Mock] = {
             "binary_sensor.motion": motion_state,
             "binary_sensor.door": door_state,
-        }.get(entity_id)
+        }
+        hass.states.get.side_effect = state_map.get
 
         motion_sensors = builder.by_device_class(
             BINARY_SENSOR_DOMAIN, BinarySensorDeviceClass.MOTION
@@ -516,7 +514,7 @@ class TestSelectorBuilder:
     def test_from_config_option_invalid_option(self):
         """Test building selector with invalid option type."""
         with pytest.raises(TypeError, match="Expected ConfigOption, got <class 'str'>"):
-            SelectorBuilder.from_config_option("invalid")
+            SelectorBuilder.from_config_option("invalid")  # type: ignore
 
     def test_from_option_set(self):
         """Test building selectors from OptionSet class."""

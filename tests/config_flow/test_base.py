@@ -1,21 +1,18 @@
 """Tests for config_flow.base module."""
 
-from collections.abc import Callable
-from typing import Any
-from unittest.mock import Mock, patch
+from enum import StrEnum
 
 import pytest
 import voluptuous as vol
+
 from homeassistant.helpers.selector import (
     BooleanSelector,
     BooleanSelectorConfig,
     EntitySelector,
     EntitySelectorConfig,
     NumberSelector,
-    NumberSelectorConfig,
     NumberSelectorMode,
     SelectSelector,
-    SelectSelectorConfig,
     SelectSelectorMode,
 )
 
@@ -167,24 +164,54 @@ class TestConfigBase:
         )
 
         assert isinstance(schema, vol.Schema)
+
         # Check that dynamic validator is applied
         schema_keys = list(schema.schema.keys())
         option1_key = next(key for key in schema_keys if "option1" in str(key))
+
         # The validator should be the dynamic one, not the original str validator
+        assert schema.schema[option1_key] == dynamic_validators["option1"]
+
+        # option2 should still use the original int validator (no override)
+        option2_key = next(key for key in schema_keys if "option2" in str(key))
+        assert schema.schema[option2_key] is int
+
+        # Validate that the dynamic validator actually works
+        # Short string (< 3 chars) should raise Invalid
+        with pytest.raises(vol.Invalid):
+            schema({"option1": "ab", "option2": 1})
+
+        # Long enough string should pass
+        result = schema({"option1": "abc", "option2": 1})
+        assert result["option1"] == "abc"
+        assert result["option2"] == 1
 
     def test_build_options_schema_with_selectors(self):
         """Test building schema with custom selectors."""
         config_base = ConfigBase()
         options = [("option1", "default1", str), ("option2", "default2", int)]
-        selectors = {"option1": BooleanSelector(BooleanSelectorConfig())}
+        selector = BooleanSelector(BooleanSelectorConfig())
+        selectors = {"option1": selector}
 
         schema = config_base.build_options_schema(options, selectors=selectors)
 
         assert isinstance(schema, vol.Schema)
+
         # Check that custom selector is used
         schema_keys = list(schema.schema.keys())
         option1_key = next(key for key in schema_keys if "option1" in str(key))
-        # The validator should be the custom selector
+
+        # The validator should be the custom selector, not the original str validator
+        assert schema.schema[option1_key] is selector
+
+        # option2 should still use the original int validator (no override)
+        option2_key = next(key for key in schema_keys if "option2" in str(key))
+        assert schema.schema[option2_key] is int
+
+        # Validate that the selector actually works functionally
+        result = schema({"option1": True, "option2": 1})
+        assert result["option1"] is True
+        assert result["option2"] == 1
 
     def test_build_options_schema_no_config_entry(self):
         """Test building schema when no config entry is available."""
@@ -202,7 +229,6 @@ class TestConfigBase:
 
     def test_build_options_schema_with_enum_keys(self):
         """Test building schema with enum keys (should convert to string values)."""
-        from enum import StrEnum
 
         class TestEnum(StrEnum):
             """Test enum for schema building."""

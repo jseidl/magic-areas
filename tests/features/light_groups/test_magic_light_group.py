@@ -7,8 +7,6 @@ not turn on additional lights.
 
 import asyncio
 
-import pytest
-
 from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_RGB_COLOR
 from homeassistant.const import STATE_OFF, STATE_ON
 

@@ -1,6 +1,5 @@
 """Tests for the BLE Tracker feature."""
 
-import asyncio
 from collections.abc import AsyncGenerator
 import logging
 from typing import Any

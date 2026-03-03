@@ -1,10 +1,10 @@
 """Tests for climate control feature handler."""
 
 from collections.abc import AsyncGenerator
-from typing import Any
 from unittest.mock import Mock
 
 import pytest
+
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
@@ -14,7 +14,6 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.climate_control import (
@@ -22,10 +21,10 @@ from custom_components.magic_areas.config_flow.features.climate_control import (
 )
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
 from custom_components.magic_areas.const import (
+    MAGICAREAS_UNIQUEID_PREFIX,
     AreaConfigOptions,
     AreaType,
     ConfigDomains,
-    MAGICAREAS_UNIQUEID_PREFIX,
 )
 from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
@@ -44,7 +43,6 @@ class TestClimateControlFeature:
         """Set up climate control feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -230,10 +228,15 @@ class TestClimateControlFeature:
         # Should proceed to preset selection step
         assert result.type == "form"
         assert result.step_id == "select_presets"
+        # pylint: disable-next=protected-access
         assert handler._state["entity_id"] == "climate.living_room_climate"
+        # pylint: disable-next=protected-access
         assert "away" in handler._state["preset_modes"]
+        # pylint: disable-next=protected-access
         assert "home" in handler._state["preset_modes"]
+        # pylint: disable-next=protected-access
         assert "sleep" in handler._state["preset_modes"]
+        # pylint: disable-next=protected-access
         assert "eco" in handler._state["preset_modes"]
 
         # Check that entity_id was saved to config
@@ -273,8 +276,15 @@ class TestClimateControlFeature:
         handler = climate_control_feature_setup["handler"]
 
         # Set up state from previous step
+        # pylint: disable-next=protected-access
         handler._state["entity_id"] = "climate.living_room"
-        handler._state["preset_modes"] = ["away", "home", "sleep", "eco"]
+        # pylint: disable-next=protected-access
+        handler._state["preset_modes"] = [
+            "away",
+            "home",
+            "sleep",
+            "eco",
+        ]
 
         result = await handler.handle_step("select_presets", None)
 
@@ -289,8 +299,15 @@ class TestClimateControlFeature:
         handler = climate_control_feature_setup["handler"]
 
         # Set up state from previous step
+        # pylint: disable-next=protected-access
         handler._state["entity_id"] = "climate.living_room"
-        handler._state["preset_modes"] = ["away", "home", "sleep", "eco"]
+        # pylint: disable-next=protected-access
+        handler._state["preset_modes"] = [
+            "away",
+            "home",
+            "sleep",
+            "eco",
+        ]
 
         # Test with valid input
         user_input = {
@@ -320,7 +337,7 @@ class TestClimateControlFeature:
         handler = climate_control_feature_setup["handler"]
 
         # Test with no climate entities
-        schema = handler._build_entity_schema()
+        schema = handler._build_entity_schema()  # pylint: disable=protected-access
         assert schema is not None
 
         # Test with mock climate entities
@@ -330,7 +347,7 @@ class TestClimateControlFeature:
             f"{CLIMATE_DOMAIN}.{MAGICAREAS_UNIQUEID_PREFIX}_test",
         ]
 
-        schema = handler._build_entity_schema()
+        schema = handler._build_entity_schema()  # pylint: disable=protected-access
         assert schema is not None
 
         # Verify that Magic Areas entities are filtered out
@@ -345,10 +362,12 @@ class TestClimateControlFeature:
         assert handler.get_initial_step() == "select_entity"
 
         # Verify that state is properly managed between steps
-        handler._state["entity_id"] = "climate.test"
-        handler._state["preset_modes"] = ["test"]
+        handler._state["entity_id"] = "climate.test"  # pylint: disable=protected-access
+        handler._state["preset_modes"] = ["test"]  # pylint: disable=protected-access
 
+        # pylint: disable-next=protected-access
         assert handler._state["entity_id"] == "climate.test"
+        # pylint: disable-next=protected-access
         assert handler._state["preset_modes"] == ["test"]
 
     def test_entity_filtering(self, climate_control_feature_setup):
@@ -366,7 +385,7 @@ class TestClimateControlFeature:
         handler.flow.all_entities = test_entities
 
         # Build schema and verify filtering
-        schema = handler._build_entity_schema()
+        schema = handler._build_entity_schema()  # pylint: disable=protected-access
         assert schema is not None
 
         # The schema should only include non-Magic Areas climate entities

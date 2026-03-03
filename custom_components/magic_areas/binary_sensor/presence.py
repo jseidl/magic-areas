@@ -566,14 +566,19 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
         self._attr_extra_state_attributes.update(
             {
                 CommonAttributes.STATES.value: [],
-                CommonAttributes.ACTIVE_SENSORS.value: [],
-                AreaAttributes.LAST_ACTIVE_SENSORS.value: [],
-                AreaAttributes.PRESENCE_SENSORS.value: [],
-                AreaAttributes.LIGHT_SENSOR: self.area.area_light_sensor,
                 AreaAttributes.TYPE.value: self.area.config.get(AreaConfigOptions.TYPE),
-                AreaAttributes.CLEAR_TIMEOUT.value: 0,
             }
         )
+        if self.area.config.get(PresenceTrackingOptions.ENABLE_DEBUG_ATTRIBUTES):
+            self._attr_extra_state_attributes.update(
+                {
+                    AreaAttributes.PRESENCE_SENSORS.value: [],
+                    CommonAttributes.ACTIVE_SENSORS.value: [],
+                    AreaAttributes.LAST_ACTIVE_SENSORS.value: [],
+                    AreaAttributes.LIGHT_SENSOR: self.area.area_light_sensor,
+                    AreaAttributes.CLEAR_TIMEOUT.value: 0,
+                }
+            )
 
     # Area change handlers
     def _area_state_changed(

@@ -12,6 +12,10 @@ from custom_components.magic_areas.config_flow.helpers import (
     SelectorBuilder,
 )
 from custom_components.magic_areas.const import ConfigDomains, PresenceTrackingOptions
+from custom_components.magic_areas.const.urls import (
+    MagicAreasDocumentationUrls,
+    UrlDescriptionPlaceholders,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,12 +53,11 @@ class PresenceTrackingHandler(DomainHandler):
         )
 
         # Filter selectors for meta areas (they only have CLEAR_TIMEOUT)
+        exclude_keys: list[str] = []
         if self.area.is_meta():
-            selectors = {
-                PresenceTrackingOptions.CLEAR_TIMEOUT.key: selectors.get(
-                    PresenceTrackingOptions.CLEAR_TIMEOUT.key
-                )
-            }
+            exclude_keys.append(PresenceTrackingOptions.DEVICE_PLATFORMS.key)
+            exclude_keys.append(PresenceTrackingOptions.SENSOR_DEVICE_CLASS.key)
+            exclude_keys.append(PresenceTrackingOptions.KEEP_ONLY_ENTITIES.key)
 
         # Get current config (nested under ConfigDomains.PRESENCE)
         current_config = self.get_config()
@@ -62,8 +65,14 @@ class PresenceTrackingHandler(DomainHandler):
         # Auto-generate schema with current values
         builder = SchemaBuilder(current_config)
         schema = builder.from_option_set(
-            PresenceTrackingOptions, selector_overrides=selectors
+            PresenceTrackingOptions,
+            selector_overrides=selectors,
+            exclude_keys=exclude_keys,
         )
+
+        description_placeholders = {
+            UrlDescriptionPlaceholders.PRESENCE_SENSING: MagicAreasDocumentationUrls.PRESENCE_SENSING,
+        }
 
         if user_input is not None:
             validator = ConfigValidator("presence_tracking")
@@ -80,12 +89,14 @@ class PresenceTrackingHandler(DomainHandler):
                 step_id="main",
                 data_schema=schema,
                 errors=errors,
+                description_placeholders=description_placeholders,
             )
 
         return DomainStepResult(
             type="form",
             step_id="main",
             data_schema=schema,
+            description_placeholders=description_placeholders,
         )
 
     def get_config(self) -> dict:

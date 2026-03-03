@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from unittest.mock import Mock
 
 import pytest
+
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.core import HomeAssistant
 
@@ -20,6 +21,7 @@ from custom_components.magic_areas.const.user_defined_states import (
     validate_state_name,
     validate_state_name_unique,
 )
+
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor
@@ -425,8 +427,8 @@ class TestValidationHelpers:
         # Reserved names should fail
         for reserved in RESERVED_STATE_NAMES:
             assert not validate_state_name(reserved)
-            assert not validate_state_name(reserved.upper())
-            assert not validate_state_name(reserved.replace("_", " ").title())
+            assert not validate_state_name(str(reserved).upper())
+            assert not validate_state_name(str(reserved).replace("_", " ").title())
 
         # Non-reserved should pass
         assert validate_state_name("Movie Time")

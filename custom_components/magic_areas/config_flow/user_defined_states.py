@@ -13,7 +13,6 @@ from custom_components.magic_areas.const import ConfigDomains
 from custom_components.magic_areas.const.user_defined_states import (
     UserDefinedStateEntryOptions,
     UserDefinedStateOptions,
-    slugify_state_name,
     validate_state_name,
     validate_state_name_unique,
 )

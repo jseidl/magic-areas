@@ -303,7 +303,8 @@ class AreaLightGroup(MagicLightGroup):
                     self.area.name,
                     self.name,
                 )
-                self._manual_mode_set()
+                if self.area.is_occupied():
+                    self._manual_mode_set()
 
         self.async_on_remove(
             async_track_state_change_event(
@@ -424,7 +425,23 @@ class AreaLightGroup(MagicLightGroup):
     def _should_turn_off_on_exterior_bright(self, new_states: set[str]) -> bool:
         """Check if lights should turn off due to exterior becoming bright."""
 
+        _LOGGER.debug(
+            "%s (%s): Checking if should turn off due exterior brightness. new=%s",
+            self.area.name,
+            self.name,
+            new_states,
+        )
+
+        if not self.is_on:
+            _LOGGER.debug("%s (%s): Light is already off", self.area.name, self.name)
+            return False
+
         if LightGroupTurnOffWhen.EXTERIOR_BRIGHT not in self.turn_off_when:
+            _LOGGER.debug(
+                "%s (%s): No turn-off triggers configured for Exterior Brightness",
+                self.area.name,
+                self.name,
+            )
             return False
 
         return AreaStates.BRIGHT in new_states
@@ -453,6 +470,15 @@ class AreaLightGroup(MagicLightGroup):
         if not self._is_control_enabled():
             _LOGGER.debug(
                 "%s (%s): Light control disabled, blocking turn-off",
+                self.area.name,
+                self.name,
+            )
+            return False
+
+        # Are we off already?
+        if not self.is_on:
+            _LOGGER.debug(
+                "%s (%s): Light group off, turn-off unnecessary.",
                 self.area.name,
                 self.name,
             )
@@ -509,6 +535,15 @@ class AreaLightGroup(MagicLightGroup):
         if not self._is_control_enabled():
             _LOGGER.debug(
                 "%s (%s): Light control disabled, blocking turn-on",
+                self.area.name,
+                self.name,
+            )
+            return False
+
+        # Are we on already?
+        if self.is_on:
+            _LOGGER.debug(
+                "%s (%s): Light group on, turn-on unnecessary.",
                 self.area.name,
                 self.name,
             )

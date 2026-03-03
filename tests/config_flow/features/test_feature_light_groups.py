@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from unittest.mock import Mock
 
 import pytest
+
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
@@ -12,6 +13,13 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.light_groups import (
@@ -34,7 +42,7 @@ from custom_components.magic_areas.const.light_groups import (
 )
 
 from tests.const import DEFAULT_MOCK_AREA
-from tests.helpers import get_basic_config_entry_data
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -83,8 +91,6 @@ class TestLightGroupsFeature:
                 unique_id="test_media_player",
             ),
         ]
-
-        from tests.helpers import setup_mock_entities
 
         await setup_mock_entities(
             hass,
@@ -187,9 +193,9 @@ class TestLightGroupsFeature:
         area_config_data = light_groups_feature_setup["area_config_data"]
 
         # Set to interior
-        area_config_data[ConfigDomains.AREA][AreaConfigOptions.TYPE.key] = (
-            AreaType.INTERIOR
-        )
+        area_config_data[ConfigDomains.AREA][
+            AreaConfigOptions.TYPE.key
+        ] = AreaType.INTERIOR
         assert handler.is_available is True
 
     def test_is_available_exterior_area(self, light_groups_feature_setup):
@@ -198,9 +204,9 @@ class TestLightGroupsFeature:
         area_config_data = light_groups_feature_setup["area_config_data"]
 
         # Set to exterior
-        area_config_data[ConfigDomains.AREA][AreaConfigOptions.TYPE.key] = (
-            AreaType.EXTERIOR
-        )
+        area_config_data[ConfigDomains.AREA][
+            AreaConfigOptions.TYPE.key
+        ] = AreaType.EXTERIOR
         assert handler.is_available is True
 
     def test_is_available_meta_area(self, light_groups_feature_setup):
@@ -271,8 +277,6 @@ class TestLightGroupsFeature:
         flow = light_groups_feature_setup["flow"]
 
         # Mock build_selector_select to return proper selectors
-        from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
-
         def mock_build_selector_select(
             options=None, multiple=False, translation_key=""
         ):
@@ -316,12 +320,6 @@ class TestLightGroupsFeature:
         flow = light_groups_feature_setup["flow"]
 
         # Mock build_selector_select to return actual SelectSelector instances
-        from homeassistant.helpers.selector import (
-            SelectSelector,
-            SelectSelectorConfig,
-            BooleanSelector,
-        )
-
         def mock_build_selector_select(
             options=None, multiple=False, translation_key=""
         ):
@@ -332,10 +330,21 @@ class TestLightGroupsFeature:
                 )
             )
 
+        def mock_build_selector_entity_simple(
+            options=None, multiple=False, translation_key=""
+        ):
+            return EntitySelector(
+                EntitySelectorConfig(
+                    include_entities=options or [],
+                    multiple=multiple,
+                )
+            )
+
         flow.build_selector_select = mock_build_selector_select
+        flow.build_selector_entity_simple = mock_build_selector_entity_simple
 
         # Build schema
-        schema = handler._build_group_schema()
+        schema = handler._build_group_schema()  # pylint: disable=protected-access
 
         # Extract validators from schema
         schema_dict = schema.schema
@@ -361,35 +370,35 @@ class TestLightGroupsFeature:
                     require_dark_validator = validator
 
         # Verify they are SelectSelector instances, not cv.multi_select validators
-        assert isinstance(lights_validator, SelectSelector), (
-            f"lights field should use SelectSelector, got {type(lights_validator)}"
-        )
-        assert isinstance(states_validator, SelectSelector), (
-            f"states field should use SelectSelector, got {type(states_validator)}"
-        )
-        assert isinstance(turn_on_when_validator, SelectSelector), (
-            f"turn_on_when field should use SelectSelector, got {type(turn_on_when_validator)}"
-        )
-        assert isinstance(turn_off_when_validator, SelectSelector), (
-            f"turn_off_when field should use SelectSelector, got {type(turn_off_when_validator)}"
-        )
-        assert isinstance(require_dark_validator, BooleanSelector), (
-            f"require_dark field should use BooleanSelector, got {type(require_dark_validator)}"
-        )
+        assert isinstance(
+            lights_validator, EntitySelector
+        ), f"lights field should use EntitySelector, got {type(lights_validator)}"
+        assert isinstance(
+            states_validator, SelectSelector
+        ), f"states field should use SelectSelector, got {type(states_validator)}"
+        assert isinstance(
+            turn_on_when_validator, SelectSelector
+        ), f"turn_on_when field should use SelectSelector, got {type(turn_on_when_validator)}"
+        assert isinstance(
+            turn_off_when_validator, SelectSelector
+        ), f"turn_off_when field should use SelectSelector, got {type(turn_off_when_validator)}"
+        assert isinstance(
+            require_dark_validator, BooleanSelector
+        ), f"require_dark field should use BooleanSelector, got {type(require_dark_validator)}"
 
         # Verify multi-select is enabled (this is important for UX)
-        assert lights_validator.config.get("multiple") is True, (
-            "lights selector should support multiple selection"
-        )
-        assert states_validator.config.get("multiple") is True, (
-            "states selector should support multiple selection"
-        )
-        assert turn_on_when_validator.config.get("multiple") is True, (
-            "turn_on_when_validator selector should support multiple selection"
-        )
-        assert turn_off_when_validator.config.get("multiple") is True, (
-            "turn_off_when_validator selector should support multiple selection"
-        )
+        assert (
+            lights_validator.config.get("multiple") is True
+        ), "lights selector should support multiple selection"
+        assert (
+            states_validator.config.get("multiple") is True
+        ), "states selector should support multiple selection"
+        assert (
+            turn_on_when_validator.config.get("multiple") is True
+        ), "turn_on_when_validator selector should support multiple selection"
+        assert (
+            turn_off_when_validator.config.get("multiple") is True
+        ), "turn_off_when_validator selector should support multiple selection"
 
     # ========================================================================
     # Add Group Tests

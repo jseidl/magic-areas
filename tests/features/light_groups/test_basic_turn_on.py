@@ -2,19 +2,10 @@
 
 import asyncio
 
-import pytest
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import AreaStates
-
-from tests.features.light_groups.conftest import (
-    enable_light_control,
-    trigger_occupancy,
-    trigger_secondary_state,
-)
-from tests.helpers import assert_state
+from tests.helpers import assert_state, trigger_occupancy, trigger_secondary_state
 
 
 class TestBasicTurnOn:

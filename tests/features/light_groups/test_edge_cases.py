@@ -7,8 +7,7 @@ import asyncio
 
 from homeassistant.const import STATE_OFF, STATE_ON
 
-from tests.features.light_groups.conftest import trigger_occupancy
-from tests.helpers import assert_state
+from tests.helpers import assert_state, trigger_occupancy
 
 
 class TestEdgeCases:

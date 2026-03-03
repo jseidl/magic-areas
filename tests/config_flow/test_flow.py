@@ -1,10 +1,10 @@
 """Tests for config_flow.flow module."""
 
 from collections.abc import AsyncGenerator
-from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from homeassistant import config_entries
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -12,43 +12,27 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
-from homeassistant.const import ATTR_DEVICE_CLASS, ATTR_FLOOR_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.floor_registry import async_get as async_get_fr
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
-from custom_components.magic_areas.const import (
-    AreaConfigOptions,
-    AreaStates,
-    AreaType,
-    CONF_AREA_ID,
-    CONF_TYPE,
-    ConfigDomains,
-    DOMAIN,
-    Features,
-    MAGICAREAS_UNIQUEID_PREFIX,
-    PresenceTrackingOptions,
-)
-from custom_components.magic_areas.const.aggregates import AggregateOptions
-from custom_components.magic_areas.const.area_aware_media_player import (
-    AreaAwareMediaPlayerOptions,
-)
-from custom_components.magic_areas.const.ble_trackers import BleTrackerOptions
-from custom_components.magic_areas.const.climate_control import ClimateControlOptions
-from custom_components.magic_areas.const.fan_groups import FanGroupOptions
-from custom_components.magic_areas.const.health import HealthOptions
-from custom_components.magic_areas.const.light_groups import LightGroupOptions
-from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
-from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
-from custom_components.magic_areas.const.wasp_in_a_box import WaspInABoxOptions
 from custom_components.magic_areas.config_flow.flow import (
     ConfigFlow,
     OptionsFlowHandler,
 )
+from custom_components.magic_areas.const import (
+    CONF_AREA_ID,
+    DOMAIN,
+    MODULE_DATA,
+    AreaConfigOptions,
+    AreaType,
+    ConfigDomains,
+    ConfigHelper,
+    Features,
+)
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
 
-from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
-from tests.helpers import get_basic_config_entry_data, init_integration
+from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -71,6 +55,13 @@ class TestConfigFlow:
             result["flow_id"], {CONF_AREA_ID: area.id}
         )
 
+        assert (
+            "type" in result
+            and "title" in result
+            and "data" in result
+            and CONF_AREA_ID in result["data"]
+        )
+
         assert result["type"] == "create_entry"
         assert result["title"] == area.name
         assert CONF_AREA_ID in result["data"]
@@ -88,11 +79,23 @@ class TestConfigFlow:
             result["flow_id"], {CONF_AREA_ID: "global"}
         )
 
+        assert (
+            "type" in result
+            and "title" in result
+            and "data" in result
+            and CONF_AREA_ID in result["data"]
+            and ConfigDomains.AREA.value in result["data"]
+            and AreaConfigOptions.TYPE.key in result["data"][ConfigDomains.AREA.value]
+        )
+
         assert result["type"] == "create_entry"
         assert result["title"] == "Global"
         assert CONF_AREA_ID in result["data"]
         assert result["data"][CONF_AREA_ID] == "global"
-        assert result["data"][CONF_TYPE] == AreaType.META
+        assert (
+            result["data"][ConfigDomains.AREA.value][AreaConfigOptions.TYPE.key]
+            == AreaType.META
+        )
 
     async def test_async_step_user_invalid_area(self, hass: HomeAssistant):
         """Test user step with invalid area."""
@@ -102,6 +105,8 @@ class TestConfigFlow:
 
         # Test selecting invalid area ID
         result = await flow.async_step_user({CONF_AREA_ID: "invalid_area_id"})
+
+        assert "type" in result and "reason" in result
 
         assert result["type"] == "abort"
         assert result["reason"] == "invalid_area"
@@ -114,6 +119,8 @@ class TestConfigFlow:
 
         # Test when no areas are available
         result = await flow.async_step_user({CONF_AREA_ID: "nonexistent_area"})
+
+        assert "type" in result and "reason" in result
 
         assert result["type"] == "abort"
         assert result["reason"] == "invalid_area"
@@ -139,7 +146,6 @@ class TestOptionsFlowHandler:
         """Set up options flow for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -164,8 +170,6 @@ class TestOptionsFlowHandler:
             ),
         ]
 
-        from tests.helpers import setup_mock_entities
-
         await setup_mock_entities(
             hass,
             BINARY_SENSOR_DOMAIN,
@@ -188,8 +192,6 @@ class TestOptionsFlowHandler:
         config_entry.options = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
 
         # Create MagicArea with ConfigHelper (not plain dict)
-        from custom_components.magic_areas.const import ConfigHelper
-
         area_config_data = {
             ConfigDomains.AREA: {
                 AreaConfigOptions.TYPE.key: AreaType.INTERIOR,
@@ -206,8 +208,6 @@ class TestOptionsFlowHandler:
         magic_area.get_presence_sensors.return_value = ["binary_sensor.motion_sensor"]
 
         # Create flow and initialize MODULE_DATA
-        from custom_components.magic_areas.const import MODULE_DATA
-
         hass.data[MODULE_DATA] = {config_entry.entry_id: magic_area}
 
         flow = OptionsFlowHandler(config_entry)
@@ -295,10 +295,6 @@ class TestOptionsFlowHandler:
         flow = options_flow_setup["flow"]
 
         # Test with valid input - use ConfigOption.key
-        from custom_components.magic_areas.const.secondary_states import (
-            SecondaryStateOptions,
-        )
-
         user_input = {
             SecondaryStateOptions.SLEEP_ENTITY.key: "binary_sensor.sleep_sensor",
             SecondaryStateOptions.EXTENDED_TIMEOUT.key: 10,  # minutes
@@ -346,8 +342,10 @@ class TestOptionsFlowHandler:
         )
         mock_handler.cleanup = Mock()
 
-        flow._feature_handlers = {"test_feature": mock_handler}
-        flow._current_feature = "test_feature"
+        flow._feature_handlers = {  # pylint: disable=protected-access
+            "test_feature": mock_handler
+        }
+        flow._current_feature = "test_feature"  # pylint: disable=protected-access
 
         result = await flow.async_step_feature({"test": "input"})
 
@@ -359,10 +357,9 @@ class TestOptionsFlowHandler:
     async def test_get_feature_list(self, options_flow_setup):
         """Test getting feature list for area type."""
         flow = options_flow_setup["flow"]
-        from custom_components.magic_areas.const import ConfigHelper
 
         # Test with regular area
-        feature_list = flow._get_feature_list()
+        feature_list = flow._get_feature_list()  # pylint: disable=protected-access
         assert Features.LIGHT_GROUPS in feature_list
         assert Features.AGGREGATION in feature_list
 
@@ -376,13 +373,13 @@ class TestOptionsFlowHandler:
                 }
             }
         )
-        feature_list = flow._get_feature_list()
+        feature_list = flow._get_feature_list()  # pylint: disable=protected-access
         # Meta areas DO support light groups (simple "All Lights" groups)
         assert Features.LIGHT_GROUPS in feature_list
 
         # Test with global area
         flow.area.id = "global"
-        feature_list = flow._get_feature_list()
+        feature_list = flow._get_feature_list()  # pylint: disable=protected-access
         # Global area uses different feature list (may or may not include light_groups)
         assert isinstance(feature_list, list)
 
@@ -390,7 +387,9 @@ class TestOptionsFlowHandler:
         """Test getting configurable features."""
         flow = options_flow_setup["flow"]
 
-        configurable = flow._get_configurable_features()
+        configurable = (
+            flow._get_configurable_features()  # pylint: disable=protected-access
+        )
         assert isinstance(configurable, list)
         assert len(configurable) > 0
 
@@ -407,7 +406,7 @@ class TestOptionsFlowHandler:
         """Test updating options."""
         flow = options_flow_setup["flow"]
 
-        result = await flow._update_options()
+        result = await flow._update_options()  # pylint: disable=protected-access
 
         assert result["type"] == "create_entry"
         assert result["title"] == ""
@@ -450,7 +449,7 @@ class TestOptionsFlowHandler:
             AreaConfigOptions.EXCLUDE_ENTITIES.key: [],
         }
 
-        result = await flow.async_step_area_config(user_input)
+        await flow.async_step_area_config(user_input)
 
         # Should use default (False)
         windowless = flow.area_options.get(ConfigDomains.AREA, {}).get(

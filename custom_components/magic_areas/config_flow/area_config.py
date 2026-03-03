@@ -12,6 +12,10 @@ from custom_components.magic_areas.config_flow.helpers import (
     SelectorBuilder,
 )
 from custom_components.magic_areas.const import AreaConfigOptions, ConfigDomains
+from custom_components.magic_areas.const.urls import (
+    MagicAreasDocumentationUrls,
+    UrlDescriptionPlaceholders,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,10 +58,12 @@ class AreaConfigHandler(DomainHandler):
         )
 
         # Filter selectors for meta areas (they don't have TYPE or INCLUDE_ENTITIES)
+        exclude_keys: list[str] = []
         if self.area.is_meta():
-            selectors.pop(AreaConfigOptions.TYPE.key, None)
-            selectors.pop(AreaConfigOptions.INCLUDE_ENTITIES.key, None)
-            selectors.pop(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES.key, None)
+            exclude_keys.append(AreaConfigOptions.TYPE.key)
+            exclude_keys.append(AreaConfigOptions.INCLUDE_ENTITIES.key)
+            exclude_keys.append(AreaConfigOptions.WINDOWLESS.key)
+            exclude_keys.append(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES.key)
 
         # Get current config (nested under ConfigDomains.AREA)
         current_config = self.get_config()
@@ -65,8 +71,12 @@ class AreaConfigHandler(DomainHandler):
         # Auto-generate schema with current values
         builder = SchemaBuilder(current_config)
         schema = builder.from_option_set(
-            AreaConfigOptions, selector_overrides=selectors
+            AreaConfigOptions, selector_overrides=selectors, exclude_keys=exclude_keys
         )
+
+        description_placeholders = {
+            UrlDescriptionPlaceholders.META_AREAS: MagicAreasDocumentationUrls.META_AREAS,
+        }
 
         if user_input is not None:
             validator = ConfigValidator("area_config")
@@ -83,12 +93,14 @@ class AreaConfigHandler(DomainHandler):
                 step_id="main",
                 data_schema=schema,
                 errors=errors,
+                description_placeholders=description_placeholders,
             )
 
         return DomainStepResult(
             type="form",
             step_id="main",
             data_schema=schema,
+            description_placeholders=description_placeholders,
         )
 
     def get_config(self) -> dict:

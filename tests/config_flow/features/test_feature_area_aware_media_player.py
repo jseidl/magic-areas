@@ -6,7 +6,6 @@ from unittest.mock import Mock
 import pytest
 import voluptuous
 
-from custom_components.magic_areas.config_flow.helpers import SelectorBuilder
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
@@ -15,14 +14,19 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.area_aware_media_player import (
     AreaAwareMediaPlayerFeature,
 )
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
+from custom_components.magic_areas.config_flow.helpers import (
+    SchemaBuilder,
+    SelectorBuilder,
+    StateOptionsBuilder,
+)
 from custom_components.magic_areas.const import (
+    BUILTIN_AREA_STATES,
     AreaConfigOptions,
     AreaStates,
     AreaType,
@@ -33,7 +37,7 @@ from custom_components.magic_areas.const.area_aware_media_player import (
 )
 
 from tests.const import DEFAULT_MOCK_AREA
-from tests.helpers import get_basic_config_entry_data
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -70,8 +74,6 @@ class TestAreaAwareMediaPlayerFeature:
                 unique_id="test_media_player",
             ),
         ]
-
-        from tests.helpers import setup_mock_entities
 
         await setup_mock_entities(
             hass,
@@ -218,11 +220,6 @@ class TestAreaAwareMediaPlayerFeature:
         feature_config = handler.get_config()
 
         # Auto-generate base selectors
-        from custom_components.magic_areas.config_flow.helpers import (
-            SelectorBuilder,
-            StateOptionsBuilder,
-        )
-
         selectors = SelectorBuilder.from_option_set(AreaAwareMediaPlayerOptions)
 
         # Override 1: Filtered media player entities
@@ -233,8 +230,6 @@ class TestAreaAwareMediaPlayerFeature:
         )
 
         # Override 2: Dynamic state options - build available states list
-        from custom_components.magic_areas.const import BUILTIN_AREA_STATES
-
         available_states = [str(s) for s in BUILTIN_AREA_STATES]
         available_states = StateOptionsBuilder.for_area_aware_media_player(
             available_states
@@ -244,8 +239,6 @@ class TestAreaAwareMediaPlayerFeature:
         )
 
         # Auto-generate schema with overrides
-        from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
-
         builder = SchemaBuilder(feature_config)
         schema = builder.from_option_set(
             AreaAwareMediaPlayerOptions, selector_overrides=selectors

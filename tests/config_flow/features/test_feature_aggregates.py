@@ -1,43 +1,36 @@
 """Tests for aggregates feature handler."""
 
 from collections.abc import AsyncGenerator
-from typing import Any
-from unittest.mock import AsyncMock, Mock
-
-import voluptuous
+from unittest.mock import Mock
 
 import pytest
-from homeassistant import config_entries
+import voluptuous
+
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
-from homeassistant.const import ATTR_DEVICE_CLASS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.aggregates import (
     AggregatesFeature,
 )
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
+from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
 from custom_components.magic_areas.const import (
     AreaConfigOptions,
-    AreaStates,
     AreaType,
-    CONF_AREA_ID,
-    CONF_TYPE,
     ConfigDomains,
-    DOMAIN,
     Features,
 )
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 
-from tests.const import DEFAULT_MOCK_AREA, MOCK_AREAS, MockAreaIds
-from tests.helpers import get_basic_config_entry_data, init_integration
+from tests.const import DEFAULT_MOCK_AREA
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -51,7 +44,6 @@ class TestAggregatesFeature:
         """Set up aggregates feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -75,8 +67,6 @@ class TestAggregatesFeature:
                 unique_id="test_media_player",
             ),
         ]
-
-        from tests.helpers import setup_mock_entities
 
         await setup_mock_entities(
             hass,
@@ -217,8 +207,6 @@ class TestAggregatesFeature:
         feature_config = handler.get_config()
 
         # Build schema using SchemaBuilder
-        from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
-
         builder = SchemaBuilder(feature_config)
         schema = builder.from_option_set(AggregateOptions)
 

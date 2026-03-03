@@ -21,6 +21,11 @@ from custom_components.magic_areas.const import (
 from tests.const import MockAreaIds
 from tests.mocks import MockBinarySensor
 
+# Total time to wait for the full reload cascade to complete:
+# regular area (DELAY) → non-global meta-areas (DELAY) → global (GLOBAL_DELAY)
+# In practice the debounce windows overlap, so GLOBAL_DELAY covers the full chain.
+_CASCADE_WAIT = MetaAreaAutoReloadSettings.GLOBAL_DELAY + 1
+
 _LOGGER = logging.getLogger(__name__)
 
 # Constants
@@ -99,9 +104,7 @@ async def test_reload_on_entity_area_change(
     await hass.async_block_till_done()
 
     # Sleep so we handle the reload delay
-    await asyncio.sleep(
-        MetaAreaAutoReloadSettings.DELAY * MetaAreaAutoReloadSettings.DELAY_MULTIPLIER
-    )
+    await asyncio.sleep(_CASCADE_WAIT)
 
     # Check all areas' timestamp against the previous map
     for area in NORMAL_AREAS:
@@ -151,10 +154,8 @@ async def test_meta_reload_from_single_reload(
         assert area_object
         assert area_object.timestamp == area_timestamp_map[area_name]
 
-    # Sleep so we handle the reload delay
-    await asyncio.sleep(
-        MetaAreaAutoReloadSettings.DELAY * MetaAreaAutoReloadSettings.DELAY_MULTIPLIER
-    )
+    # Sleep so we handle the full reload cascade (regular → non-global meta → global)
+    await asyncio.sleep(_CASCADE_WAIT)
 
     # Check corresponding area reloaded
     _assert_has_reloaded(MockAreaIds.KITCHEN.value)

@@ -3,27 +3,28 @@
 from collections.abc import AsyncGenerator
 from unittest.mock import Mock
 
+import pytest
 import voluptuous
 
-
-import pytest
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
-
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
-from homeassistant.helpers.entity_registry import async_get as async_get_er
 
-from custom_components.magic_areas.config_flow.helpers import SelectorBuilder
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.config_flow.features.fan_groups import (
     FanGroupsFeature,
 )
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
+from custom_components.magic_areas.config_flow.helpers import (
+    SchemaBuilder,
+    SelectorBuilder,
+    StateOptionsBuilder,
+)
 from custom_components.magic_areas.const import (
     AreaConfigOptions,
     AreaStates,
@@ -34,7 +35,7 @@ from custom_components.magic_areas.const import (
 from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 
 from tests.const import DEFAULT_MOCK_AREA
-from tests.helpers import get_basic_config_entry_data
+from tests.helpers import get_basic_config_entry_data, setup_mock_entities
 from tests.mocks import MockBinarySensor, MockLight, MockMediaPlayer
 
 
@@ -48,7 +49,6 @@ class TestFanGroupsFeature:
         """Set up fan groups feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
-        entity_registry = async_get_er(hass)
 
         if not area_registry.async_get_area_by_name(DEFAULT_MOCK_AREA.value):
             area_registry.async_create(name=DEFAULT_MOCK_AREA.value)
@@ -72,8 +72,6 @@ class TestFanGroupsFeature:
                 unique_id="test_media_player",
             ),
         ]
-
-        from tests.helpers import setup_mock_entities
 
         await setup_mock_entities(
             hass,
@@ -158,9 +156,9 @@ class TestFanGroupsFeature:
         assert handler.is_available is False
 
         # Test with regular area
-        area_config_data[ConfigDomains.AREA][AreaConfigOptions.TYPE.key] = (
-            AreaType.INTERIOR
-        )
+        area_config_data[ConfigDomains.AREA][
+            AreaConfigOptions.TYPE.key
+        ] = AreaType.INTERIOR
         assert handler.is_available is True
 
     def test_get_summary_no_config(self, fan_groups_feature_setup):
@@ -227,23 +225,15 @@ class TestFanGroupsFeature:
         feature_config = handler.get_config()
 
         # Auto-generate base selectors
-        from custom_components.magic_areas.config_flow.helpers import SelectorBuilder
-
         selectors = SelectorBuilder.from_option_set(FanGroupOptions)
 
         # Override: Dynamic state options (only occupied/extended for fans)
-        from custom_components.magic_areas.config_flow.helpers import (
-            StateOptionsBuilder,
-        )
-
         available_states = StateOptionsBuilder.for_fan_groups()
         selectors[FanGroupOptions.REQUIRED_STATE.key] = (
             handler.flow.build_selector_select(available_states)
         )
 
         # Auto-generate schema with overrides
-        from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
-
         builder = SchemaBuilder(feature_config)
         schema = builder.from_option_set(FanGroupOptions, selector_overrides=selectors)
 
@@ -254,19 +244,11 @@ class TestFanGroupsFeature:
         """Test that state selector is properly overridden."""
         handler = fan_groups_feature_setup["handler"]
 
-        # Get auto-generated selectors
-        selectors = SelectorBuilder.from_option_set(FanGroupOptions)
-
         # Verify that state selector can be overridden
         state_selector = handler.flow.build_selector_select(
             [AreaStates.OCCUPIED, AreaStates.EXTENDED]
         )
         assert state_selector is not None
-
-        # Verify that only occupied and extended states are available for fans
-        from custom_components.magic_areas.config_flow.helpers import (
-            StateOptionsBuilder,
-        )
 
         available_states = StateOptionsBuilder.for_fan_groups()
         assert AreaStates.OCCUPIED in available_states

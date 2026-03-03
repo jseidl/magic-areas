@@ -106,7 +106,7 @@ class LightGroupEntryOptions(OptionSet):
         default=[],
         required=True,
         validator=cv.entity_ids,
-        selector_type="select",
+        selector_type="entity",
         selector_config={"options": [], "multiple": True},
         title="Lights",
         description="Light entities in this group",
@@ -136,6 +136,7 @@ class LightGroupEntryOptions(OptionSet):
         selector_config={
             "options": [cls.value for cls in LightGroupTurnOnWhen],
             "multiple": True,
+            "translation_key": "turn_on_when",
         },
         title="Turn On When",
         description="When to turn on lights",
@@ -154,6 +155,7 @@ class LightGroupEntryOptions(OptionSet):
         selector_config={
             "options": [cls.value for cls in LightGroupTurnOffWhen],
             "multiple": True,
+            "translation_key": "turn_off_when",
         },
         title="Turn Off When",
         description="When to turn off lights. Leave empty to never turn off automatically (lights stay on until manually turned off).",

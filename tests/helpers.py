@@ -14,7 +14,7 @@ import voluptuous as vol
 
 from homeassistant import loader
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import ATTR_FLOOR_ID, CONF_PLATFORM
+from homeassistant.const import ATTR_FLOOR_ID, CONF_PLATFORM, STATE_OFF, STATE_ON
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,
@@ -444,7 +444,6 @@ async def safe_set_state(hass: HomeAssistant, sensor, active: bool = True) -> No
         active: True for STATE_ON, False for STATE_OFF
 
     """
-    from homeassistant.const import STATE_OFF, STATE_ON
 
     state = STATE_ON if active else STATE_OFF
     # Handle both MockBinarySensor objects and entity_id strings
@@ -463,6 +462,7 @@ async def trigger_occupancy(
         hass: Home Assistant instance
         motion_sensor: MockBinarySensor object or entity_id string
         occupied: True for occupied (ON), False for clear (OFF)
+
     """
 
     await safe_set_state(hass, motion_sensor, occupied)

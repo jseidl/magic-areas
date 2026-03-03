@@ -409,11 +409,14 @@ class LightGroupsFeature(FeatureHandler):
             # Build selector overrides for dynamic options
             _LOGGER.debug("Light Groups: Building selector_overrides...")
             selector_overrides = {
-                LightGroupEntryOptions.LIGHTS.key: self.flow.build_selector_select(
-                    options=lights, multiple=True
+                LightGroupEntryOptions.LIGHTS.key: self.flow.build_selector_entity_simple(
+                    options=lights,
+                    multiple=True,
                 ),
                 LightGroupEntryOptions.STATES.key: self.flow.build_selector_select(
-                    options=available_states, multiple=True
+                    options=available_states,
+                    multiple=True,
+                    translation_key=LightGroupEntryOptions.STATES.key,
                 ),
             }
             _LOGGER.debug(

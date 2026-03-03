@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 import logging
 from typing import Any
 
-from custom_components.magic_areas.const.aggregates import AggregateOptions
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -22,6 +21,7 @@ from custom_components.magic_areas.const import (
     CommonAttributes,
     PresenceTrackingOptions,
 )
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
 
 from tests.const import DEFAULT_MOCK_AREA
