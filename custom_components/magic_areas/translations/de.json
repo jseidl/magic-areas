@@ -175,7 +175,7 @@
                     "setpoint": "Wert, den der überwachte Aggregatsensor mindestens erreichen muss, damit die Lüftergruppe eingeschaltet wird."
                 }
             },
-            "feature_climate_control_select_entity": {
+            "feature_climate_control": {
                 "title": "Funktion: Klimasteuerung > Auswahl der Entität",
                 "description": "Wähle die Klimaentität die anhand des Bereichszustands gesteuert werden soll.",
                 "data": {

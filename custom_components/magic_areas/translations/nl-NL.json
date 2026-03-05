@@ -175,7 +175,7 @@
                     "setpoint": "Getal waarmee de gevolgde aggregaatsensor gelijk of groter moet zijn om de ventilateurgroep aan te zetten."
                 }
             },
-            "feature_climate_control_select_entity": {
+            "feature_climate_control": {
                 "title": "Functie: Klimaatregeling > Entiteitsselectie",
                 "description": "Selecteer de klimaatentiteit die u via gebiedsstatussen wilt laten regelen.",
                 "data": {

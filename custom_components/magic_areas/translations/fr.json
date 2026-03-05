@@ -175,7 +175,7 @@
                     "setpoint": "Nombre que le capteur agrégé suivi doit atteindre ou dépasser pour allumer le groupe de ventilateurs."
                 }
             },
-            "feature_climate_control_select_entity": {
+            "feature_climate_control": {
                 "title": "Fonctionnalité : Contrôle climatique > Sélection d'entité",
                 "description": "Sélectionner l'entité climatique que vous souhaitez contrôler en fonction des états de la zone.",
                 "data": {

@@ -175,7 +175,7 @@
           "setpoint": "Liczba rowna lub wieksza od wartosci sledzonego sensora zagregowanego, wymagana dla wlaczenia grupy wentylatorow."
         }
       },
-      "feature_climate_control_select_entity": {
+      "feature_climate_control": {
         "title": "Sterowanie klimatem - Wybor encji",
         "description": "Wybierz urzadzenie klimatyczne, ktore chcesz sterowac za pomoca stanow obszarow.",
         "data": {

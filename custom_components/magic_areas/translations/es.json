@@ -175,7 +175,7 @@
                     "setpoint": "Número que el sensor agregado rastreado debe ser igual o mayor para encender el grupo de ventiladores."
                 }
             },
-            "feature_climate_control_select_entity": {
+            "feature_climate_control": {
                 "title": "Característica: Control climático - Selección de entidad",
                 "description": "Seleccione la entidad climática que desea controlar a través de los estados de área.",
                 "data": {

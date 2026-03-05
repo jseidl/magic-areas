@@ -175,7 +175,7 @@
           "setpoint": "Number which the tracked aggregate sensor must be equal or greater in order to turn on the fan group."
         }
       },
-      "feature_climate_control_select_entity": {
+      "feature_climate_control": {
         "title": "Feature: Climate Control > Entity Selection",
         "description": "Select the climate entity that you would like to be controlled through area states.",
         "data": {
