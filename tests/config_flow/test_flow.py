@@ -22,7 +22,6 @@ from custom_components.magic_areas.config_flow.flow import (
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
     DOMAIN,
-    MODULE_DATA,
     AreaConfigOptions,
     AreaType,
     ConfigDomains,
@@ -207,8 +206,8 @@ class TestOptionsFlowHandler:
         magic_area.is_meta.return_value = False
         magic_area.get_presence_sensors.return_value = ["binary_sensor.motion_sensor"]
 
-        # Create flow and initialize MODULE_DATA
-        hass.data[MODULE_DATA] = {config_entry.entry_id: magic_area}
+        # Store MagicArea as runtime_data on the config entry (new convention)
+        config_entry.runtime_data = magic_area
 
         flow = OptionsFlowHandler(config_entry)
         flow.hass = hass

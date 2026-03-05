@@ -1,5 +1,6 @@
 """Climate control feature constants."""
 
+from homeassistant.components.climate.const import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.helpers import config_validation as cv
 
 from custom_components.magic_areas.const import (
@@ -24,7 +25,7 @@ class ClimateControlOptions(FeatureOptionSet):
         translation_key="climate_entity_id",
         validator=cv.entity_id,
         selector_type="entity",
-        selector_config={"domain": "climate"},
+        selector_config={"domain": CLIMATE_DOMAIN},
     )
 
     PRESET_CLEAR = ConfigOption(

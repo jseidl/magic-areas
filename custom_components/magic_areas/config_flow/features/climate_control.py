@@ -2,12 +2,7 @@
 
 import logging
 
-import voluptuous as vol
-
-from homeassistant.components.climate.const import (
-    ATTR_PRESET_MODES,
-    DOMAIN as CLIMATE_DOMAIN,
-)
+from homeassistant.components.climate.const import ATTR_PRESET_MODES
 from homeassistant.helpers.entity_registry import async_get as entityreg_async_get
 
 from custom_components.magic_areas.config_flow.features import register_feature
@@ -15,14 +10,18 @@ from custom_components.magic_areas.config_flow.features.base import (
     FeatureHandler,
     StepResult,
 )
-from custom_components.magic_areas.const import (
-    EMPTY_ENTRY,
-    MAGICAREAS_UNIQUEID_PREFIX,
-    Features,
-)
+from custom_components.magic_areas.config_flow.helpers import SchemaBuilder
+from custom_components.magic_areas.const import EMPTY_ENTRY, Features
 from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
 _LOGGER = logging.getLogger(__name__)
+
+_PRESET_KEYS = [
+    ClimateControlOptions.PRESET_CLEAR.key,
+    ClimateControlOptions.PRESET_OCCUPIED.key,
+    ClimateControlOptions.PRESET_SLEEP.key,
+    ClimateControlOptions.PRESET_EXTENDED.key,
+]
 
 
 @register_feature
@@ -131,26 +130,18 @@ class ClimateControlFeature(FeatureHandler):
 
             return StepResult(type="create_entry", save_data=config)
 
-        # Build preset schema
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    ClimateControlOptions.PRESET_CLEAR.key, default=""
-                ): vol.In(EMPTY_ENTRY + preset_modes),
-                vol.Optional(
-                    ClimateControlOptions.PRESET_OCCUPIED.key, default=""
-                ): vol.In(EMPTY_ENTRY + preset_modes),
-                vol.Optional(
-                    ClimateControlOptions.PRESET_SLEEP.key, default=""
-                ): vol.In(EMPTY_ENTRY + preset_modes),
-                vol.Optional(
-                    ClimateControlOptions.PRESET_EXTENDED.key, default=""
-                ): vol.In(EMPTY_ENTRY + preset_modes),
-            }
+        # Build dynamic preset selector from actual entity capabilities
+        preset_selector = self.flow.build_selector_select(
+            options=EMPTY_ENTRY + preset_modes
         )
 
-        # Pre-populate with existing config
-        config = self.get_config()
+        # Use SchemaBuilder for pre-population + consistent schema generation
+        builder = SchemaBuilder(self.get_config())
+        schema = builder.from_option_set(
+            ClimateControlOptions,
+            selector_overrides={key: preset_selector for key in _PRESET_KEYS},
+            exclude_keys=[ClimateControlOptions.ENTITY_ID.key],
+        )
 
         return StepResult(
             type="form",
@@ -162,24 +153,12 @@ class ClimateControlFeature(FeatureHandler):
             },
         )
 
-    def _build_entity_schema(self) -> vol.Schema:
-        """Build schema for entity selection."""
-        # Get available climate entities
-        climate_entities = [
-            entity_id
-            for entity_id in self.all_entities
-            if (
-                entity_id.split(".")[0] == CLIMATE_DOMAIN
-                and not entity_id.split(".")[1].startswith(MAGICAREAS_UNIQUEID_PREFIX)
-            )
-        ]
-
-        return vol.Schema(
-            {
-                vol.Required(ClimateControlOptions.ENTITY_ID.key): (
-                    vol.In(climate_entities) if climate_entities else vol.In([])
-                ),
-            }
+    def _build_entity_schema(self):
+        """Build schema for entity selection, pre-populated with saved entity."""
+        builder = SchemaBuilder(self.get_config())
+        return builder.from_option_set(
+            ClimateControlOptions,
+            exclude_keys=_PRESET_KEYS,
         )
 
     def get_summary(self, config: dict) -> str:

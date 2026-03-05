@@ -189,31 +189,10 @@ class LightGroupsFeature(FeatureHandler):
                 return StepResult(
                     type="form",
                     step_id="add_group",
-                    data_schema=self._build_group_schema(),
+                    data_schema=self._build_group_schema(user_input),
                     errors=errors,
                 )
 
-            # Create new group
-            # new_group = {
-            #     LightGroupEntryOptions.NAME.key: name,
-            #     LightGroupEntryOptions.LIGHTS.key: lights,
-            #     LightGroupEntryOptions.STATES.key: user_input.get(
-            #         LightGroupEntryOptions.STATES.key,
-            #         LightGroupEntryOptions.STATES.default,
-            #     ),
-            #     LightGroupEntryOptions.TURN_ON_WHEN.key: user_input.get(
-            #         LightGroupEntryOptions.TURN_ON_WHEN.key,
-            #         LightGroupEntryOptions.TURN_ON_WHEN.default,
-            #     ),
-            #     LightGroupEntryOptions.TURN_OFF_WHEN.key: user_input.get(
-            #         LightGroupEntryOptions.TURN_OFF_WHEN.key,
-            #         LightGroupEntryOptions.TURN_OFF_WHEN.default,
-            #     ),
-            #     LightGroupEntryOptions.REQUIRE_DARK.key: user_input.get(
-            #         LightGroupEntryOptions.REQUIRE_DARK.key,
-            #         LightGroupEntryOptions.REQUIRE_DARK.default,
-            #     ),
-            # }
             new_group = LightGroupEntryOptions.from_user_input(user_input)
 
             # Add to config
@@ -279,31 +258,10 @@ class LightGroupsFeature(FeatureHandler):
                 return StepResult(
                     type="form",
                     step_id="edit_group",
-                    data_schema=self._build_group_schema(self._partial_group),
+                    data_schema=self._build_group_schema(user_input),
                     errors=errors,
                 )
 
-            # Update group at index
-            # updated_group = {
-            #     LightGroupEntryOptions.NAME.key: name,
-            #     LightGroupEntryOptions.LIGHTS.key: lights,
-            #     LightGroupEntryOptions.STATES.key: user_input.get(
-            #         LightGroupEntryOptions.STATES.key,
-            #         LightGroupEntryOptions.STATES.default,
-            #     ),
-            #     LightGroupEntryOptions.TURN_ON_WHEN.key: user_input.get(
-            #         LightGroupEntryOptions.TURN_ON_WHEN.key,
-            #         LightGroupEntryOptions.TURN_ON_WHEN.default,
-            #     ),
-            #     LightGroupEntryOptions.TURN_OFF_WHEN.key: user_input.get(
-            #         LightGroupEntryOptions.TURN_OFF_WHEN.key,
-            #         LightGroupEntryOptions.TURN_OFF_WHEN.default,
-            #     ),
-            #     LightGroupEntryOptions.REQUIRE_DARK.key: user_input.get(
-            #         LightGroupEntryOptions.REQUIRE_DARK.key,
-            #         LightGroupEntryOptions.REQUIRE_DARK.default,
-            #     ),
-            # }
             updated_group = LightGroupEntryOptions.from_user_input(user_input)
 
             # Update in config

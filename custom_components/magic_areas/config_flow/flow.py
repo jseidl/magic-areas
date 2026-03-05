@@ -29,13 +29,11 @@ from custom_components.magic_areas.config_flow.user_defined_states import (
 )
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
-    DATA_AREA_OBJECT,
     DOMAIN,
     FEATURE_LIST,
     FEATURE_LIST_GLOBAL,
     FEATURE_LIST_META,
     META_AREA_GLOBAL,
-    MODULE_DATA,
     AreaConfigOptions,
     AreaType,
     ConfigDomains,
@@ -131,10 +129,11 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
             return self.async_create_entry(title=area_object.name, data=config_entry)
 
         # Filter out already-configured areas
-        configured_areas = []
-        ma_data = self.hass.data.get(MODULE_DATA, {})
-        for config_data in ma_data.values():
-            configured_areas.append(config_data[DATA_AREA_OBJECT].id)
+        configured_areas = [
+            entry.runtime_data.id
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
+            if hasattr(entry, "runtime_data") and entry.runtime_data is not None
+        ]
 
         available_areas = [area for area in areas if area.id not in configured_areas]
 
@@ -215,8 +214,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_init(self, user_input=None):
         """Initialize the options flow."""
-        self.data = self.hass.data[MODULE_DATA][self.config_entry.entry_id]
-        self.area = self.data[DATA_AREA_OBJECT]
+        self.area = self.config_entry.runtime_data
 
         _LOGGER.debug("OptionsFlow: Initializing for area %s", self.area.name)
 
