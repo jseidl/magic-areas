@@ -32,7 +32,7 @@ from homeassistant.helpers.entity_registry import (
 from homeassistant.util import slugify
 
 from custom_components.magic_areas.const import (
-    DATA_AREA_OBJECT,
+    DOMAIN,
     INVALID_STATES,
     MAGIC_AREAS_COMPONENTS,
     MAGIC_AREAS_COMPONENTS_GLOBAL,
@@ -40,7 +40,6 @@ from custom_components.magic_areas.const import (
     MAGIC_DEVICE_ID_PREFIX,
     MAGICAREAS_UNIQUEID_PREFIX,
     META_AREA_GLOBAL,
-    MODULE_DATA,
     AreaConfigOptions,
     AreaStates,
     AreaType,
@@ -544,14 +543,17 @@ class MagicArea:
         self.logger.debug("%s: Using sun.sun for dark detection", self.name)
         return "sun.sun"
 
+    def _iter_magic_areas(self):
+        """Yield MagicArea instances for all loaded config entries."""
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if hasattr(entry, "runtime_data") and entry.runtime_data is not None:
+                yield entry.runtime_data
+
     def _get_exterior_meta_area(self) -> "MagicArea | None":
         """Get the exterior meta-area if it exists."""
-        data = self.hass.data.get(MODULE_DATA, {})
-        exterior_id = MetaAreaType.EXTERIOR
-
-        if exterior_id in data:
-            return data[exterior_id][DATA_AREA_OBJECT]
-
+        for area in self._iter_magic_areas():
+            if area.id == MetaAreaType.EXTERIOR:
+                return area
         return None
 
     def is_area_dark(self) -> bool:
@@ -719,12 +721,9 @@ class MagicMetaArea(MagicArea):
 
     def get_child_areas(self):
         """Return areas that a Meta area is watching."""
-        data = self.hass.data[MODULE_DATA]
         areas: list[str] = []
 
-        for area_info in data.values():
-            area: MagicArea = area_info[DATA_AREA_OBJECT]
-
+        for area in self._iter_magic_areas():
             if area.is_meta():
                 continue
 
@@ -758,10 +757,7 @@ class MagicMetaArea(MagicArea):
         entity_registry = entityreg_async_get(self.hass)
         entity_list: list[RegistryEntry] = []
 
-        data = self.hass.data[MODULE_DATA]
-        for area_info in data.values():
-            area: MagicArea = area_info[DATA_AREA_OBJECT]
-
+        for area in self._iter_magic_areas():
             if area.slug not in self.child_areas:
                 continue
 

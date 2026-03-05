@@ -19,8 +19,6 @@ from homeassistant.helpers.floor_registry import (
 from custom_components.magic_areas.base.magic import BasicArea, MagicArea, MagicMetaArea
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
-    DATA_AREA_OBJECT,
-    MODULE_DATA,
     MetaAreaIcons,
     MetaAreaType,
 )
@@ -137,7 +135,7 @@ def get_area_from_config_entry(
 ) -> MagicArea | MagicMetaArea | None:
     """Return area object for given config entry."""
 
-    if config_entry.entry_id not in hass.data[MODULE_DATA]:
+    if not hasattr(config_entry, "runtime_data") or config_entry.runtime_data is None:
         return None
 
-    return hass.data[MODULE_DATA][config_entry.entry_id][DATA_AREA_OBJECT]
+    return config_entry.runtime_data

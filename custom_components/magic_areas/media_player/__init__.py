@@ -8,10 +8,9 @@ from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_D
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
-    DATA_AREA_OBJECT,
+    DOMAIN,
     EMPTY_STRING,
     META_AREA_GLOBAL,
-    MODULE_DATA,
     Features,
     MagicAreasFeatureInfoMediaPlayerGroups,
 )
@@ -69,13 +68,13 @@ def setup_media_player_group(area):
 
 def setup_area_aware_media_player(area):
     """Create Area-aware media player."""
-    ma_data = area.hass.data[MODULE_DATA]
-
     # Check if we have areas with MEDIA_PLAYER_DOMAIN entities
     areas_with_media_players = []
 
-    for entry in ma_data.values():
-        current_area = entry[DATA_AREA_OBJECT]
+    for entry in area.hass.config_entries.async_entries(DOMAIN):
+        if not hasattr(entry, "runtime_data") or entry.runtime_data is None:
+            continue
+        current_area = entry.runtime_data
 
         # Skip meta areas
         if current_area.is_meta():

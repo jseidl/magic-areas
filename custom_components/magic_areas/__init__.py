@@ -1,6 +1,5 @@
 """Magic Areas component for Home Assistant."""
 
-from collections.abc import Callable
 from datetime import UTC, datetime
 import logging
 from typing import Any
@@ -20,9 +19,6 @@ from homeassistant.helpers.entity_registry import (
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
-    DATA_AREA_OBJECT,
-    DATA_TRACKED_LISTENERS,
-    MODULE_DATA,
     AreaConfigOptions,
     ConfigDomains,
     MagicConfigEntryVersion,
@@ -106,20 +102,21 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             str(magic_area.config),
         )
 
-        # Setup config uptate listener
-        tracked_listeners: list[Callable] = []
-        tracked_listeners.append(config_entry.add_update_listener(async_update_options))
+        # Register cleanup callbacks — HA calls these automatically on unload.
+        config_entry.async_on_unload(
+            config_entry.add_update_listener(async_update_options)
+        )
 
         # Watch for area changes.
         if not magic_area.is_meta():
-            tracked_listeners.append(
+            config_entry.async_on_unload(
                 hass.bus.async_listen(
                     EVENT_ENTITY_REGISTRY_UPDATED,
                     _async_registry_updated,
                     magic_area.make_entity_registry_filter(),
                 )
             )
-            tracked_listeners.append(
+            config_entry.async_on_unload(
                 hass.bus.async_listen(
                     EVENT_DEVICE_REGISTRY_UPDATED,
                     _async_registry_updated,
@@ -129,17 +126,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             # Reload once Home Assistant has finished starting to make sure we have all entities.
             hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_reload_entry)
 
-        hass.data[MODULE_DATA][config_entry.entry_id] = {
-            DATA_AREA_OBJECT: magic_area,
-            DATA_TRACKED_LISTENERS: tracked_listeners,
-        }
+        # Store the MagicArea instance as runtime data on the config entry.
+        config_entry.runtime_data = magic_area
 
         # Setup platforms
         await hass.config_entries.async_forward_entry_setups(
             config_entry, magic_area.available_platforms()
         )
-
-    hass.data.setdefault(MODULE_DATA, {})
 
     await _async_setup_integration()
 
@@ -156,39 +149,10 @@ async def async_update_options(hass: HomeAssistant, config_entry: ConfigEntry) -
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-
-    if MODULE_DATA not in hass.data:
-        _LOGGER.warning(
-            "Module data object for Magic Areas not found, possibly already removed."
-        )
-        return False
-
-    data = hass.data[MODULE_DATA]
-
-    if config_entry.entry_id not in data:
-        _LOGGER.debug(
-            "Config entry '%s' not on data dictionary, probably already unloaded. Skipping.",
-            config_entry.entry_id,
-        )
-        return True
-
-    area_data = data[config_entry.entry_id]
-    area = area_data[DATA_AREA_OBJECT]
-
-    all_unloaded = await hass.config_entries.async_unload_platforms(
+    area: MagicArea = config_entry.runtime_data
+    return await hass.config_entries.async_unload_platforms(
         config_entry, area.available_platforms()
     )
-
-    for tracked_listener in area_data[DATA_TRACKED_LISTENERS]:
-        tracked_listener()
-
-    if all_unloaded:
-        data.pop(config_entry.entry_id)
-
-    if not data:
-        hass.data.pop(MODULE_DATA)
-
-    return True
 
 
 # ============================================================================

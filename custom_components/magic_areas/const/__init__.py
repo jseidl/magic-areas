@@ -42,7 +42,6 @@ EMPTY_ENTRY = [""]
 
 # Domain Constants
 DOMAIN = "magic_areas"
-MODULE_DATA = f"{DOMAIN}_data"
 
 # Config Entry Keys
 CONF_AREA_ID = "id"  # Area identifier stored in config_entry.data
@@ -581,10 +580,6 @@ AREA_TYPES = list(AreaType)
 
 INVALID_STATES = [STATE_UNAVAILABLE, STATE_UNKNOWN]
 PRESENCE_SENSOR_VALID_ON_STATES = [STATE_ON, STATE_OPEN, STATE_PLAYING]
-
-# Data Items
-DATA_AREA_OBJECT = "area_object"
-DATA_TRACKED_LISTENERS = "tracked_listeners"
 
 # Device Class Lists
 ALL_BINARY_SENSOR_DEVICE_CLASSES = [cls.value for cls in BinarySensorDeviceClass]

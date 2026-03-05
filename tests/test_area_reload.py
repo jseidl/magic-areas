@@ -12,11 +12,7 @@ from homeassistant.helpers.entity_registry import (
 )
 
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.const import (
-    DATA_AREA_OBJECT,
-    MODULE_DATA,
-    MetaAreaAutoReloadSettings,
-)
+from custom_components.magic_areas.const import DOMAIN, MetaAreaAutoReloadSettings
 
 from tests.const import MockAreaIds
 from tests.mocks import MockBinarySensor
@@ -50,29 +46,13 @@ ALL_AREAS = NORMAL_AREAS + REGULAR_META_AREAS + FLOOR_META_AREAS
 # Helpers
 
 
-def get_config_entry_by_area_name(hass: HomeAssistant, area_name: str) -> str | None:
-    """Fetch config_entry_id from an area's name."""
-    ma_data = hass.data[MODULE_DATA]
-    for entry_id, entry_data in ma_data.items():
-        area_data = entry_data[DATA_AREA_OBJECT]
-        if area_data.id == area_name.lower():
-            return entry_id
-
-    return None
-
-
 def get_entry_by_area_name(hass: HomeAssistant, area_name: str) -> MagicArea | None:
     """Fetch MagicArea object from an area's name."""
-    config_entry_id = get_config_entry_by_area_name(hass, area_name)
-    if not config_entry_id:
-        return None
-
-    ma_data = hass.data[MODULE_DATA]
-
-    if config_entry_id not in ma_data:
-        return None
-
-    return ma_data[config_entry_id][DATA_AREA_OBJECT]
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if hasattr(entry, "runtime_data") and entry.runtime_data is not None:
+            if entry.runtime_data.id == area_name.lower():
+                return entry.runtime_data
+    return None
 
 
 # Tests
