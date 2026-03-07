@@ -445,6 +445,19 @@ class TestMigrateV2_1ToV2_2:  # pylint: disable=invalid-name
         assert ConfigDomains.USER_DEFINED_STATES in result
         assert ConfigDomains.FEATURES in result
 
+    def test_windowless_true_when_dark_entity_empty(self):
+        """Empty dark_entity indicates windowless room."""
+        opts = {**OLD_OPTIONS_REGULAR}
+        opts["secondary_states"] = {**opts["secondary_states"], "dark_entity": ""}
+        result = _migrate_v2_1_to_v2_2(self._entry(opts))
+        assert result[ConfigDomains.AREA][AreaConfigOptions.WINDOWLESS.key] is True
+
+    def test_windowless_false_when_dark_entity_set(self):
+        """Non-empty dark_entity indicates room has windows/natural light."""
+        result = _migrate_v2_1_to_v2_2(self._entry(OLD_OPTIONS_REGULAR))
+        # OLD_OPTIONS_REGULAR has dark_entity set to a sensor
+        assert result[ConfigDomains.AREA][AreaConfigOptions.WINDOWLESS.key] is False
+
 
 # ---------------------------------------------------------------------------
 # TestAsyncMigrateEntry

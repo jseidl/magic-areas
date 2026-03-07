@@ -227,6 +227,14 @@ def _migrate_v2_1_to_v2_2(config_entry: ConfigEntry) -> dict:
     # ------------------------------------------------------------------
     # area domain
     # ------------------------------------------------------------------
+
+    # Check old dark_entity to infer windowless setting
+    old_secondary: dict[str, Any] = old.get(ConfigDomains.SECONDARY_STATES, {})
+    old_dark_entity: str = old_secondary.get("dark_entity", "")
+
+    # If dark_entity was empty/None, the room was marked as always dark (windowless)
+    windowless: bool = not bool(old_dark_entity)
+
     new_options[ConfigDomains.AREA] = {
         AreaConfigOptions.TYPE.key: old.get(
             AreaConfigOptions.TYPE.key, AreaConfigOptions.TYPE.default
@@ -248,7 +256,7 @@ def _migrate_v2_1_to_v2_2(config_entry: ConfigEntry) -> dict:
             AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES.default,
         ),
         # New field with no old equivalent — default to False
-        AreaConfigOptions.WINDOWLESS.key: AreaConfigOptions.WINDOWLESS.default,
+        AreaConfigOptions.WINDOWLESS.key: windowless,
     }
 
     # ------------------------------------------------------------------
