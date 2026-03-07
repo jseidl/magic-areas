@@ -23,7 +23,7 @@ repos:
           - --quiet
         files: ^(custom_components|tests)/.+\.py$
   - repo: https://github.com/pycqa/flake8.git
-    rev: 6.0.0
+    rev: 7.1.1
     hooks:
       - id: flake8
         additional_dependencies:
