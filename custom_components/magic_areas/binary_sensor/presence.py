@@ -643,10 +643,6 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
 
         self.hass.loop.call_soon_threadsafe(self._update_state, datetime.now(UTC))
 
-        # Ensure clear timeout is scheduled if needed after startup
-        # This catches the case where area was occupied before restart but timer was lost
-        self.hass.loop.call_soon_threadsafe(self._ensure_clear_timeout_on_startup)
-
         _LOGGER.debug("%s: area presence binary sensor initialized", self.area.name)
 
     async def restore_state(self) -> None:
@@ -669,37 +665,6 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
                     self.area.name,
                     restored_states,
                 )
-
-    @callback
-    def _ensure_clear_timeout_on_startup(self) -> None:
-        """Ensure clear timeout is scheduled if area is occupied with no active sensors.
-
-        This handles the case where:
-        1. Area was occupied before HA restart
-        2. Timer was scheduled but lost when HA stopped
-        3. After restart, area.states is restored but no sensors are active
-        4. Without this, area would stay occupied forever
-        """
-        if not self.area.is_occupied():
-            return
-
-        has_active_sensors = self._get_sensors_state()
-        has_timeout_pending = self._is_on_clear_timeout()
-
-        _LOGGER.debug(
-            "%s: Startup validation - occupied=%s, active_sensors=%s, timeout_pending=%s",
-            self.area.name,
-            self.area.is_occupied(),
-            has_active_sensors,
-            has_timeout_pending,
-        )
-
-        if not has_active_sensors and not has_timeout_pending:
-            _LOGGER.info(
-                "%s: Occupied with no active sensors after startup, scheduling clear timeout",
-                self.area.name,
-            )
-            self._set_clear_timeout()
 
     async def _setup_listeners(self) -> None:
         # Setup state change listener
@@ -785,9 +750,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
         states_list: list[AreaStates] = []
 
         for area_slug in child_areas:
-            area_entity_id: str = (
-                f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
-            )
+            area_entity_id: str = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
             area_state = self.hass.states.get(area_entity_id)
 
             if not area_state:
