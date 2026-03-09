@@ -132,6 +132,29 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         """Remove pending timers."""
         self._remove_clear_timeout()
 
+    @callback
+    def _validate_state_consistency(self, now: datetime | None = None) -> None:
+        """Validate area state consistency and schedule clear timeout if needed.
+
+        Catches edge cases where:
+        1. Area is stuck occupied due to a race condition or bug
+        2. Sensors became unavailable during startup
+        3. Any other scenario where occupied state has no timeout scheduled
+        """
+        if not self.area.is_occupied():
+            return
+
+        has_active_sensors = self._get_sensors_state()
+        has_timeout_pending = self._is_on_clear_timeout()
+
+        if not has_active_sensors and not has_timeout_pending:
+            _LOGGER.warning(
+                "%s: State inconsistency detected - occupied with no active sensors "
+                "and no timeout scheduled. Scheduling clear timeout.",
+                self.area.name,
+            )
+            self._set_clear_timeout()
+
     # Public methods
 
     def get_sensors(self) -> list[str]:
@@ -284,6 +307,9 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             states_tuple = (self.area.states.copy(), [])
 
         self._report_state_change(states_tuple)
+
+        # Safety check: ensure stuck states get cleared
+        self._validate_state_consistency()
 
     def _report_state_change(self, states_tuple=([], [])):
         """Fire an event reporting area state change."""
@@ -619,6 +645,27 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
 
         _LOGGER.debug("%s: area presence binary sensor initialized", self.area.name)
 
+    async def restore_state(self) -> None:
+        """Restore the state of the entity and area.states list.
+
+        Extends parent to also restore area.states from saved attributes,
+        fixing the bug where timers don't fire after HA restart because
+        area.is_occupied() returns False when area.states is empty.
+        """
+        await super().restore_state()
+
+        # Restore area.states from saved attributes
+        last_state = await self.async_get_last_state()
+        if last_state is not None and ATTR_STATES in last_state.attributes:
+            restored_states = last_state.attributes[ATTR_STATES]
+            if isinstance(restored_states, list):
+                self.area.states = list(restored_states)
+                _LOGGER.info(
+                    "%s: Restored area.states from attributes: %s",
+                    self.area.name,
+                    restored_states,
+                )
+
     async def _setup_listeners(self) -> None:
         # Setup state change listener
         async_dispatcher_connect(
@@ -703,9 +750,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
         states_list: list[AreaStates] = []
 
         for area_slug in child_areas:
-            area_entity_id: str = (
-                f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
-            )
+            area_entity_id: str = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
             area_state = self.hass.states.get(area_entity_id)
 
             if not area_state:
