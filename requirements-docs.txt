@@ -1,3 +1,11 @@
+# MkDocs core
 mkdocs
+
+# Material theme for MkDocs
 mkdocs-material
+
+# Plugins
 mkdocs-git-revision-date-localized-plugin
+
+# Markdown extensions
+pymdown-extensions

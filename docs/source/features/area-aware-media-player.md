@@ -21,7 +21,7 @@ This ensures messages and notifications are **only played where someone is prese
 | Option | Description | Default |
 |--------|-------------|---------|
 | **Notification Devices** | `media_player` entities in this area that can be used for playback. Leave blank to include all devices in the area. | All media players in the area |
-| **Notify States** | Area states where playback is allowed. | `extended` (avoids triggering on transient occupancy like someone walking by) |
+| **Notify States** | Area states where playback is allowed. Supports built-in states (`occupied`, `extended`, `sleep`) and any [user-defined states](../concepts/area-states.md#user-defined-states) you've created. | `extended` (avoids triggering on transient occupancy like someone walking by) |
 
 💡 *Use `occupied` for immediate feedback, or stick to `extended` for less noisy results in places like bedrooms.*
 

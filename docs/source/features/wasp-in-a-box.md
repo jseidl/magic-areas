@@ -2,22 +2,28 @@
 
 The **Wasp in a Box** 🐝📦 feature improves presence detection by adding **contextual logic** to motion-based sensors using an associated door or entry sensor.
 
-It’s based on a simple concept:
+It's based on a simple concept:
 
 ## 🚀 How It Works
+
+!!! note "🧮 Requires Aggregates Feature"
+    Wasp in a Box relies on the [Aggregates feature](aggregation.md) to create aggregated motion and door sensors. Ensure Aggregates is enabled with appropriate device classes:
+
+    - **Wasp sensors**: motion, occupancy (configured in Wasp settings)
+    - **Box sensors**: door, garage_door (auto-detected)
 
 1. If we **see a wasp**, there is a wasp in the box.
 2. If we **close the box** while the wasp is inside, the wasp stays inside.
 3. If the box remains closed and the wasp **stops moving**, we **assume** it's still inside.
-4. If the box is **opened again** and the wasp isn’t moving, we assume it’s **gone**.
+4. If the box is **opened again** and the wasp isn't moving, we assume it's **gone**.
 
-> 🧪 This helps avoid false clears due to motion sensors timing out after you’ve already left the room—preserving presence state more accurately.
+> 🧪 This helps avoid false clears due to motion sensors timing out after you've already left the room—preserving presence state more accurately.
 
 When enabled, Magic Areas will:
 
 - Create a `binary_sensor` for each area using this logic.
 - Automatically use it for presence tracking (replacing or supplementing your regular motion sensors).
-- Use the area’s **aggregated wasp and box sensors** (see below).
+- Use the area's **aggregated wasp and box sensors** (see below).
 
 ## ⏱️ Delay Behavior
 

@@ -1,117 +1,181 @@
 # 💡 Light Groups
 
-The **Light Groups** feature in Magic Areas helps you organize and automate your lights intelligently and contextually—starting with automatic [light group](https://www.home-assistant.io/integrations/light.group/) creation and adding state-aware behavior for smarter automation.
+Light Groups let you organize lights intelligently, with each group responding automatically to area presence and states. Create as many groups as you need with names that make sense for YOUR home.
 
-## ✅ Basic Functionality
+## ✅ Unlimited Custom Groups
 
-At its simplest, this feature automatically creates a Home Assistant light group for each area using all `light` entities assigned to it.
+Unlike rigid category systems, Light Groups are completely flexible. Create groups with custom names:
+
+- **Movie Lights** - Dim ambiance for movie night
+- **Desk Lamp** - Task lighting that stays on during work hours
+- **Cooking Lights** - Bright lighting over prep areas
+- **Bedside Lamps** - Gentle lights for winding down
+- **Accent Wall** - Decorative lighting for art display
+
+Each group has full control over when it activates, what triggers it, and whether it requires darkness.
 
 !!! warning
     No group will be created if there are no `light` entities in the area.
 
-## 🌈 Available Light Groups
-
-You can classify your lights into **predefined groups** for specific purposes:
-
-- **Overhead Lights** – Main ceiling lights for general illumination.
-- **Accent Lights** – Decorative or highlight lighting (e.g., under cabinets, wall sconces).
-- **Task Lights** – Focused lights for workspaces, desks, or reading.
-- **Sleep Lights** – Dim lighting suitable for nighttime or bedtime use.
-
-Each of these groups—when populated—automatically gets a dedicated `light.group` in Home Assistant.
-They can also be linked to an area's **secondary states** (e.g., `sleep`, `accented`, `extended`) for smarter automation.
-
-!!! warning
-    🧠 To enable automation, turn on the `Light Control ($Area)` switch created by Magic Areas.
-
 ## ⚙️ Configuration Options
 
-| Option                              | Type             | Default      | Description                                                                                      |
-|------------------------------------|-----------------|-------------|--------------------------------------------------------------------------------------------------|
-| Overhead lights                     | entity list      | blank       | Lights assigned to this group.                                                                  |
-| States which this group should be on (Overhead lights) | list | `occupied` | Area states that trigger this group.                                                           |
-| When should we control this light? (Overhead lights) | multi-choice  | occupancy + state | `occupancy` triggers on clear → occupied; `state` triggers on secondary state changes.         |
-| Sleep lights                        | entity list      | blank       | Lights assigned to this group.                                                                  |
-| States which this group should be on (Sleep lights) | list | `occupied` | Area states that trigger this group.                                                           |
-| When should we control this light? (Sleep lights) | multi-choice  | occupancy + state | Same behavior explanation as above.                                                            |
-| Accent lights                       | entity list      | blank       | Lights assigned to this group.                                                                  |
-| States which this group should be on (Accent lights) | list | `occupied` | Area states that trigger this group.                                                           |
-| When should we control this light? (Accent lights) | multi-choice  | occupancy + state | Same behavior explanation as above.                                                            |
-| Task lights                          | entity list      | blank       | Lights assigned to this group.                                                                  |
-| States which this group should be on (Task lights) | list | `occupied` | Area states that trigger this group.                                                           |
-| When should we control this light? (Task lights) | multi-choice  | occupancy + state | Same behavior explanation as above.                                                            |
+Each light group you create has these options:
 
-!!! warning "💡 **Control Timing Notes:** "
-    - **Occupancy only:** Light group reacts when entering the room (clear → occupied) but not if the area enters a secondary state while already occupied.
-    - **State only:** Light group reacts when a secondary state changes but **not** when first entering the room.
-    - **Both selected (default):** Reacts on room entry **and** secondary state changes.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| **Group Name** | Text | (required) | Custom name for this group (e.g., "Movie Lights") |
+| **Lights** | Entity selector | (required) | Light entities in this group |
+| **Active States** | Multi-select | `occupied` | Area states when this group should be active (e.g., `extended`, `sleep`, or any user-defined states like `movie`, `gaming`) |
+| **Turn On When** | Multi-select | `area_occupied`, `state_gain`, `area_dark` | Triggers that activate lights |
+| **Turn Off When** | Multi-select | `area_clear`, `state_loss`, `exterior_bright` | Triggers that deactivate lights |
+| **Require Dark** | Boolean | `True` | Only activate if area is dark |
 
-## 🔁 Automatic Control
+### 🎯 Turn On Triggers
 
-Magic Areas can automatically turn lights on or off based on:
+Choose when lights should turn on:
 
-- **Primary presence state**: `occupied` or `clear`
-- **Secondary states**: `dark`, `extended`, `sleep`, etc.
+- **`area_occupied`** - When area transitions from clear to occupied
+- **`state_gain`** - When area gains a configured state (while already occupied)
+- **`area_dark`** - When area becomes dark (while occupied)
 
-### 🌒 The `dark` State
+### 🎯 Turn Off Triggers
 
-If a `dark` sensor is configured:
+Choose when lights should turn off:
 
-- Lights turn on only when the area is both **occupied** _and_ **dark**.
-- Otherwise, lights turn on anytime the area becomes occupied.
+- **`area_clear`** - When area becomes unoccupied
+- **`state_loss`** - When area loses ALL configured states
+- **`exterior_bright`** - When outside becomes bright (uses Exterior meta-area or sun.sun fallback)
 
-!!! note
-    ✅ If the area becomes dark while already occupied, lights will turn on immediately.
+!!! note "☀️ Sun Integration Required"
+    The `exterior_bright` trigger requires the [Sun integration](https://www.home-assistant.io/integrations/sun/) to be enabled for fallback when no Exterior meta-area exists.
 
-#### Dark State Behavior Matrix
+!!! tip "🔄 Eliminating Feedback Loops"
+    The separate on/off triggers solve the classic problem: lights turning on make the room bright, which used to trigger them to turn off again. Now you can configure lights to turn on when dark but only turn off when you leave or morning arrives—not just because they illuminated the room.
 
-| Area State | Dark Configured? | Dark State | Lights Will… |
-|------------|-----------------|------------|--------------|
-| `occupied` | ❌ No           | N/A        | Turn on      |
-| `occupied` | ✅ Yes          | `off`      | Do nothing   |
-| `occupied` | ✅ Yes          | `on`       | Turn on      |
-| `clear`    | ❌ No           | N/A        | Turn off     |
-| `clear`    | ✅ Yes          | `off`      | Turn off     |
-| `clear`    | ✅ Yes          | `on`       | Turn off     |
+## ☀️ The `require_dark` Toggle
 
-### 💡 Automatically Turning Off Lights
+Control whether each group respects darkness:
 
-When an area becomes `clear`, **all lights are turned off**, regardless of secondary state.
-Disable **Light Control** to override.
+**`require_dark = True`** (default)
+- Group only activates if area is dark
+- Uses automatic light sensor resolution (see below)
+- Perfect for most lighting scenarios
 
-## 🚀 How it Works
+**`require_dark = False`**
+- Group activates based on states alone, ignoring brightness
+- Essential for **windowless areas** (bathrooms, closets, basements)
+- Useful for **accent lighting** that should always be on (lava lamps, desk accent lights, decorative lighting)
+- Great for hallways that need light during the day
 
-Light groups are tied to area states:
+### 🔦 How Darkness is Determined
 
-- **States:** Each group activates only when the area is in selected states (primary or secondary).
-- **Control timing:** Decide if groups react on **occupancy**, **secondary state changes**, or both (recommended).
+Magic Areas automatically determines if an area is dark using:
 
-**Example:**
-- `Sleep Lights` set to **occupancy only**: will turn on when you enter a bedroom at night, but not if `sleep` state activates while already inside.
-- `Accent Lights` set to **state only**: will turn on whenever the `extended` state is activated, even if already inside.
+1. **Area Light (Calculated)** - If [Aggregates feature](aggregation.md) has illuminance sensors + threshold configured
+2. **Area Light Aggregate** - If [Aggregates feature](aggregation.md) has binary light sensors
+3. **Windowless Flag** - If enabled, area is always dark (unless local sensors override)
+4. **Exterior brightness** - Falls back to Exterior meta-area sensors or sun.sun
+
+!!! note "🔗 Complete Details"
+    See [Area States - Dark Detection](../concepts/area-states.md#dark-bright-states) for the full cascading resolution logic.
+
+## 🚀 How It Works
+
+1. **Area state changes** (occupied, dark, sleep, or custom states)
+2. **Light groups evaluate** their active states + turn on triggers
+3. **If conditions match** → lights activate (respecting `require_dark`)
+4. **Turn off triggers** independently control when lights deactivate
+
+!!! warning "💡 Control Switch"
+    Turn on the `Light Control ({Area})` switch created by Magic Areas to enable automation. When off, lights respond only to manual control.
 
 ## 🧠 Usage Examples
 
-### 🛋️ TV ambiance with accent lights
+### 🚽 Bathroom Lights (Windowless)
 
-- **Group:** Accent Lights
-- **State:** `accented`
-- **Trigger Mode:** `state` (media player, for exmaple)
-- **Why:** Soft lighting during movie nights or relaxing evenings.
+```yaml
+Group Name: Bathroom Overhead
+Lights: light.bathroom_ceiling
+Active States: (leave default - occupied is implied)
+Turn On When: area_occupied
+Turn Off When: area_clear
+Require Dark: False  # ← Always turn on, regardless of time
+```
 
-### 💤 Nighttime routine in bedrooms
+**Why**: Bathrooms have no windows, so lights should always activate when someone enters.
 
-- **Group:** Sleep Lights
-- **State:** `sleep`
-- **Trigger Mode:** `occupancy`
-- **Why:** Turn on softer lights when entering the room at night.
+### 🎬 Living Room Movie Lights
+
+```yaml
+Group Name: Movie Ambiance
+Lights: light.tv_backlight, light.corner_lamp
+Active States: movie  # ← Requires custom "movie" user-defined state
+Turn On When: state_gain
+Turn Off When: state_loss
+Require Dark: True
+```
+
+**Why**: Only activates when movie mode is enabled, creating perfect ambiance.
+
+### 🌙 Bedroom Overnight
+
+```yaml
+Group Name: Bedside Lamps
+Lights: light.bedside_left, light.bedside_right
+Active States: sleep
+Turn On When: area_occupied, state_gain
+Turn Off When: area_clear
+Require Dark: True
+```
+
+**Why**: Gentle lighting when entering bedroom at night or when sleep mode activates.
+
+### 🍳 Kitchen Task Lighting
+
+```yaml
+Group Name: Cooking Lights
+Lights: light.counter_strips, light.stove_light
+Active States: (leave default - occupied is implied)
+Turn On When: area_occupied, area_dark
+Turn Off When: area_clear, exterior_bright
+Require Dark: True
+```
+
+**Why**: Turns on when you enter the kitchen and it's dark, turns off when you leave or morning arrives.
+
+### 💼 Office Desk Accent
+
+```yaml
+Group Name: Desk Accent Lights
+Lights: light.desk_rgb_strip, light.lava_lamp
+Active States: work  # ← Custom "work" user-defined state
+Turn On When: state_gain
+Turn Off When: state_loss
+Require Dark: False  # ← Always on during work, regardless of brightness
+```
+
+**Why**: Decorative lighting that creates ambiance during work hours, independent of room brightness.
+
+### 🎮 Gaming Setup
+
+```yaml
+Group Name: Gaming Lights
+Lights: light.desk_rgb, light.wall_panels
+Active States: gaming  # ← Custom "gaming" user-defined state
+Turn On When: state_gain
+Turn Off When: state_loss
+Require Dark: False  # ← Gaming lights should be on regardless of ambient light
+```
+
+**Why**: Creates immersive gaming atmosphere whenever gaming mode is active.
 
 ## 🎚️ Brightness and Color Temperature
 
-Magic Areas **does not control brightness or color temperature**.
-Use integrations like:
+Magic Areas controls **when** lights turn on/off, not **how bright** or what color.
+
+For brightness/temperature automation, use:
 
 - [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting/)
 - [Circadian Lighting](https://github.com/claytonjn/hass-circadian_lighting)
 
-These handle brightness/temperature better and are fully compatible with Magic Areas.
+These integrate seamlessly with Magic Areas.
