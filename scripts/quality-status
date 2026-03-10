@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+"""Quality Scale status checker for Magic Areas.
+
+Parses quality_scale.yaml and displays current tier status,
+completion percentages, and pending items.
+"""
+
+import argparse
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+# Try importing PyYAML
+try:
+    import yaml
+except ImportError:
+    print("Error: PyYAML not found.")
+    print("Please install test requirements:")
+    print("  pip install -r requirements-test.txt")
+    sys.exit(1)
+
+# ANSI color codes
+COLORS = {
+    "green": "\033[92m",
+    "yellow": "\033[93m",
+    "red": "\033[91m",
+    "gray": "\033[90m",
+    "bold": "\033[1m",
+    "reset": "\033[0m",
+}
+
+# Tier configuration
+TIERS = ["BRONZE", "SILVER", "GOLD", "PLATINUM"]
+TIER_EMOJI = {
+    "complete": "✅",
+    "in_progress": "🟡",
+    "not_started": "🔴",
+}
+
+
+def colorize(text, color="reset"):
+    """Add ANSI color codes to text."""
+    return f"{COLORS.get(color, '')}{text}{COLORS['reset']}"
+
+
+def load_quality_scale(yaml_path):
+    """Load and parse quality_scale.yaml."""
+    with open(yaml_path, "r") as f:
+        data = yaml.safe_load(f)
+    return data.get("rules", {})
+
+
+def extract_tier_from_comments(file_path):
+    """Extract tier sections from YAML file by parsing comments."""
+    tier_rules = defaultdict(list)
+    current_tier = None
+
+    with open(file_path, "r") as f:
+        for line in f:
+            # Check for tier header comments
+            if "# BRONZE TIER" in line:
+                current_tier = "BRONZE"
+            elif "# SILVER TIER" in line:
+                current_tier = "SILVER"
+            elif "# GOLD TIER" in line:
+                current_tier = "GOLD"
+            elif "# PLATINUM TIER" in line:
+                current_tier = "PLATINUM"
+            # Extract rule names (indented with 2 spaces, followed by :)
+            elif (
+                current_tier
+                and line.strip()
+                and not line.startswith("#")
+                and line.startswith("  ")
+                and not line.startswith("    ")
+                and ":" in line
+            ):
+                rule_name = line.strip().split(":")[0]
+                if rule_name and rule_name != "rules":
+                    tier_rules[current_tier].append(rule_name)
+
+    return tier_rules
+
+
+def get_rule_summary(rule_name, rule_data):
+    """Extract first line of comment for display."""
+    comment = rule_data.get("comment", "").strip()
+    if comment:
+        # Get first non-empty line
+        first_line = comment.split("\n")[0].strip()
+        return first_line
+    return ""
+
+
+def calculate_tier_stats(tier_rules, all_rules):
+    """Calculate statistics for each tier."""
+    stats = {}
+
+    for tier, rules in tier_rules.items():
+        done = 0
+        pending = 0
+        exempt = 0
+
+        for rule in rules:
+            if rule in all_rules:
+                status = all_rules[rule].get("status", "").lower()
+                if status == "done":
+                    done += 1
+                elif status == "exempt":
+                    exempt += 1
+                elif status == "pending":
+                    pending += 1
+
+        total = len(rules)
+        # Completion is based on done + exempt (exempt rules don't block tier)
+        completion = ((done + exempt) / total * 100) if total > 0 else 0
+
+        # Determine tier status
+        if pending == 0:
+            tier_status = "complete"
+        elif done > 0 or exempt > 0:
+            tier_status = "in_progress"
+        else:
+            tier_status = "not_started"
+
+        stats[tier] = {
+            "total": total,
+            "done": done,
+            "pending": pending,
+            "exempt": exempt,
+            "completion": completion,
+            "status": tier_status,
+        }
+
+    return stats
+
+
+def get_current_tier(tier_stats):
+    """Determine highest achieved tier (all rules done/exempt)."""
+    for tier in TIERS:
+        if tier in tier_stats:
+            if tier_stats[tier]["pending"] > 0:
+                # First tier with pending items, previous tier is achieved
+                tier_index = TIERS.index(tier)
+                if tier_index > 0:
+                    return TIERS[tier_index - 1]
+                else:
+                    return None  # No tier achieved yet
+    # All tiers complete
+    return TIERS[-1]
+
+
+def print_summary(tier_rules, all_rules, tier_stats, current_tier):
+    """Print tier summary."""
+    print(
+        f"\n{colorize('🏆 Magic Areas - Integration Quality Scale Status', 'bold')}\n"
+    )
+    print("━" * 60)
+
+    for tier in TIERS:
+        if tier not in tier_stats:
+            continue
+
+        stats = tier_stats[tier]
+        emoji = TIER_EMOJI[stats["status"]]
+
+        status_text = stats["status"].replace("_", " ").upper()
+        completion_text = f"{stats['completion']:.1f}%"
+
+        if stats["status"] == "complete":
+            color = "green"
+        elif stats["status"] == "in_progress":
+            color = "yellow"
+        else:
+            color = "red"
+
+        tier_line = f"{emoji} {tier} TIER - {status_text} ({completion_text})"
+        print(colorize(tier_line, color))
+        print(
+            f"   {stats['done']}/{stats['total']} rules ({stats['done']} done, {stats['exempt']} exempt, {stats['pending']} pending)"
+        )
+
+    print("\n" + "━" * 60)
+
+    # Current tier status
+    if current_tier:
+        print(
+            f"\n{colorize('Current Tier: ' + current_tier, 'green')} {TIER_EMOJI['complete']}"
+        )
+    else:
+        print(f"\n{colorize('Current Tier: None (working toward Bronze)', 'yellow')}")
+
+    # Next tier
+    if current_tier:
+        current_index = TIERS.index(current_tier)
+        if current_index < len(TIERS) - 1:
+            next_tier = TIERS[current_index + 1]
+            next_pending = tier_stats[next_tier]["pending"]
+            print(f"Next Tier: {next_tier} ({next_pending} items pending)")
+    else:
+        bronze_pending = tier_stats["BRONZE"]["pending"]
+        print(f"Next Tier: BRONZE ({bronze_pending} items pending)")
+
+
+def print_pending_items(tier_rules, all_rules, tier_stats):
+    """Print pending items for each tier."""
+    has_pending = any(stats["pending"] > 0 for stats in tier_stats.values())
+
+    if not has_pending:
+        print(f"\n{colorize('🎉 All tiers complete! No pending items.', 'green')}")
+        return
+
+    print(f"\n{colorize('━━━━━━━━ PENDING ITEMS TO COMPLETE ━━━━━━━━', 'bold')}\n")
+
+    for tier in TIERS:
+        if tier not in tier_stats or tier_stats[tier]["pending"] == 0:
+            continue
+
+        print(
+            colorize(f"{tier} TIER ({tier_stats[tier]['pending']} pending):", "yellow")
+        )
+
+        for rule in tier_rules[tier]:
+            if (
+                rule in all_rules
+                and all_rules[rule].get("status", "").lower() == "pending"
+            ):
+                summary = get_rule_summary(rule, all_rules[rule])
+                print(f"  • {colorize(rule, 'yellow')}")
+                if summary:
+                    # Print first line of comment, truncated if too long
+                    if len(summary) > 80:
+                        summary = summary[:77] + "..."
+                    print(f"    {colorize(summary, 'gray')}")
+
+        print()
+
+
+def print_verbose(tier_rules, all_rules, tier_stats):
+    """Print all rules with their status."""
+    print(f"\n{colorize('━━━━━━━━ ALL RULES ━━━━━━━━', 'bold')}\n")
+
+    for tier in TIERS:
+        if tier not in tier_rules:
+            continue
+
+        print(colorize(f"═══ {tier} TIER ═══", "bold"))
+        print()
+
+        for rule in tier_rules[tier]:
+            if rule not in all_rules:
+                continue
+
+            status = all_rules[rule].get("status", "").lower()
+            summary = get_rule_summary(rule, all_rules[rule])
+
+            if status == "done":
+                icon = "✅"
+                color = "green"
+            elif status == "exempt":
+                icon = "⊘"
+                color = "gray"
+            else:
+                icon = "⏸"
+                color = "yellow"
+
+            print(f"{icon} {colorize(rule, color)} [{status.upper()}]")
+            if summary:
+                if len(summary) > 80:
+                    summary = summary[:77] + "..."
+                print(f"  {colorize(summary, 'gray')}")
+
+        print()
+
+
+def print_markdown(tier_rules, all_rules, tier_stats):
+    """Print markdown table output."""
+    print("\n# Magic Areas - Quality Scale Status\n")
+
+    # Summary table
+    print("| Tier | Status | Completion | Done | Exempt | Pending |")
+    print("|------|--------|------------|------|--------|---------|")
+
+    for tier in TIERS:
+        if tier not in tier_stats:
+            continue
+
+        stats = tier_stats[tier]
+        emoji = TIER_EMOJI[stats["status"]]
+        status = stats["status"].replace("_", " ").title()
+
+        print(
+            f"| {emoji} **{tier}** | {status} | {stats['completion']:.1f}% | {stats['done']} | {stats['exempt']} | {stats['pending']} |"
+        )
+
+    # Pending items
+    print("\n## Pending Items\n")
+
+    for tier in TIERS:
+        if tier not in tier_stats or tier_stats[tier]["pending"] == 0:
+            continue
+
+        print(f"\n### {tier} Tier ({tier_stats[tier]['pending']} pending)\n")
+
+        for rule in tier_rules[tier]:
+            if (
+                rule in all_rules
+                and all_rules[rule].get("status", "").lower() == "pending"
+            ):
+                summary = get_rule_summary(rule, all_rules[rule])
+                print(f"- **{rule}**")
+                if summary:
+                    print(f"  - {summary}")
+
+
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Check Magic Areas integration quality scale status",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Show all rules including done and exempt",
+    )
+    parser.add_argument(
+        "--markdown", "-m", action="store_true", help="Output in markdown format"
+    )
+
+    args = parser.parse_args()
+
+    # Find quality_scale.yaml
+    script_dir = Path(__file__).parent
+    project_dir = script_dir.parent
+    yaml_path = project_dir / "quality_scale.yaml"
+
+    if not yaml_path.exists():
+        print(f"Error: quality_scale.yaml not found at {yaml_path}")
+        sys.exit(1)
+
+    # Load data
+    all_rules = load_quality_scale(yaml_path)
+    tier_rules = extract_tier_from_comments(yaml_path)
+    tier_stats = calculate_tier_stats(tier_rules, all_rules)
+    current_tier = get_current_tier(tier_stats)
+
+    # Print output
+    if args.markdown:
+        print_markdown(tier_rules, all_rules, tier_stats)
+    elif args.verbose:
+        print_summary(tier_rules, all_rules, tier_stats, current_tier)
+        print_verbose(tier_rules, all_rules, tier_stats)
+    else:
+        print_summary(tier_rules, all_rules, tier_stats, current_tier)
+        print_pending_items(tier_rules, all_rules, tier_stats)
+
+    # Overall stats
+    if not args.markdown:
+        total_rules = sum(stats["total"] for stats in tier_stats.values())
+        total_complete = sum(
+            stats["done"] + stats["exempt"] for stats in tier_stats.values()
+        )
+        total_pending = sum(stats["pending"] for stats in tier_stats.values())
+        overall_pct = (total_complete / total_rules * 100) if total_rules > 0 else 0
+
+        print("━" * 60)
+        print(
+            f"📊 OVERALL: {total_complete}/{total_rules} rules complete ({overall_pct:.1f}%)"
+        )
+        if total_pending > 0:
+            print(f"🎯 {total_pending} items remaining across all tiers")
+        print()
+
+
+if __name__ == "__main__":
+    main()
