@@ -41,7 +41,7 @@ repos:
         args:
           - --quiet
           - --format=custom
-          - --configfile=bandit.yaml
+          - --configfile=pyproject.toml
         files: ^(custom_components|tests)/.+\.py$
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.10.1
@@ -58,7 +58,6 @@ repos:
           [
             "-rn", # Only display messages
             "-sn", # Don't display the score
-            "--rcfile=pylintrc", # Link to your config file
           ]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.9.0'
