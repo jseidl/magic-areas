@@ -17,10 +17,11 @@ rules:
       Evidence: custom_components/magic_areas/config_flow.py
 
   config-flow-test-coverage:
-    status: done
+    status: pending
     comment: |
       Comprehensive test coverage for config flow.
       Tests located in tests/config_flow/ directory.
+      Currently at ~90%
       Evidence: tests/config_flow/
 
   test-before-configure:
