@@ -182,6 +182,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
         self._current_feature: str | None = None
         self._current_feature_step: str | None = None
 
+        # Domain handler cache - stores domain handler instances
+        self._domain_handlers: dict[str, Any] = {}
+
     def _get_feature_list(self) -> list:
         """Return list of available features for area type."""
         feature_list = FEATURE_LIST
@@ -521,7 +524,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
     # User-defined states domain handlers
     async def async_step_user_defined_states(self, user_input=None):
         """Handle user-defined states configuration."""
-        handler = UserDefinedStatesHandler(self)
+        # Use cached handler instead of creating new instance
+        if "user_defined_states" not in self._domain_handlers:
+            self._domain_handlers["user_defined_states"] = UserDefinedStatesHandler(
+                self
+            )
+        handler = self._domain_handlers["user_defined_states"]
+
         result = await handler.handle_step("main", user_input)
 
         if result.type == "create_entry":
@@ -546,7 +555,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_user_defined_states_add_state(self, user_input=None):
         """Handle adding a user-defined state."""
-        handler = UserDefinedStatesHandler(self)
+        # Use cached handler
+        if "user_defined_states" not in self._domain_handlers:
+            self._domain_handlers["user_defined_states"] = UserDefinedStatesHandler(
+                self
+            )
+        handler = self._domain_handlers["user_defined_states"]
+
         result = await handler.handle_step("add_state", user_input)
 
         if result.type == "create_entry":
@@ -563,7 +578,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_user_defined_states_select_state(self, user_input=None):
         """Handle selecting a state to edit."""
-        handler = UserDefinedStatesHandler(self)
+        # Use cached handler
+        if "user_defined_states" not in self._domain_handlers:
+            self._domain_handlers["user_defined_states"] = UserDefinedStatesHandler(
+                self
+            )
+        handler = self._domain_handlers["user_defined_states"]
+
         result = await handler.handle_step("select_state", user_input)
 
         if result.type == "create_entry":
@@ -584,7 +605,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_user_defined_states_edit_state(self, user_input=None):
         """Handle editing a user-defined state."""
-        handler = UserDefinedStatesHandler(self)
+        # Use cached handler
+        if "user_defined_states" not in self._domain_handlers:
+            self._domain_handlers["user_defined_states"] = UserDefinedStatesHandler(
+                self
+            )
+        handler = self._domain_handlers["user_defined_states"]
+
         result = await handler.handle_step("edit_state", user_input)
 
         if result.type == "create_entry":
@@ -601,7 +628,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_user_defined_states_delete_state(self, user_input=None):
         """Handle deleting a user-defined state."""
-        handler = UserDefinedStatesHandler(self)
+        # Use cached handler
+        if "user_defined_states" not in self._domain_handlers:
+            self._domain_handlers["user_defined_states"] = UserDefinedStatesHandler(
+                self
+            )
+        handler = self._domain_handlers["user_defined_states"]
+
         result = await handler.handle_step("delete_state", user_input)
 
         if result.type == "create_entry":

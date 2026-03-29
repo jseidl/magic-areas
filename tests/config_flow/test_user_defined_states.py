@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from unittest.mock import Mock
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.core import HomeAssistant
@@ -12,7 +13,7 @@ from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
 from custom_components.magic_areas.config_flow.user_defined_states import (
     UserDefinedStatesHandler,
 )
-from custom_components.magic_areas.const import ConfigDomains
+from custom_components.magic_areas.const import DOMAIN, ConfigDomains
 from custom_components.magic_areas.const.user_defined_states import (
     RESERVED_STATE_NAMES,
     UserDefinedStateEntryOptions,
@@ -23,7 +24,12 @@ from custom_components.magic_areas.const.user_defined_states import (
 )
 
 from tests.const import DEFAULT_MOCK_AREA
-from tests.helpers import get_basic_config_entry_data, setup_mock_entities
+from tests.helpers import (
+    get_basic_config_entry_data,
+    init_integration,
+    setup_mock_entities,
+    shutdown_integration,
+)
 from tests.mocks import MockBinarySensor
 
 
@@ -386,6 +392,101 @@ class TestUserDefinedStatesHandler:
             UserDefinedStateOptions.STATES.key
         ]
         assert len(states) == 1
+
+    # ========================================================================
+    # Flow Integration Tests (Regression Tests)
+    # ========================================================================
+
+    async def test_edit_state_handler_persistence(self, hass: HomeAssistant):
+        """Test that editing a state works through the actual flow (regression test).
+
+        This test ensures the domain handler is cached and state persists between steps.
+        Without caching, _current_index would be lost and edit would fail.
+        """
+        # Setup: Create config entry with existing state
+        test_binary = MockBinarySensor(
+            name="movie_mode", unique_id="test_movie", device_class=None
+        )
+
+        await setup_mock_entities(
+            hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: [test_binary]}
+        )
+
+        data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+        data[ConfigDomains.USER_DEFINED_STATES.value] = {
+            UserDefinedStateOptions.STATES.key: [
+                {
+                    UserDefinedStateEntryOptions.NAME.key: "Movie Time",
+                    UserDefinedStateEntryOptions.ENTITY.key: test_binary.entity_id,
+                }
+            ]
+        }
+
+        # Create mock MagicArea
+        magic_area = Mock()
+        magic_area.id = DEFAULT_MOCK_AREA.value
+        magic_area.name = DEFAULT_MOCK_AREA.value
+        magic_area.config = Mock()
+        magic_area.config.get = Mock(return_value=None)
+
+        config_entry = MockConfigEntry(domain=DOMAIN, data=data, options=data)
+        config_entry.runtime_data = magic_area
+        await init_integration(hass, [config_entry])
+
+        # Create flow instance - follow test_flow.py pattern
+        flow = OptionsFlowHandler(config_entry)
+        flow.hass = hass  # Set hass first (required for config_entry property)
+        flow.area = magic_area  # Set directly (what async_step_init does)
+        flow.area_options = dict(config_entry.options)  # Mutable copy for modification
+        flow.all_binary_entities = [test_binary.entity_id]  # For handler
+
+        # CRITICAL: These steps must use the SAME handler instance
+
+        # Step 1: Navigate to user_defined_states main menu
+        result = await flow.async_step_user_defined_states(None)
+        assert result["type"] == "menu"
+
+        # Step 2: Navigate to select_state
+        result = await flow.async_step_user_defined_states_select_state(None)
+        assert result["type"] == "form"
+        assert result["step_id"] == "user_defined_states_select_state"
+
+        # Step 3: Select state #0 (this sets handler._current_index = 0)
+        result = await flow.async_step_user_defined_states_select_state(
+            {"state_index": 0}
+        )
+
+        # WITHOUT FIX: New handler created, _current_index lost
+        # WITH FIX: Same handler reused, _current_index = 0
+
+        # Step 4: Show edit form (REGRESSION CHECK - should have current values)
+        result = await flow.async_step_user_defined_states_edit_state(None)
+        assert result["type"] == "form"
+        assert result["step_id"] == "user_defined_states_edit_state"
+
+        # Step 5: Submit edited values
+        result = await flow.async_step_user_defined_states_edit_state(
+            {
+                UserDefinedStateEntryOptions.NAME.key: "Cinema Mode",
+                UserDefinedStateEntryOptions.ENTITY.key: test_binary.entity_id,
+            }
+        )
+
+        # Step 6: Verify edit succeeded
+        assert result["type"] == "menu"
+        assert result["step_id"] == "user_defined_states"
+
+        # Step 7: Verify the state was updated in config
+        states = config_entry.options[ConfigDomains.USER_DEFINED_STATES.value][
+            UserDefinedStateOptions.STATES.key
+        ]
+        assert len(states) == 1
+        assert states[0][UserDefinedStateEntryOptions.NAME.key] == "Cinema Mode"
+        assert (
+            states[0][UserDefinedStateEntryOptions.ENTITY.key] == test_binary.entity_id
+        )
+
+        await shutdown_integration(hass, [config_entry])
 
     # ========================================================================
     # Summary Tests
