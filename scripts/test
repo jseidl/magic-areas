@@ -13,17 +13,21 @@ PYTEST_ARGS=("$@")
 # Fetch latest HA stable + beta versions from PyPI
 VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
 
-#HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-#HA_BETA_VERSION=$(echo "$VERSIONS" | grep 'b' | sort -Vr | head -n1)
+# Latest overall stable version (any patch version, no alpha/beta/dev)
+HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
 
-HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n1)
+# Latest major version release (x.y.0 only)
+HA_MAJOR_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n1)
 
-# For beta: extract major version from stable, then find latest beta for that major
-MAJOR_VERSION=$(echo "$HA_STABLE_VERSION" | sed -E 's/\.[0-9]+$//')
+# For beta: extract major version from major release, then find latest beta for that major
+MAJOR_VERSION=$(echo "$HA_MAJOR_VERSION" | sed -E 's/\.[0-9]+$//')
 HA_BETA_VERSION=$(echo "$VERSIONS" | grep "^${MAJOR_VERSION}\..*b" | sort -Vr | head -n1)
+
+# Previous major version release
 HA_PREVIOUS_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n2 | tail -n1)
 
 export HA_STABLE_VERSION
+export HA_MAJOR_VERSION
 export HA_BETA_VERSION
 export HA_PREVIOUS_STABLE_VERSION
 
@@ -43,6 +47,11 @@ case "$CHOICE" in
     [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
     eval "$(build_tox_cmd ha-stable)"
     ;;
+  major)
+    echo "Running tests against Home Assistant major release: $HA_MAJOR_VERSION"
+    [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
+    eval "$(build_tox_cmd ha-major)"
+    ;;
   previous-stable)
     echo "Running tests against Home Assistant previous stable: $HA_PREVIOUS_STABLE_VERSION"
     [ ${#PYTEST_ARGS[@]} -gt 0 ] && echo "Pytest args: ${PYTEST_ARGS[*]}"
@@ -59,7 +68,7 @@ case "$CHOICE" in
     eval "$(build_tox_cmd ha-stable,ha-beta)"
     ;;
   *)
-    echo "Usage: $0 [stable|previous-stable|beta|both] [pytest-args...]"
+    echo "Usage: $0 [stable|major|previous-stable|beta|both] [pytest-args...]"
     echo ""
     echo "Examples:"
     echo "  $0 stable                              # Run all tests"
