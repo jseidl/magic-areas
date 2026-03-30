@@ -198,6 +198,7 @@ def _migrate_light_groups(old_lg_config: dict) -> dict:
             turn_on_when.append(LightGroupTurnOnWhen.STATE_GAIN.value)
             turn_on_when.append(LightGroupTurnOnWhen.AREA_DARK.value)
             turn_off_when.append(LightGroupTurnOffWhen.STATE_LOSS.value)
+            turn_off_when.append(LightGroupTurnOffWhen.EXTERIOR_BRIGHT.value)
 
         groups.append(
             {
@@ -312,7 +313,7 @@ def _migrate_v2_1_to_v2_2(config_entry: ConfigEntry) -> dict:
     if accent_entity:
         user_defined_states.append(
             {
-                UserDefinedStateEntryOptions.NAME.key: "Accent",
+                UserDefinedStateEntryOptions.NAME.key: "Accented",
                 UserDefinedStateEntryOptions.ENTITY.key: accent_entity,
             }
         )
