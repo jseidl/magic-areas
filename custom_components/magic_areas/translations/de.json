@@ -375,7 +375,10 @@
                         "name": "Zuletzt aktive Sensoren"
                     },
                     "light_sensor": {
-                        "name": "Lichtsensor"
+                        "name": "Lichtsensor",
+                        "state": {
+                            "none": "Nicht verfügbar"
+                        }
                     },
                     "presence_sensors": {
                         "name": "Präsenzsensoren"

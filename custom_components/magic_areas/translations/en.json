@@ -375,7 +375,10 @@
             "name": "Last active sensors"
           },
           "light_sensor": {
-            "name": "Light sensor"
+            "name": "Light sensor",
+            "state": {
+              "none": "Not defined"
+            }
           },
           "presence_sensors": {
             "name": "Presence sensors"

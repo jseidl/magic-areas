@@ -375,7 +375,10 @@
                         "name": "Laatste actieve sensoren"
                     },
                     "light_sensor": {
-                        "name": "Lichtsensor"
+                        "name": "Lichtsensor",
+                        "state": {
+                            "none": "Niet beschikbaar"
+                        }
                     },
                     "presence_sensors": {
                         "name": "Aanwezigheidssensoren"

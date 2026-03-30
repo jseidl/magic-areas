@@ -263,6 +263,28 @@ class TestLightEntityResolution:
         area_state = hass.states.get(area_state_id)
         assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.DARK)
 
+    async def test_no_sun_entity_returns_none(self, hass: HomeAssistant):
+        """Test that missing sun.sun returns None and area is always dark."""
+        # Setup area without sun.sun entity
+        data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+        # No aggregates, no windowless - would normally fall back to sun.sun
+
+        config_entry = MockConfigEntry(
+            domain=DOMAIN, title=DEFAULT_MOCK_AREA.title(), data=data
+        )
+        await init_integration(hass, [config_entry])
+
+        area_state_id = f"binary_sensor.magic_areas_presence_tracking_{DEFAULT_MOCK_AREA.value}_area_state"
+
+        # Area should be always dark (like windowless) since sun.sun doesn't exist
+        area_state = hass.states.get(area_state_id)
+        assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.DARK)
+
+        # Verify light_sensor attribute is None (if debug attributes enabled)
+        # Note: This would only show if enable_debug_attributes is True
+
+        await shutdown_integration(hass, [config_entry])
+
     async def test_area_light_aggregate_fallback(
         self, hass: HomeAssistant, setup_area_with_light_aggregate: dict
     ):

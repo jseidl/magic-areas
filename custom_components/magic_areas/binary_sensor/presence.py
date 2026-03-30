@@ -575,7 +575,8 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
                     AreaAttributes.PRESENCE_SENSORS.value: [],
                     CommonAttributes.ACTIVE_SENSORS.value: [],
                     AreaAttributes.LAST_ACTIVE_SENSORS.value: [],
-                    AreaAttributes.LIGHT_SENSOR: self.area.area_light_sensor,
+                    AreaAttributes.LIGHT_SENSOR.value: self.area.area_light_sensor
+                    or "none",  # string representation for translation
                     AreaAttributes.CLEAR_TIMEOUT.value: 0,
                 }
             )

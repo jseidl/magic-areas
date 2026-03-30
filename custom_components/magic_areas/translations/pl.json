@@ -375,7 +375,10 @@
             "name": "Ostatnio aktywne sensory"
           },
           "light_sensor": {
-            "name": "Sensor oswietlenia"
+            "name": "Sensor oswietlenia",
+            "state": {
+              "none": "Niedostępny"
+            }
           },
           "presence_sensors": {
             "name": "Sensory obecnosci"

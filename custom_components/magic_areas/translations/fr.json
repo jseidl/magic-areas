@@ -375,7 +375,10 @@
                         "name": "Derniers capteurs actifs"
                     },
                     "light_sensor": {
-                        "name": "Capteur de lumière"
+                        "name": "Capteur de lumière",
+                        "state": {
+                            "none": "Aucun disponible"
+                        }
                     },
                     "presence_sensors": {
                         "name": "Capteurs de présence"

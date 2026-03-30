@@ -539,9 +539,17 @@ class MagicArea:
                 )
                 return ext_light_aggregate
 
-        # 6. Final fallback: sun.sun
-        self.logger.debug("%s: Using sun.sun for dark detection", self.name)
-        return "sun.sun"
+        # 6. Final fallback: sun.sun (if available)
+        sun_entity = self.hass.states.get("sun.sun")
+        if sun_entity:
+            self.logger.debug("%s: Using sun.sun for dark detection", self.name)
+            return "sun.sun"
+
+        # No light sensor available - will always be dark
+        self.logger.debug(
+            "%s: No light sensor available - will always be dark", self.name
+        )
+        return None
 
     def _iter_magic_areas(self):
         """Yield MagicArea instances for all loaded config entries."""
