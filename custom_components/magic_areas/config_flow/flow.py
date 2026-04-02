@@ -1,5 +1,6 @@
 """Main config flow for Magic Areas."""
 
+from datetime import UTC, datetime
 import logging
 from typing import Any
 
@@ -198,10 +199,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
     def _get_configurable_features(self) -> list:
         """Return configurable features for area type using introspection."""
         return get_configurable_features(self)
-
-    async def _update_options(self):
-        """Update config entry options."""
-        return self.async_create_entry(title="", data=dict(self.area_options))
 
     @staticmethod
     def resolve_groups(raw_list):
@@ -656,5 +653,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             self.area.name,
             str(self.area_options),
         )
-        # return await self._update_options()
+
+        # Timestamp update to force config change / reload
+        self.area_options["config_timestamp"] = datetime.now(UTC)
+
         return self.async_create_entry(title="", data=dict(self.area_options))
