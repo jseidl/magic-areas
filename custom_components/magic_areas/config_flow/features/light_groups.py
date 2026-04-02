@@ -57,23 +57,15 @@ class LightGroupsFeature(FeatureHandler):
 
     async def handle_step(self, step_id: str, user_input: dict | None) -> StepResult:
         """Route to appropriate step handler."""
-        _LOGGER.warning(
-            "LG HANDLING STEPS step_id=%s user_input=%s", step_id, str(user_input)
-        )
         if step_id == "main":
-            _LOGGER.warning("LG HANDLING STEPS :: MAIN")
             return await self._step_main(user_input)
         if step_id == "add_group":
-            _LOGGER.warning("LG HANDLING STEPS :: ADD")
             return await self._step_add_group(user_input)
         if step_id == "select_group":
-            _LOGGER.warning("LG HANDLING STEPS :: SELECT GROUP")
             return await self._step_select_group(user_input)
         if step_id == "edit_group":
-            _LOGGER.warning("LG HANDLING STEPS :: EDIT")
             return await self._step_edit_group(user_input)
         if step_id == "delete_group":
-            _LOGGER.warning("LG HANDLING STEPS :: DELETE")
             return await self._step_delete_group(user_input)
 
         return await self._step_main(user_input)
@@ -157,9 +149,6 @@ class LightGroupsFeature(FeatureHandler):
 
     async def _step_add_group(self, user_input: dict | None) -> StepResult:
         """Add a new light group - single form with all fields."""
-
-        _LOGGER.warning("ADD G START")
-
         if user_input is not None:
             # Validate all fields
             errors = {}
@@ -208,17 +197,11 @@ class LightGroupsFeature(FeatureHandler):
 
             return self._build_main_menu_result()
 
-        _LOGGER.warning("CREATING GS")
-
-        group_schema = self._build_group_schema()
-
-        _LOGGER.warning("GS: --> %s", str(group_schema))
-
         # Show form
         return StepResult(
             type="form",
             step_id="add_group",
-            data_schema=group_schema,
+            data_schema=self._build_group_schema(),
         )
 
     # ========================================================================

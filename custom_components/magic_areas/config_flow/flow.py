@@ -186,6 +186,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
         # Domain handler cache - stores domain handler instances
         self._domain_handlers: dict[str, Any] = {}
 
+    async def _enter_feature(self, feature_id: str, step_id: str | None = None):
+        """Safely enter a feature configuration flow.
+
+        Centralizes feature state management to prevent stale step IDs.
+        Always resets both tracking variables before entering a feature.
+
+        Args:
+            feature_id: The feature to configure (e.g., "light_groups")
+            step_id: Optional specific step to start at. If None, uses handler's initial step.
+
+        Returns:
+            Result from async_step_feature(None) to initialize the flow
+
+        """
+        self._current_feature = feature_id
+        self._current_feature_step = step_id
+        return await self.async_step_feature(None)
+
     def _get_feature_list(self) -> list:
         """Return list of available features for area type."""
         feature_list = FEATURE_LIST
@@ -244,6 +262,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
 
     async def async_step_show_menu(self, user_input=None):
         """Show main options menu."""
+        # Reset feature state when returning to main menu (safety net)
+        self._current_feature = None
+        self._current_feature_step = None
+
         menu_options = [
             "area_config",
             "presence_tracking",
@@ -443,79 +465,86 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
     # Individual feature step handlers - they all delegate to async_step_feature
     async def async_step_feature_light_groups(self, user_input=None):
         """Handle light groups feature config."""
-        _LOGGER.warning("LG MAIN")
-        self._current_feature = "light_groups"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("light_groups")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_light_groups_add_group(self, user_input=None):
         """Handle light groups add group step - routes to generic handler."""
-        _LOGGER.warning(
-            "SHOWING LG ADD FORM STEP async_step_feature_light_groups_add_group"
-        )
-        self._current_feature = "light_groups"
-        self._current_feature_step = "add_group"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("light_groups", "add_group")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_light_groups_select_group(self, user_input=None):
         """Handle light groups select group step - routes to generic handler."""
-        self._current_feature = "light_groups"
-        self._current_feature_step = "select_group"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("light_groups", "select_group")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_light_groups_edit_group(self, user_input=None):
         """Handle light groups edit group step - routes to generic handler."""
-        self._current_feature = "light_groups"
-        self._current_feature_step = "edit_group"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("light_groups", "edit_group")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_light_groups_delete_group(self, user_input=None):
         """Handle light groups delete group - routes to generic handler."""
-        self._current_feature = "light_groups"
-        self._current_feature_step = "delete_group"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("light_groups", "delete_group")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_climate_control(self, user_input=None):
         """Handle climate control feature config."""
-        self._current_feature = "climate_control"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("climate_control")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_climate_control_select_presets(self, user_input=None):
         """Handle climate control preset selection - routes to generic handler."""
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("climate_control", "select_presets")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_aggregates(self, user_input=None):
         """Handle aggregates feature config."""
-        self._current_feature = "aggregates"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("aggregates")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_health(self, user_input=None):
         """Handle health feature config."""
-        self._current_feature = "health"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("health")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_presence_hold(self, user_input=None):
         """Handle presence hold feature config."""
-        self._current_feature = "presence_hold"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("presence_hold")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_ble_trackers(self, user_input=None):
         """Handle BLE trackers feature config."""
-        self._current_feature = "ble_trackers"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("ble_trackers")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_wasp_in_a_box(self, user_input=None):
         """Handle wasp in a box feature config."""
-        self._current_feature = "wasp_in_a_box"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("wasp_in_a_box")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_fan_groups(self, user_input=None):
         """Handle fan groups feature config."""
-        self._current_feature = "fan_groups"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("fan_groups")
         return await self.async_step_feature(user_input)
 
     async def async_step_feature_area_aware_media_player(self, user_input=None):
         """Handle area aware media player feature config."""
-        self._current_feature = "area_aware_media_player"
+        if user_input is None:  # Initial entry
+            return await self._enter_feature("area_aware_media_player")
         return await self.async_step_feature(user_input)
 
     # User-defined states domain handlers

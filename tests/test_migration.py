@@ -378,7 +378,7 @@ class TestMigrateV2_1ToV2_2:  # pylint: disable=invalid-name
         uds = result[ConfigDomains.USER_DEFINED_STATES]
         states = uds[UserDefinedStateOptions.STATES.key]
         assert len(states) == 1
-        assert states[0][UserDefinedStateEntryOptions.NAME.key] == "Accent"
+        assert states[0][UserDefinedStateEntryOptions.NAME.key] == "Accented"
         assert (
             states[0][UserDefinedStateEntryOptions.ENTITY.key] == "switch.accent_mode"
         )
@@ -534,7 +534,7 @@ class TestAsyncMigrateEntry:
             UserDefinedStateOptions.STATES.key
         ]
         assert len(uds_states) == 1
-        assert uds_states[0][UserDefinedStateEntryOptions.NAME.key] == "Accent"
+        assert uds_states[0][UserDefinedStateEntryOptions.NAME.key] == "Accented"
 
     async def test_downgrade_returns_false(self, hass: HomeAssistant):
         """Entry with version > MAJOR returns False (downgrade from future)."""

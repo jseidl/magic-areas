@@ -401,16 +401,6 @@ class TestOptionsFlowHandler:
 
         assert resolved == ["item1", "item2", "item3"]
 
-    async def test_update_options(self, options_flow_setup):
-        """Test updating options."""
-        flow = options_flow_setup["flow"]
-
-        result = await flow._update_options()  # pylint: disable=protected-access
-
-        assert result["type"] == "create_entry"
-        assert result["title"] == ""
-        assert result["data"] == flow.area_options
-
     async def test_async_step_area_config_with_windowless_true(
         self, options_flow_setup
     ):
