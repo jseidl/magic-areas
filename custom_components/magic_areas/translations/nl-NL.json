@@ -318,7 +318,7 @@
                     "entity": "Trackerentiteit"
                 },
                 "data_description": {
-                    "name": "Voer een unieke naam in voor deze status. Hernoemen zal de slugwaarde van de status wijzigen die wordt gebruikt in automatiseringen.",
+                    "name": "Voer een unieke naam in voor deze status. ⚠️ WAARSCHUWING: Hernoemen wijzigt de status-slug en vereist handmatige updates van alle functieconfiguraties en automatiseringen die deze status gebruiken.",
                     "entity": "Binaire sensor, schakelaar of input_boolean die bijhoudt wanneer deze status actief is."
                 }
             },

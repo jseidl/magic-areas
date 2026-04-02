@@ -318,7 +318,7 @@
                     "entity": "Entidade de rastreamento"
                 },
                 "data_description": {
-                    "name": "Digite um nome único para este estado. Renomear irá alterar o valor do estado (slug) usado nas automações.",
+                    "name": "Digite um nome único para este estado. ⚠️ AVISO: Renomear mudará o slug do estado, exigindo atualizações manuais em todas as configurações de recursos e automatizações que usam este estado.",
                     "entity": "Sensor binário, interruptor ou input_boolean que rastreia quando este estado está ativo."
                 }
             },

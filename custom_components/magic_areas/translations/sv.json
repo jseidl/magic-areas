@@ -1,1 +1,11 @@
-{}
+{
+    "options": {
+        "step": {
+            "user_defined_states_edit_state": {
+                "data_description": {
+                    "name": "Ange ett unikt namn för detta tillstånd. ⚠️ VARNING: Namnbyte kommer att ändra tillstånds-sluggen och kräva manuella uppdateringar av alla funktionskonfigurationer och automatiseringar som använder detta tillstånd."
+                }
+            }
+        }
+    }
+}

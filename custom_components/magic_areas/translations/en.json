@@ -318,7 +318,7 @@
           "entity": "Tracking Entity"
         },
         "data_description": {
-          "name": "Enter a unique name for this state. Renaming will change the slugified state value used in automations.",
+          "name": "Enter a unique name for this state. ⚠️ WARNING: Renaming will change the state slug, requiring manual updates to all feature configurations and automations using this state.",
           "entity": "Binary sensor, switch, or input_boolean that tracks when this state is active."
         }
       },

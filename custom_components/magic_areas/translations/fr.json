@@ -318,7 +318,7 @@
                     "entity": "Entité de suivi"
                 },
                 "data_description": {
-                    "name": "Entrez un nom unique pour cet état. Renommer changera la valeur d'état convertie en slug utilisée dans les automatisations.",
+                    "name": "Entrez un nom unique pour cet état. ⚠️ AVERTISSEMENT : Renommer changera le slug de l'état, nécessitant des mises à jour manuelles de toutes les configurations de fonctionnalités et des automatisations utilisant cet état.",
                     "entity": "Capteur binaire, interrupteur ou input_boolean qui suit quand cet état est actif."
                 }
             },

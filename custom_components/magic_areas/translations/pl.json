@@ -318,7 +318,7 @@
           "entity": "Encja sledząca"
         },
         "data_description": {
-          "name": "Wprowadz unikalna nazwe dla tego stanu. Zmiana nazwy zmieni wartosc stanu (slug) uzywana w automatyzacjach.",
+          "name": "Wprowadz unikalna nazwe dla tego stanu. ⚠️ OSTRZEŻENIE: Zmiana nazwy zmieni identyfikator stanu, wymagając ręcznych aktualizacji wszystkich konfiguracji funkcji i automatyzacji używających tego stanu.",
           "entity": "Sensor binarny, przelacznik lub input_boolean, ktory sledzi, kiedy ten stan jest aktywny."
         }
       },

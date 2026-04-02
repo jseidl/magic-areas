@@ -318,7 +318,7 @@
                     "entity": "Entidad de seguimiento"
                 },
                 "data_description": {
-                    "name": "Ingrese un nombre único para este estado. Cambiar el nombre cambiará el valor del estado (slug) usado en automatizaciones.",
+                    "name": "Ingrese un nombre único para este estado. ⚠️ ADVERTENCIA: Renombrar cambiará el slug del estado, requiriendo actualizaciones manuales en todas las configuraciones de funciones y automatizaciones que usen este estado.",
                     "entity": "Sensor binario, interruptor o input_boolean que rastrea cuándo este estado está activo."
                 }
             },

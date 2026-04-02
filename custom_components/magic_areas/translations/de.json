@@ -318,7 +318,7 @@
                     "entity": "Verfolgungsentität"
                 },
                 "data_description": {
-                    "name": "Eindeutigen Namen für diesen Zustand eingeben. Umbenennen ändert den Slug-Zustandswert in Automatisierungen.",
+                    "name": "Eindeutigen Namen für diesen Zustand eingeben. ⚠️ WARNUNG: Eine Umbenennung ändert den Zustandsschlüssel und erfordert manuelle Aktualisierungen aller Funktionskonfigurationen und Automatisierungen, die diesen Zustand verwenden.",
                     "entity": "Binärsensor, Schalter oder input_boolean, der verfolgt, wann dieser Zustand aktiv ist."
                 }
             },
