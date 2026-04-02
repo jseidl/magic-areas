@@ -163,7 +163,7 @@
             },
             "feature_fan_groups": {
                 "title": "Característica: Grupos de ventiladores",
-                "description": "Agrupe y controle todas las entidades de ventilador en un área. Esta característica permite que las entidades de ventilador se controlen automáticamente según el estado de un área y si el valor del sensor agregado supera un punto de ajuste. El control del ventilador requiere que la función de agregados esté habilitada y las clases de dispositivos correspondientes seleccionadas.",
+                "description": "Agrupe y controle todas las entidades de ventiladores en un área. Esta función permite controlar automáticamente las entidades de ventiladores según el estado de un área y si el valor del sensor agregado cruza un punto de ajuste. **⚠️ Requiere que la función de Agregados esté habilitada** con las clases de dispositivos correspondientes seleccionadas para el seguimiento.",
                 "data": {
                     "required_state": "Estado requerido.",
                     "tracked_device_class": "Clase de dispositivo rastreado.",
@@ -213,7 +213,7 @@
             },
             "feature_wasp_in_a_box": {
                 "title": "Avispa en una caja",
-                "description": "Si vemos una avispa, entonces hay una avispa en la caja. Si cerramos la caja mientras hay una avispa en la caja, la avispa permanece en la caja. Si la caja permanece cerrada cuando hay una avispa en la caja, y la avispa deja de moverse, asumimos que todavía está en la caja. Si la caja se abre y la avispa no se mueve, asumimos que la avispa ha escapado. Esta función monitorea sus agregados `door` como la caja y sus agregados `motion` (por defecto) como su avispa. Se creará un nuevo `sensor binario` y se rastreará automáticamente para la presencia.",
+                "description": "Si vemos una avispa, entonces hay una avispa en la caja. Si cerramos la caja mientras hay una avispa en la caja, entonces la avispa permanece en la caja. Si la caja permanece cerrada cuando hay una avispa en la caja, y la avispa deja de moverse, asumimos que todavía está en la caja. Si la caja se abre y la avispa no se mueve, asumimos que la avispa ha escapado (no hay avispa en la caja). **⚠️ Requiere que la función de Agregados esté habilitada** - Esta función monitorea sus agregados de `puerta` como la caja y sus agregados de `movimiento` (predeterminado) como su avispa. Se creará un nuevo `binary_sensor` y se rastreará automáticamente para detectar presencia.",
                 "data": {
                     "delay": "Retraso",
                     "wasp_timeout": "Tiempo de espera de avispa",

@@ -163,7 +163,7 @@
             },
             "feature_fan_groups": {
                 "title": "Fonctionnalité : Groupes de ventilateurs",
-                "description": "Grouper et contrôler toutes les entités de ventilateurs dans une zone. Cette fonctionnalité permet de contrôler automatiquement les entités de ventilateurs en fonction de l'état de la zone et si la valeur du capteur agrégé dépasse un seuil défini. Le contrôle des ventilateurs nécessite que la fonctionnalité des agrégats soit activée et que les classes de dispositifs correspondantes soient sélectionnées.",
+                "description": "Regroupez et contrôlez toutes les entités de ventilateurs dans une zone. Cette fonctionnalité permet de contrôler automatiquement les entités de ventilateurs en fonction de l'état d'une zone et si la valeur du capteur agrégé dépasse un point de consigne. **⚠️ Nécessite l'activation de la fonction Agrégats** avec les classes d'appareils correspondantes sélectionnées pour le suivi.",
                 "data": {
                     "required_state": "État requis.",
                     "tracked_device_class": "Classe de dispositif suivie.",
@@ -213,7 +213,7 @@
             },
             "feature_wasp_in_a_box": {
                 "title": "Guêpe dans une boîte",
-                "description": "Si nous voyons une guêpe, il y a une guêpe dans la boîte. Si nous fermons la boîte alors qu'il y a une guêpe, la guêpe reste dans la boîte. Si la boîte reste fermée avec une guêpe et que la guêpe arrête de bouger, nous supposons qu'elle est toujours dans la boîte. Si la boîte est ouverte et que la guêpe ne bouge pas, nous supposons que la guêpe s'est échappée. Cette fonctionnalité surveille vos agrégats `porte` comme la boîte et vos agrégats `mouvement` (par défaut) comme votre guêpe. Un nouveau `binary_sensor` sera créé et automatiquement suivi pour la présence.",
+                "description": "Si nous voyons une guêpe, alors il y a une guêpe dans la boîte. Si nous fermons la boîte alors qu'il y a une guêpe dans la boîte, alors la guêpe reste dans la boîte. Si la boîte reste fermée lorsqu'il y a une guêpe dans la boîte, et que la guêpe arrête de bouger, nous supposons qu'elle est toujours dans la boîte. Si la boîte est ouverte et que la guêpe ne bouge pas, nous supposons que la guêpe s'est échappée (il n'y a pas de guêpe dans la boîte). **⚠️ Nécessite l'activation de la fonction Agrégats** - Cette fonctionnalité surveille vos agrégats de `porte` comme la boîte et vos agrégats de `mouvement` (par défaut) comme votre guêpe. Un nouveau `binary_sensor` sera créé et suivi automatiquement pour la présence.",
                 "data": {
                     "delay": "Délai",
                     "wasp_timeout": "Délai d'expiration de la guêpe",

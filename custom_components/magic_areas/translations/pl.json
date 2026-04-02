@@ -163,7 +163,7 @@
       },
       "feature_fan_groups": {
         "title": "Grupy wentylatorow",
-        "description": "Grupowanie i sterowanie wszystkimi wentylatorami w danym obszarze. Ta funkcja umozliwia automatyczne sterowanie wentylatorami w zaleznosci od stanu obszaru i od przekroczenia zagregowanej zadanej wartosci sensorow. Sterowanie wentylatorami wymaga wlaczenia funkcji agregacji i wybrania odpowiednich klas urzadzen.",
+        "description": "Grupuj i kontroluj wszystkie encje wentylatorów w obszarze. Ta funkcja umożliwia automatyczne sterowanie encjami wentylatorów zgodnie ze stanem obszaru i tym, czy wartość czujnika agregatu przekracza punkt nastawiony. **⚠️ Wymaga włączenia funkcji Agregatów** z odpowiednimi wybranymi klasami urządzeń do śledzenia.",
         "data": {
           "required_state": "Wymagany stan.",
           "tracked_device_class": "Klasa urzadzenia sledzacego.",
@@ -213,7 +213,7 @@
       },
       "feature_wasp_in_a_box": {
         "title": "Owad w pojemniku",
-        "description": "Jesli widzimy owada, to owad jest w pojemniku. Jesli zamkniemy pojemnik, gdy jest w nim owad, owad pozostanie w pojemniku. Jesli pojemnik pozostanie zamkniety, gdy jest w nim owad, a owad przestanie sie poruszac, zakladamy, ze nadal jest w pojemniku. Jesli pojemnik jest otwarty, a owad sie nie porusza, zakladamy, ze owad uciekl z pojemnika. Ta funkcja monitoruje agregacje `drzwi` jako pojemnik, a agregacje `ruchu` (domyslnie) jako owada. Zostanie utworzony nowy `sensor binarny`, ktorego obecnosc bedzie automatycznie sledzona.",
+        "description": "Jeśli widzimy osę, to w pudełku jest osa. Jeśli zamkniemy pudełko, gdy w pudełku jest osa, to osa pozostaje w pudełku. Jeśli pudełko pozostanie zamknięte, gdy w pudełku jest osa, a osa przestanie się poruszać, zakładamy, że nadal jest w pudełku. Jeśli pudełko zostanie otwarte, a osa się nie porusza, zakładamy, że osa uciekła (nie ma osy w pudełku). **⚠️ Wymaga włączenia funkcji Agregatów** - Ta funkcja monitoruje agregaty `drzwi` jako pudełko i agregaty `ruchu` (domyślnie) jako osę. Nowy `binary_sensor` zostanie utworzony i automatycznie śledzony pod kątem obecności.",
         "data": {
           "delay": "Opoznienie",
           "wasp_timeout": "Timeout owada",

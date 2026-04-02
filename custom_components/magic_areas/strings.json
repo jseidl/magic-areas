@@ -163,7 +163,7 @@
       },
       "feature_fan_groups": {
         "title": "Feature: Fan Groups",
-        "description": "Group and control all fan entities in an area. This feature allows fan entities to be controlled automatically according to an area's state and wether the aggregate sensor value crosses a setpoint. Fan control requires the aggregates feature to be enable and corresponding device classses selected.",
+        "description": "Group and control all fan entities in an area. This feature allows fan entities to be controlled automatically according to an area's state and whether the aggregate sensor value crosses a setpoint. **⚠️ Requires Aggregates feature to be enabled** with the corresponding device classes selected for tracking.",
         "data": {
           "required_state": "Required state.",
           "tracked_device_class": "Tracked device class.",
@@ -213,7 +213,7 @@
       },
       "feature_wasp_in_a_box": {
         "title": "Wasp in a Box",
-        "description": "If we see a wasp, then there is a wasp in the box. If we close the box while there is a wasp in the box, then the wasp remains in the box. If the box remains closed when there is a wasp in the box, and the wasp stops moving, we assume it's still in the box. If the box is opened, and the wasp is not moving, we assume that the wasp has escaped (there is no wasp in the box). This feature monitors your `door` aggregates as the box and your `motion` (default) aggregates as your wasp. A new `binary_sensor` will be created and automatically tracked for presence.",
+        "description": "If we see a wasp, then there is a wasp in the box. If we close the box while there is a wasp in the box, then the wasp remains in the box. If the box remains closed when there is a wasp in the box, and the wasp stops moving, we assume it's still in the box. If the box is opened, and the wasp is not moving, we assume that the wasp has escaped (there is no wasp in the box). **⚠️ Requires Aggregates feature to be enabled** - This feature monitors your `door` aggregates as the box and your `motion` (default) aggregates as your wasp. A new `binary_sensor` will be created and automatically tracked for presence.",
         "data": {
           "delay": "Delay",
           "wasp_timeout": "Wasp Timeout",

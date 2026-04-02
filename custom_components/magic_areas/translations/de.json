@@ -163,7 +163,7 @@
             },
             "feature_fan_groups": {
                 "title": "Funktion: Lüftergruppen",
-                "description": "Alle Lüfter Entitäten eines Bereichs gruppieren. Mit dieser Funktion lassen sich Lüfter automatisch steuern – abhängig vom Status eines Bereichs und dem Wert eines Aggregatsensors (z. B. Temperatur). Wird ein definierter Schwellenwert überschritten, schaltet sich der Lüfter ein; fällt der Wert darunter, wird der Lüfter wieder ausgeschaltet. Für die Lüftersteuerung muss die Funktion `Aggregierte Sensoren` aktiviert und die passende Gerätekategorien ausgewählt sein.",
+                "description": "Gruppieren und steuern Sie alle Lüfterentitäten in einem Bereich. Diese Funktion ermöglicht die automatische Steuerung von Lüfterentitäten basierend auf dem Zustand eines Bereichs und ob der Aggregatsensorwert einen Sollwert überschreitet. **⚠️ Erfordert die Aktivierung der Aggregatfunktion** mit den entsprechenden ausgewählten Geräteklassen zur Verfolgung.",
                 "data": {
                     "required_state": "Erforderlicher Zustand.",
                     "tracked_device_class": "Überwachte Gerätekategorie.",
@@ -213,7 +213,7 @@
             },
             "feature_wasp_in_a_box": {
                 "title": "Wasp in a Box",
-                "description": "Wenn eine Wespe erkannt wird, ist sie in der Box. Wird die Box geschlossen, bleibt die Wespe darin. Bleibt die Box geschlossen und die Wespe bewegt sich nicht, wird angenommen, dass sie noch in der Box ist. Öffnet sich die Box und die Wespe bewegt sich nicht, gilt sie als entkommen (nicht mehr in der Box). Diese Funktion überwacht die `Tür`-Aggregatssensoren als Box und die `Bewegung`-Aggregatssensoren als Wespe. Ein neuer Binärsensor wird erstellt und automatisch auf Anwesenheit geprüft.",
+                "description": "Wenn eine Wespe erkannt wird, ist sie in der Box. Wird die Box geschlossen, bleibt die Wespe darin. Bleibt die Box geschlossen und die Wespe bewegt sich nicht, wird angenommen, dass sie noch in der Box ist. Öffnet sich die Box und die Wespe bewegt sich nicht, gilt sie als entkommen (nicht mehr in der Box). **⚠️ Erfordert die Aktivierung der Aggregatfunktion** - Diese Funktion überwacht die `Tür`-Aggregatssensoren als Box und die `Bewegung`-Aggregatssensoren als Wespe. Ein neuer Binärsensor wird erstellt und automatisch auf Anwesenheit geprüft.",
                 "data": {
                     "delay": "Verzögerung",
                     "wasp_timeout": "Inaktivitäts-Timeout",

@@ -163,7 +163,7 @@
             },
             "feature_fan_groups": {
                 "title": "Functie: Ventilateurgroepen",
-                "description": "Groepeer en beheer alle ventilateurentiteiten in een gebied. Met deze functie kunnen ventilateurentiteiten automatisch worden bestuurd op basis van de status van een gebied en of de waarde van de aggregaatsensor een ingesteld punt overschrijdt. Ventilateurbeheer vereist dat de aggregatenfunctie is ingeschakeld en de bijbehorende apparaatklassen zijn geselecteerd.",
+                "description": "Groepeer en beheer alle ventilator-entiteiten in een gebied. Met deze functie kunnen ventilator-entiteiten automatisch worden bestuurd op basis van de status van een gebied en of de waarde van de geaggregeerde sensor een instelpunt overschrijdt. **⚠️ Vereist dat de Aggregaten-functie is ingeschakeld** met de overeenkomstige apparaatklassen geselecteerd voor tracking.",
                 "data": {
                     "required_state": "Vereiste status.",
                     "tracked_device_class": "Gevolgde apparaatklasse.",
@@ -213,7 +213,7 @@
             },
             "feature_wasp_in_a_box": {
                 "title": "Wesp in een doos",
-                "description": "Als we een wesp zien, is er een wesp in de doos. Als we de doos sluiten terwijl er een wesp in de doos zit, blijft de wesp in de doos. Als de doos gesloten blijft terwijl er een wesp in de doos zit en de wesp stopt met bewegen, nemen we aan dat de wesp er nog in zit. Als de doos wordt geopend en de wesp beweegt niet, nemen we aan dat de wesp is ontsnapt (er is geen wesp in de doos). Deze functie bewaakt uw `deur`-aggregaten als de doos en uw `beweging`-aggregaten (standaard) als uw wesp. Er wordt een nieuwe `binaire sensor` gemaakt die automatisch wordt gevolgd op aanwezigheid.",
+                "description": "Als we een wesp zien, dan is er een wesp in de doos. Als we de doos sluiten terwijl er een wesp in de doos zit, dan blijft de wesp in de doos. Als de doos gesloten blijft wanneer er een wesp in de doos zit, en de wesp stopt met bewegen, gaan we ervan uit dat deze nog steeds in de doos zit. Als de doos wordt geopend en de wesp beweegt niet, gaan we ervan uit dat de wesp is ontsnapt (er is geen wesp in de doos). **⚠️ Vereist dat de Aggregaten-functie is ingeschakeld** - Deze functie bewaakt uw `deur`-aggregaten als de doos en uw `beweging`-aggregaten (standaard) als uw wesp. Een nieuwe `binary_sensor` wordt aangemaakt en automatisch gevolgd voor aanwezigheid.",
                 "data": {
                     "delay": "Vertraging",
                     "wasp_timeout": "Wesp time-out",

@@ -163,7 +163,7 @@
             },
             "feature_fan_groups": {
                 "title": "Recurso: Grupo de ventiladores",
-                "description": "Agrupe e controle todas as entidades de ventilador em uma área. Este recurso permite que as entidades de ventilador sejam controladas automaticamente de acordo com o estado de uma área e se o valor do sensor agregado cruza um ponto de ajuste. O controle do ventilador requer que o recurso de agregados esteja habilitado e as classes de dispositivos correspondentes selecionadas.",
+                "description": "Agrupe e controle todas as entidades de ventiladores em uma área. Este recurso permite que as entidades de ventiladores sejam controladas automaticamente de acordo com o estado de uma área e se o valor do sensor agregado ultrapassa um ponto de ajuste. **⚠️ Requer que o recurso de Agregados esteja ativado** com as classes de dispositivos correspondentes selecionadas para rastreamento.",
                 "data": {
                     "required_state": "Estado requerido.",
                     "tracked_device_class": "Classe de dispositivo rastreado.",
@@ -213,7 +213,7 @@
             },
             "feature_wasp_in_a_box": {
                 "title": "Vespa em uma Caixa",
-                "description": "Se vemos uma vespa, então há uma vespa na caixa. Se fecharmos a caixa enquanto há uma vespa na caixa, então a vespa permanece na caixa. Se a caixa permanecer fechada quando há uma vespa na caixa, e a vespa parar de se mover, assumimos que ela ainda está na caixa. Se a caixa for aberta, e a vespa não estiver se movendo, assumimos que a vespa escapou (não há vespa na caixa). Este recurso monitora seus agregados `door` como a caixa e seus agregados `motion` (padrão) como sua vespa. Um novo `binary_sensor` será criado e rastreado automaticamente para presença.",
+                "description": "Se vemos uma vespa, então há uma vespa na caixa. Se fecharmos a caixa enquanto há uma vespa na caixa, então a vespa permanece na caixa. Se a caixa permanecer fechada quando há uma vespa na caixa, e a vespa parar de se mover, assumimos que ela ainda está na caixa. Se a caixa for aberta e a vespa não se mover, assumimos que a vespa escapou (não há vespa na caixa). **⚠️ Requer que o recurso de Agregados esteja ativado** - Este recurso monitora seus agregados de `porta` como a caixa e seus agregados de `movimento` (padrão) como sua vespa. Um novo `binary_sensor` será criado e rastreado automaticamente para presença.",
                 "data": {
                     "delay": "Atraso",
                     "wasp_timeout": "Tempo limite da vespa",

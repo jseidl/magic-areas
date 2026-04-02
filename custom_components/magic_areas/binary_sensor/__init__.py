@@ -108,9 +108,16 @@ def create_wasp_in_a_box_sensor(
 ) -> list[AreaWaspInABoxBinarySensor]:
     """Add the Wasp in a box sensor for the area."""
 
-    if not area.has_feature(Features.WASP_IN_A_BOX) or not area.has_feature(
-        Features.AGGREGATION
-    ):
+    if not area.has_feature(Features.WASP_IN_A_BOX):
+        return []
+
+    # Check aggregates dependency
+    if not area.has_feature(Features.AGGREGATION):
+        _LOGGER.warning(
+            "%s: Wasp in a Box feature requires Aggregates feature to be enabled. "
+            "Please enable Aggregates in the area configuration.",
+            area.name,
+        )
         return []
 
     try:
