@@ -39,7 +39,10 @@ from custom_components.magic_areas.const import (
     AreaType,
     ConfigDomains,
     MagicConfigEntryVersion,
+    PresenceTrackingOptions,
 )
+from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
 from custom_components.magic_areas.helpers.area import (
     basic_area_from_floor,
     basic_area_from_meta,
@@ -116,14 +119,34 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
             # Create entry with only area ID (name is stored in entry.title)
             config_entry = {CONF_AREA_ID: area_object.id}
 
+            # Add defaults
+            config_entry.update(
+                AreaConfigOptions.to_config(AreaConfigOptions.from_user_input({}))
+            )
+            config_entry.update(
+                PresenceTrackingOptions.to_config(
+                    PresenceTrackingOptions.from_user_input({})
+                )
+            )
+            config_entry.update(
+                SecondaryStateOptions.to_config(
+                    SecondaryStateOptions.from_user_input({})
+                )
+            )
+            config_entry.update(
+                AggregateOptions.to_config(AggregateOptions.from_user_input({}))
+            )
+
             # Handle Meta area type
             if slugify(area_object.id) in reserved_names:
                 _LOGGER.debug("ConfigFlow: Meta area %s found", area_object.id)
                 config_entry.update(
                     AreaConfigOptions.to_config(
-                        {
-                            AreaConfigOptions.TYPE.key: AreaType.META,
-                        }
+                        AreaConfigOptions.from_user_input(
+                            {
+                                AreaConfigOptions.TYPE.key: AreaType.META,
+                            }
+                        )
                     )
                 )
 
