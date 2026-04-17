@@ -1276,3 +1276,137 @@ CONFIG_FLOW_ENTITY_FILTER_EXT = CONFIG_FLOW_ENTITY_FILTER + [
     SUN_DOMAIN,
     FAN_DOMAIN,
 ]
+
+# ---- Light Group blocker / bright-off extensions (backward compatible) ----
+CONF_OVERHEAD_LIGHTS_BLOCKING_STATES = "overhead_lights_blocking_states"
+CONF_OVERHEAD_LIGHTS_TURN_OFF_WHEN_BRIGHT = "overhead_lights_turn_off_when_bright"
+CONF_SLEEP_LIGHTS_BLOCKING_STATES = "sleep_lights_blocking_states"
+CONF_SLEEP_LIGHTS_TURN_OFF_WHEN_BRIGHT = "sleep_lights_turn_off_when_bright"
+CONF_ACCENT_LIGHTS_BLOCKING_STATES = "accent_lights_blocking_states"
+CONF_ACCENT_LIGHTS_TURN_OFF_WHEN_BRIGHT = "accent_lights_turn_off_when_bright"
+CONF_TASK_LIGHTS_BLOCKING_STATES = "task_lights_blocking_states"
+CONF_TASK_LIGHTS_TURN_OFF_WHEN_BRIGHT = "task_lights_turn_off_when_bright"
+
+LIGHT_GROUP_BLOCKING_STATE_OPTIONS = [
+    AREA_STATE_SLEEP,
+    AREA_STATE_EXTENDED,
+    AREA_STATE_ACCENT,
+    AREA_STATE_DARK,
+    AREA_STATE_BRIGHT,
+]
+
+LIGHT_GROUP_BLOCKING_STATES = {
+    CONF_OVERHEAD_LIGHTS: CONF_OVERHEAD_LIGHTS_BLOCKING_STATES,
+    CONF_SLEEP_LIGHTS: CONF_SLEEP_LIGHTS_BLOCKING_STATES,
+    CONF_ACCENT_LIGHTS: CONF_ACCENT_LIGHTS_BLOCKING_STATES,
+    CONF_TASK_LIGHTS: CONF_TASK_LIGHTS_BLOCKING_STATES,
+}
+
+LIGHT_GROUP_TURN_OFF_WHEN_BRIGHT = {
+    CONF_OVERHEAD_LIGHTS: CONF_OVERHEAD_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+    CONF_SLEEP_LIGHTS: CONF_SLEEP_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+    CONF_ACCENT_LIGHTS: CONF_ACCENT_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+    CONF_TASK_LIGHTS: CONF_TASK_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+}
+
+
+def _light_group_blocking_states_validator():
+    return vol.All(cv.ensure_list, [vol.In(LIGHT_GROUP_BLOCKING_STATE_OPTIONS)])
+
+
+LIGHT_GROUP_FEATURE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_OVERHEAD_LIGHTS, default=[]): cv.entity_ids,
+        vol.Optional(
+            CONF_OVERHEAD_LIGHTS_STATES, default=[AREA_STATE_OCCUPIED]
+        ): cv.ensure_list,
+        vol.Optional(
+            CONF_OVERHEAD_LIGHTS_ACT_ON, default=DEFAULT_LIGHT_GROUP_ACT_ON
+        ): cv.ensure_list,
+        vol.Optional(CONF_OVERHEAD_LIGHTS_BLOCKING_STATES, default=[]): (
+            _light_group_blocking_states_validator()
+        ),
+        vol.Optional(
+            CONF_OVERHEAD_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+            default=False,
+        ): cv.boolean,
+        vol.Optional(CONF_SLEEP_LIGHTS, default=[]): cv.entity_ids,
+        vol.Optional(CONF_SLEEP_LIGHTS_STATES, default=[]): cv.ensure_list,
+        vol.Optional(
+            CONF_SLEEP_LIGHTS_ACT_ON, default=DEFAULT_LIGHT_GROUP_ACT_ON
+        ): cv.ensure_list,
+        vol.Optional(CONF_SLEEP_LIGHTS_BLOCKING_STATES, default=[]): (
+            _light_group_blocking_states_validator()
+        ),
+        vol.Optional(
+            CONF_SLEEP_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+            default=False,
+        ): cv.boolean,
+        vol.Optional(CONF_ACCENT_LIGHTS, default=[]): cv.entity_ids,
+        vol.Optional(CONF_ACCENT_LIGHTS_STATES, default=[]): cv.ensure_list,
+        vol.Optional(
+            CONF_ACCENT_LIGHTS_ACT_ON, default=DEFAULT_LIGHT_GROUP_ACT_ON
+        ): cv.ensure_list,
+        vol.Optional(CONF_ACCENT_LIGHTS_BLOCKING_STATES, default=[]): (
+            _light_group_blocking_states_validator()
+        ),
+        vol.Optional(
+            CONF_ACCENT_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+            default=False,
+        ): cv.boolean,
+        vol.Optional(CONF_TASK_LIGHTS, default=[]): cv.entity_ids,
+        vol.Optional(CONF_TASK_LIGHTS_STATES, default=[]): cv.ensure_list,
+        vol.Optional(
+            CONF_TASK_LIGHTS_ACT_ON, default=DEFAULT_LIGHT_GROUP_ACT_ON
+        ): cv.ensure_list,
+        vol.Optional(CONF_TASK_LIGHTS_BLOCKING_STATES, default=[]): (
+            _light_group_blocking_states_validator()
+        ),
+        vol.Optional(
+            CONF_TASK_LIGHTS_TURN_OFF_WHEN_BRIGHT,
+            default=False,
+        ): cv.boolean,
+    },
+    extra=vol.REMOVE_EXTRA,
+)
+
+CONFIGURABLE_FEATURES[CONF_FEATURE_LIGHT_GROUPS] = LIGHT_GROUP_FEATURE_SCHEMA
+
+OPTIONS_LIGHT_GROUP = [
+    (CONF_OVERHEAD_LIGHTS, [], cv.entity_ids),
+    (CONF_OVERHEAD_LIGHTS_STATES, [AREA_STATE_OCCUPIED], cv.ensure_list),
+    (CONF_OVERHEAD_LIGHTS_ACT_ON, DEFAULT_LIGHT_GROUP_ACT_ON, cv.ensure_list),
+    (
+        CONF_OVERHEAD_LIGHTS_BLOCKING_STATES,
+        [],
+        _light_group_blocking_states_validator(),
+    ),
+    (CONF_OVERHEAD_LIGHTS_TURN_OFF_WHEN_BRIGHT, False, cv.boolean),
+    (CONF_SLEEP_LIGHTS, [], cv.entity_ids),
+    (CONF_SLEEP_LIGHTS_STATES, [], cv.ensure_list),
+    (CONF_SLEEP_LIGHTS_ACT_ON, DEFAULT_LIGHT_GROUP_ACT_ON, cv.ensure_list),
+    (
+        CONF_SLEEP_LIGHTS_BLOCKING_STATES,
+        [],
+        _light_group_blocking_states_validator(),
+    ),
+    (CONF_SLEEP_LIGHTS_TURN_OFF_WHEN_BRIGHT, False, cv.boolean),
+    (CONF_ACCENT_LIGHTS, [], cv.entity_ids),
+    (CONF_ACCENT_LIGHTS_STATES, [], cv.ensure_list),
+    (CONF_ACCENT_LIGHTS_ACT_ON, DEFAULT_LIGHT_GROUP_ACT_ON, cv.ensure_list),
+    (
+        CONF_ACCENT_LIGHTS_BLOCKING_STATES,
+        [],
+        _light_group_blocking_states_validator(),
+    ),
+    (CONF_ACCENT_LIGHTS_TURN_OFF_WHEN_BRIGHT, False, cv.boolean),
+    (CONF_TASK_LIGHTS, [], cv.entity_ids),
+    (CONF_TASK_LIGHTS_STATES, [], cv.ensure_list),
+    (CONF_TASK_LIGHTS_ACT_ON, DEFAULT_LIGHT_GROUP_ACT_ON, cv.ensure_list),
+    (
+        CONF_TASK_LIGHTS_BLOCKING_STATES,
+        [],
+        _light_group_blocking_states_validator(),
+    ),
+    (CONF_TASK_LIGHTS_TURN_OFF_WHEN_BRIGHT, False, cv.boolean),
+]
