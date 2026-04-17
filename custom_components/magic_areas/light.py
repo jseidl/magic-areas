@@ -331,14 +331,6 @@ class AreaLightGroup(MagicLightGroup):
             self.reset_control()
             return False
 
-        if self.turn_off_when_bright and self.area.has_state(AreaStates.BRIGHT):
-            self.logger.debug(
-                "%s: Area is bright and turn_off_when_bright is enabled, turning off.",
-                self.name,
-            )
-            self.controlled = True
-            return self._turn_off()
-
         active_blocking_states = self._active_blocking_states()
         if active_blocking_states:
             self.logger.debug(
@@ -348,6 +340,24 @@ class AreaLightGroup(MagicLightGroup):
             )
             self.controlled = True
             return self._turn_off()
+
+        if self.turn_off_when_bright and self.area.has_state(AreaStates.BRIGHT):
+            self.logger.debug(
+                "%s: Area is bright and turn_off_when_bright is enabled, turning off.",
+                self.name,
+            )
+            self.controlled = True
+            return self._turn_off()
+
+        # Preserve legacy behavior by default: react to bright transition only.
+        if self.area.has_state(AreaStates.BRIGHT):
+            if (
+                AreaStates.BRIGHT in new_states
+                and AreaStates.OCCUPIED not in new_states
+            ):
+                self.controlled = True
+                self._turn_off()
+            return False
 
         # Only react to actual secondary state changes
         if not new_states and not lost_states:
