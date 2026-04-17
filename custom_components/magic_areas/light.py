@@ -25,10 +25,12 @@ from custom_components.magic_areas.const import (
     LIGHT_GROUP_ACT_ON,
     LIGHT_GROUP_ACT_ON_OCCUPANCY_CHANGE,
     LIGHT_GROUP_ACT_ON_STATE_CHANGE,
+    LIGHT_GROUP_BLOCKING_STATES,
     LIGHT_GROUP_CATEGORIES,
     LIGHT_GROUP_DEFAULT_ICON,
     LIGHT_GROUP_ICONS,
     LIGHT_GROUP_STATES,
+    LIGHT_GROUP_TURN_OFF_WHEN_BRIGHT,
     AreaStates,
     LightGroupCategory,
     MagicAreasFeatureInfoLightGroups,
@@ -189,6 +191,8 @@ class AreaLightGroup(MagicLightGroup):
         self.category = category
         self.assigned_states = []
         self.act_on = []
+        self.blocking_states = []
+        self.turn_off_when_bright = False
 
         self.controlling = True
         self.controlled = False
@@ -200,11 +204,17 @@ class AreaLightGroup(MagicLightGroup):
 
         # Get assigned states
         if self.category and self.category != LightGroupCategory.ALL:
-            self.assigned_states = area.feature_config(
-                MagicAreasFeatures.LIGHT_GROUPS
-            ).get(LIGHT_GROUP_STATES[self.category], [])
-            self.act_on = area.feature_config(MagicAreasFeatures.LIGHT_GROUPS).get(
+            feature_config = area.feature_config(MagicAreasFeatures.LIGHT_GROUPS)
+            self.assigned_states = feature_config.get(LIGHT_GROUP_STATES[self.category], [])
+            self.act_on = feature_config.get(
                 LIGHT_GROUP_ACT_ON[self.category], DEFAULT_LIGHT_GROUP_ACT_ON
+            )
+            self.blocking_states = feature_config.get(
+                LIGHT_GROUP_BLOCKING_STATES[self.category], []
+            )
+            self.turn_off_when_bright = feature_config.get(
+                LIGHT_GROUP_TURN_OFF_WHEN_BRIGHT[self.category],
+                False,
             )
 
         # Add static attributes
@@ -321,15 +331,23 @@ class AreaLightGroup(MagicLightGroup):
             self.reset_control()
             return False
 
-        if self.area.has_state(AreaStates.BRIGHT):
-            # Only turn off lights when bright if the room was already occupied
-            if (
-                AreaStates.BRIGHT in new_states
-                and AreaStates.OCCUPIED not in new_states
-            ):
-                self.controlled = True
-                self._turn_off()
-            return False
+        if self.turn_off_when_bright and self.area.has_state(AreaStates.BRIGHT):
+            self.logger.debug(
+                "%s: Area is bright and turn_off_when_bright is enabled, turning off.",
+                self.name,
+            )
+            self.controlled = True
+            return self._turn_off()
+
+        active_blocking_states = self._active_blocking_states()
+        if active_blocking_states:
+            self.logger.debug(
+                "%s: Blocking states active (%s), turning off/keeping off.",
+                self.name,
+                str(active_blocking_states),
+            )
+            self.controlled = True
+            return self._turn_off()
 
         # Only react to actual secondary state changes
         if not new_states and not lost_states:
@@ -447,6 +465,17 @@ class AreaLightGroup(MagicLightGroup):
             relevant_states.remove(AreaStates.DARK)
 
         return relevant_states
+
+    def _active_blocking_states(self) -> list[str]:
+        """Return configured blocking states that are currently active."""
+        if not self.blocking_states:
+            return []
+
+        return [
+            blocking_state
+            for blocking_state in self.blocking_states
+            if self.area.has_state(blocking_state)
+        ]
 
     # Light Handling
 
