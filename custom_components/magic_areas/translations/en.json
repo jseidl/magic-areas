@@ -234,13 +234,15 @@
           "presence_sensor_device_class": "Presence sensors device classes",
           "presence_device_platforms": "Platforms to be used for presence sensing",
           "keep_only_entities": "Keep-only entities",
-          "clear_timeout": "Clear timeout"
+          "clear_timeout": "Clear timeout",
+          "door_transition_occupancy_timeout": "Door transition occupancy timeout"
         },
         "data_description": {
           "presence_device_platforms": "Binary sensors are usually the standard source of presence but media devices can be used too.",
           "presence_sensor_device_class": "Define which device classes of `binary sensors` will be used for presence tracking. Common non-standard options are door and humidity.",
           "keep_only_entities": "Select presence-tracking entities that will only be considered when the room is already occupied. This is useful for preventing over-sensitive sensors such as mmWave sensors and BLE trackers false-triggering an area's presence.",
-          "clear_timeout": "How long since last presence event should it wait before clearing the area"
+          "clear_timeout": "How long since last presence event should it wait before clearing the area",
+          "door_transition_occupancy_timeout": "How many seconds a door (or garage door) transitioning open/closed should mark the area as occupied. This provides an earlier presence signal than motion sensors, since opening/closing a door usually happens before a PIR can see the person. Set to 0 to disable."
         }
       }
     },
@@ -329,6 +331,18 @@
               "off": "Closed",
               "on": "Open"
             }
+          }
+        }
+      },
+      "door_transition_occupancy": {
+        "name": "Door Transition Occupancy",
+        "state": {
+          "off": "No recent door transition",
+          "on": "Door recently transitioned"
+        },
+        "state_attributes": {
+          "last_door_entity_id": {
+            "name": "Last door entity"
           }
         }
       }
