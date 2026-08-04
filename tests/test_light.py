@@ -205,3 +205,74 @@ async def test_light_group_releases_listeners_on_reload(
         await hass.async_block_till_done()
 
         assert subscriber_count() == subscribers_before
+
+
+@pytest.fixture(name="all_lights_config_entry")
+def mock_config_entry_all_lights() -> MockConfigEntry:
+    """Fixture for a config entry without categorized light groups."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data.update({CONF_ENABLED_FEATURES: {CONF_FEATURE_LIGHT_GROUPS: {}}})
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+@pytest.fixture(name="_setup_integration_all_lights")
+async def setup_integration_all_lights(
+    hass: HomeAssistant,
+    all_lights_config_entry: MockConfigEntry,
+) -> AsyncGenerator[Any]:
+    """Set up integration without categorized light groups."""
+    await init_integration(hass, [all_lights_config_entry])
+    yield
+    await shutdown_integration(hass, [all_lights_config_entry])
+
+
+async def test_all_lights_group_without_categorized_groups(
+    hass: HomeAssistant,
+    entities_light_one: list[MockLight],
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_all_lights,
+) -> None:
+    """Test the All Lights group drives lights when no categorized groups exist."""
+
+    mock_light_entity_id = entities_light_one[0].entity_id
+    mock_motion_sensor_entity_id = entities_binary_sensor_motion_one[0].entity_id
+    all_lights_entity_id = (
+        f"{LIGHT_DOMAIN}.magic_areas_light_groups_{DEFAULT_MOCK_AREA}_all_lights"
+    )
+    light_control_entity_id = (
+        f"{SWITCH_DOMAIN}.magic_areas_light_groups_{DEFAULT_MOCK_AREA}_light_control"
+    )
+
+    # Test the All Lights group is created and controls the light entities
+    all_lights_state = hass.states.get(all_lights_entity_id)
+    assert_state(all_lights_state, STATE_OFF)
+    assert_in_attribute(all_lights_state, ATTR_ENTITY_ID, mock_light_entity_id)
+
+    # Enable light control
+    hass.states.async_set(light_control_entity_id, STATE_ON)
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: light_control_entity_id}
+    )
+    await hass.async_block_till_done()
+
+    # Turn motion sensor on
+    hass.states.async_set(mock_motion_sensor_entity_id, STATE_ON)
+    await hass.async_block_till_done()
+
+    await asyncio.sleep(1)
+
+    # The All Lights group turns on the lights directly
+    all_lights_state = hass.states.get(all_lights_entity_id)
+    assert_state(all_lights_state, STATE_ON)
+
+    # Turn motion sensor off
+    hass.states.async_set(mock_motion_sensor_entity_id, STATE_OFF)
+    await hass.async_block_till_done()
+
+    # The area clears on its own schedule, so let it run before asserting
+    await asyncio.sleep(1)
+    await hass.async_block_till_done()
+
+    # The All Lights group turns the lights back off
+    all_lights_state = hass.states.get(all_lights_entity_id)
+    assert_state(all_lights_state, STATE_OFF)

@@ -207,6 +207,12 @@ class AreaLightGroup(MagicLightGroup):
                 LIGHT_GROUP_ACT_ON[self.category], DEFAULT_LIGHT_GROUP_ACT_ON
             )
 
+        # Without categorized groups, the All Lights group drives the light
+        # entities directly on occupancy (#478)
+        if self.category == LightGroupCategory.ALL and not self._child_ids:
+            self.assigned_states = [AreaStates.OCCUPIED]
+            self.act_on = DEFAULT_LIGHT_GROUP_ACT_ON
+
         # Add static attributes
         self._attr_extra_state_attributes["lights"] = self._entity_ids
         self._attr_extra_state_attributes["controlling"] = self.controlling
@@ -294,7 +300,11 @@ class AreaLightGroup(MagicLightGroup):
 
         # Handle all lights group
         if self.category == LightGroupCategory.ALL:
-            return self.state_change_primary(states_tuple)
+            result = self.state_change_primary(states_tuple)
+            if result or self._child_ids:
+                return result
+            # Without categorized groups, also drive the lights directly (#478)
+            return self.state_change_secondary(states_tuple)
 
         # Handle light category
         return self.state_change_secondary(states_tuple)
