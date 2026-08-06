@@ -2,17 +2,22 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
+import inspect
 import logging
 from typing import Any
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.binary_sensor import (
+    DOMAIN as BINARY_SENSOR_DOMAIN,
+    BinarySensorDeviceClass,
+)
 from homeassistant.components.sensor.const import (
     DOMAIN as SENSOR_DOMAIN,
     SensorDeviceClass,
 )
+from homeassistant.components.threshold.binary_sensor import ThresholdSensor
 from homeassistant.components.threshold.const import ATTR_HYSTERESIS, ATTR_UPPER
 from homeassistant.const import LIGHT_LUX, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
@@ -25,6 +30,7 @@ from custom_components.magic_areas.const import (
     CONF_FEATURE_AGGREGATION,
     DOMAIN,
 )
+from custom_components.magic_areas.threshold import THRESHOLD_SENSOR_ACCEPTS_HASS
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
@@ -103,6 +109,31 @@ async def setup_entities_sensor_illuminance_multiple(
 
 
 # Tests
+
+
+def test_threshold_sensor_arguments_bind_to_core() -> None:
+    """Ensure the arguments we hand ThresholdSensor match the running core.
+
+    Core changes this signature from time to time — 2026.8 (core#177598) dropped
+    `hass` — and AreaThresholdSensor's failure is swallowed by a broad except,
+    so the only symptom is a missing threshold sensor and areas silently stuck
+    in the `bright` state. Bind the call site here so a mismatch fails loudly.
+    """
+
+    arguments = {
+        "entity_id": "sensor.magic_areas_aggregates_kitchen_aggregate_illuminance",
+        "name": "",
+        "unique_id": "test",
+        "lower": None,
+        "upper": 600,
+        "hysteresis": 60,
+        "device_class": BinarySensorDeviceClass.LIGHT,
+    }
+    if THRESHOLD_SENSOR_ACCEPTS_HASS:
+        arguments["hass"] = None
+
+    # Raises TypeError if the call in AreaThresholdSensor.__init__ is no longer valid.
+    inspect.signature(ThresholdSensor.__init__).bind(object(), **arguments)
 
 
 async def test_threshold_sensor_light(

@@ -1,5 +1,6 @@
 """Platform file for Magic Areas threhsold sensors."""
 
+import inspect
 import logging
 
 from homeassistant.components.binary_sensor import (
@@ -30,6 +31,14 @@ from custom_components.magic_areas.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Home Assistant 2026.8 (core#177598) dropped the `hass` argument from
+# ThresholdSensor.__init__ and moved listener setup into async_added_to_hass.
+# Pass it only when the running core still accepts it, so we keep working on
+# both sides of that change.
+THRESHOLD_SENSOR_ACCEPTS_HASS = (
+    "hass" in inspect.signature(ThresholdSensor.__init__).parameters
+)
 
 
 def create_illuminance_threshold(hass: HomeAssistant, area: MagicArea) -> Entity | None:
@@ -129,9 +138,10 @@ class AreaThresholdSensor(MagicEntity, ThresholdSensor):
         MagicEntity.__init__(
             self, area, domain=BINARY_SENSOR_DOMAIN, translation_key=device_class
         )
+        self.hass = hass
         ThresholdSensor.__init__(
             self,
-            hass=hass,
+            **({"hass": hass} if THRESHOLD_SENSOR_ACCEPTS_HASS else {}),
             entity_id=entity_id,
             name=EMPTY_STRING,
             unique_id=self.unique_id,
