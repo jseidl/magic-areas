@@ -64,12 +64,17 @@ class ClimateControlSwitch(SwitchBase):
             )
         )
 
-    async def area_state_changed(self, area_id, states_tuple):
+    async def area_state_changed(
+        self, area_id: str, states_tuple: set[set[AreaStates]]
+    ) -> None:
         """Handle area state change event."""
 
         if not self.is_on:
             self.logger.debug("%s: Control disabled. Skipping.", self.name)
             return
+
+        new_states: set[AreaStates]
+        lost_states: set[AreaStates]
 
         new_states, lost_states = states_tuple
 
@@ -77,24 +82,29 @@ class ClimateControlSwitch(SwitchBase):
             self.logger.debug("%s: No state change. Skipping.", self.name)
             return
 
-        priority_states: list[str] = [
+        await self.process_states(new_states)
+
+    async def process_states(self, area_states: set[AreaStates]):
+        """Process available states and apply corresponding preset."""
+
+        priority_states: list[AreaStates] = [
             AreaStates.SLEEP,
             AreaStates.EXTENDED,
             AreaStates.OCCUPIED,
         ]
 
         # Handle area clear because the other states doesn't matter
-        if AreaStates.CLEAR in new_states:
+        if AreaStates.CLEAR in area_states:
             if self.preset_map[AreaStates.CLEAR]:
                 await self.apply_preset(AreaStates.CLEAR)
             return
 
         # Handle each state top priority to last, returning early
         for p_state in priority_states:
-            if p_state in new_states and self.preset_map[p_state]:
+            if p_state in area_states and self.preset_map[p_state]:
                 return await self.apply_preset(p_state)
 
-    async def apply_preset(self, state_name: str):
+    async def apply_preset(self, state_name: AreaStates):
         """Set climate entity to given preset."""
 
         selected_preset: str = self.preset_map[state_name]
