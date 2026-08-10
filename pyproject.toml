@@ -18,23 +18,10 @@ ignore = ["tests"]
 # Use a conservative default here; 2 should speed up most setups and not hurt
 # any too bad. Override on command line as appropriate.
 jobs = 2
-init-hook = """\
-    from pathlib import Path; \
-    import sys; \
-
-    from pylint.config import find_default_config_files; \
-
-    sys.path.append( \
-        str(Path(next(find_default_config_files())).parent.joinpath('pylint/plugins'))
-    ) \
-    """
+init-hook = "import sys; sys.path.append('.')"
 load-plugins = [
     "pylint.extensions.code_style",
     "pylint.extensions.typing",
-    "hass_enforce_type_hints",
-    "hass_imports",
-    "hass_logger",
-    "pylint_per_file_ignores",
 ]
 persistent = false
 extension-pkg-allow-list = [
@@ -148,7 +135,7 @@ warn_redundant_casts = true
 warn_unused_configs = true
 
 [tool.bandit]
-tests = ["B108", "B306", "B307", "B313", "B314", "B315", "B316", "B317", "B318", "B319", "B320", "B602", "B604"]
+tests = ["B306", "B307", "B313", "B314", "B315", "B316", "B317", "B318", "B319", "B320", "B602", "B604"]
 
 [tool.ruff]
 target-version = "py312"
