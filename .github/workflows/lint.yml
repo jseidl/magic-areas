@@ -28,11 +28,5 @@ jobs:
         - name: "Install requirements"
           run: python3 -m pip install -r requirements-test.txt
 
-        - name: Get latest HA stable version from PyPI
-          run: |
-            VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
-            STABLE=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-            echo "HA_STABLE_VERSION=$STABLE" >> $GITHUB_ENV
-
-        - name: "Run"
-          run: tox -e lint
+        - name: "Run lint"
+          run: scripts/lint

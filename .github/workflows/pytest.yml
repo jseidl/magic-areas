@@ -29,16 +29,8 @@ jobs:
           pip install -r requirements-test.txt
           sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Get latest HA stable version from PyPI
-        run: |
-          VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
-          STABLE=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-          echo "HA_STABLE_VERSION=$STABLE" >> $GITHUB_ENV
-
-      - name: Run tox for stable
-        run: tox -e ha-stable
-        env:
-          HA_STABLE_VERSION: ${{ env.HA_STABLE_VERSION }}
+      - name: "Run tests against stable"
+        run: scripts/test stable tests/
 
   # test-beta:
   #   name: "Test against beta release"
@@ -58,13 +50,5 @@ jobs:
   #         pip install -r requirements-test.txt
   #         sudo apt-get update && sudo apt-get install -y jq
 
-  #     - name: Get latest HA beta version from PyPI
-  #       run: |
-  #         VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
-  #         BETA=$(echo "$VERSIONS" | grep 'b' | sort -Vr | head -n1)
-  #         echo "HA_BETA_VERSION=$BETA" >> $GITHUB_ENV
-
-  #     - name: Run tox for beta
-  #       run: tox -e ha-beta
-  #       env:
-  #         HA_BETA_VERSION: ${{ env.HA_BETA_VERSION }}
+  #     - name: "Run tests against beta"
+  #       run: scripts/test beta tests/
