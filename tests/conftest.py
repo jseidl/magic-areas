@@ -41,7 +41,7 @@ _LOGGER = logging.getLogger(__name__)
 @pytest.fixture(autouse=True)
 async def auto_enable_custom_integrations(
     enable_custom_integrations: None,
-) -> AsyncGenerator[None, None]:
+) -> AsyncGenerator[None]:
     """Enable custom integration."""
     _ = enable_custom_integrations  # unused
     yield

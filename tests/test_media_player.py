@@ -128,7 +128,7 @@ async def test_area_aware_media_player(
     hass: HomeAssistant,
     entities_media_player_single: list[MockMediaPlayer],
     entities_binary_sensor_motion_one: list[MockBinarySensor],
-    _setup_integration_area_aware_media_player: AsyncGenerator[Any, None],
+    _setup_integration_area_aware_media_player: AsyncGenerator[Any],
 ) -> None:
     """Test the area aware media player."""
 

@@ -49,7 +49,7 @@ async def async_setup_entry(
 
     # Append None to the list of device classes to catch those covers that
     # don't have a device class assigned (and put them in their own group)
-    for device_class in [*COVER_DEVICE_CLASSES, None]:
+    for device_class in (*COVER_DEVICE_CLASSES, None):
         covers_in_device_class = [
             e["entity_id"]
             for e in area.entities[COVER_DOMAIN]
