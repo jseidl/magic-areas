@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
 
 HA_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-HA_STABLE_VERSION="2026.3.4"
+
 export HA_STABLE_VERSION
 
 tox -e lint

@@ -25,7 +25,7 @@ HA_BETA_VERSION=$(echo "$VERSIONS" | grep "^${MAJOR_VERSION}\..*b" | sort -Vr | 
 
 # Previous major version release
 HA_PREVIOUS_STABLE_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n2 | tail -n1)
-HA_STABLE_VERSION="2026.3.4"
+
 export HA_STABLE_VERSION
 export HA_MAJOR_VERSION
 export HA_BETA_VERSION
