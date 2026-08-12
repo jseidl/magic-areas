@@ -82,7 +82,16 @@ class ClimateControlSwitch(SwitchBase):
             self.logger.debug("%s: No state change. Skipping.", self.name)
             return
 
-        await self.process_states(new_states)
+        # Process new states if available.
+        # This is the main behavior of triggering when gaining a state.
+        if new_states:
+            return await self.process_states(new_states)
+
+        # If no new states but lost states, send all states.
+        # This is necessary when leaving priority states like sleep,
+        # that don't have an opposite state as occupied/clear.
+        if lost_states:
+            return await self.process_states(self.area.states)
 
     async def process_states(self, area_states: set[AreaStates]):
         """Process available states and apply corresponding preset."""

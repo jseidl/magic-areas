@@ -114,7 +114,7 @@ class MagicArea:
 
         self.last_changed: datetime = datetime.now(UTC)
 
-        self.states: list[str] = []
+        self.states: set[AreaStates] = set()
 
         self.loaded_platforms: list[str] = []
 
