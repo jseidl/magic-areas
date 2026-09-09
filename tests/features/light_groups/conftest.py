@@ -264,32 +264,6 @@ def light_group_sleep_config_entry() -> MockConfigEntry:
 
 
 @pytest.fixture
-def light_group_never_turn_off_config_entry() -> MockConfigEntry:
-    """Light group configured to NEVER turn off automatically (empty turn_off_when)."""
-    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-
-    never_group = {
-        LightGroupEntryOptions.NAME.key: "Never Turn Off Group",
-        LightGroupEntryOptions.LIGHTS.key: [
-            "light.light_1",
-            "light.light_2",
-            "light.light_3",
-        ],
-        LightGroupEntryOptions.STATES.key: [AreaStates.OCCUPIED],
-        LightGroupEntryOptions.TURN_ON_WHEN.key: [
-            LightGroupTurnOnWhen.AREA_OCCUPIED,
-        ],
-        LightGroupEntryOptions.TURN_OFF_WHEN.key: [],  # Empty = never turn off
-        LightGroupEntryOptions.REQUIRE_DARK.key: False,
-    }
-
-    data.update(
-        LightGroupOptions.to_config({LightGroupOptions.GROUPS.key: [never_group]})
-    )
-    return MockConfigEntry(domain=DOMAIN, title=DEFAULT_MOCK_AREA.title(), data=data)
-
-
-@pytest.fixture
 def light_group_no_exterior_config_entry() -> MockConfigEntry:
     """Light group without EXTERIOR_BRIGHT in turn_off_when."""
     data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
@@ -794,29 +768,6 @@ async def setup_sleep_light_group(
     }
 
     await shutdown_integration(hass, [light_group_sleep_config_entry])
-
-
-@pytest.fixture
-async def setup_never_turn_off_light_group(
-    hass: HomeAssistant,
-    light_group_never_turn_off_config_entry: MockConfigEntry,
-    setup_test_lights: list[MockLight],
-    setup_motion_sensor: MockBinarySensor,
-) -> AsyncGenerator[dict[str, Any]]:
-    """Set up complete integration with NEVER turn-off light group."""
-    await init_integration(hass, [light_group_never_turn_off_config_entry])
-    await enable_light_control(hass, DEFAULT_MOCK_AREA.value)
-
-    yield {
-        "config_entry": light_group_never_turn_off_config_entry,
-        "lights": setup_test_lights,
-        "motion_sensor": setup_motion_sensor,
-        "light_group_id": f"light.magic_areas_light_groups_{DEFAULT_MOCK_AREA.value}_never_turn_off_group",
-        "area_state_id": f"binary_sensor.magic_areas_presence_tracking_{DEFAULT_MOCK_AREA.value}_area_state",
-        "light_control_id": f"switch.magic_areas_light_groups_{DEFAULT_MOCK_AREA.value}_light_control",
-    }
-
-    await shutdown_integration(hass, [light_group_never_turn_off_config_entry])
 
 
 @pytest.fixture

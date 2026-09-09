@@ -43,6 +43,8 @@ from custom_components.magic_areas.util import cleanup_removed_entries
 
 _LOGGER = logging.getLogger(__name__)
 
+ADAPTIVE_LIGHTING_CONTEXT_TOKEN: str = ":al:"
+
 # Entry Setup
 
 
@@ -306,15 +308,9 @@ class AreaLightGroup(MagicLightGroup):
             """Handle child light state change."""
             # Check if the state change was triggered by our magic context
             # If not, it's a manual change - enter manual mode
-            context = event.context
-            if not context or not context.id.startswith(LIGHT_GROUP_CONTEXT_PREFIX):
-                _LOGGER.debug(
-                    "%s (%s): Child light changed without magic context, entering manual mode",
-                    self.area.name,
-                    self.name,
-                )
-                if self.area.is_occupied():
-                    self._manual_mode_set()
+
+            if self._should_release_control(event.context):
+                self._manual_mode_set_or_reset()
 
         self.async_on_remove(
             async_track_state_change_event(
@@ -756,6 +752,61 @@ class AreaLightGroup(MagicLightGroup):
         self.update_attributes()
         _LOGGER.debug("%s (%s): Manual mode reset.", self.area.name, self.name)
 
+    def _manual_mode_set_or_reset(self):
+        """Set or reset manual mode depending on area occupancy."""
+
+        if self.area.is_occupied():
+            self._manual_mode_set()
+        else:
+            self._manual_mode_reset()
+
+    def _should_release_control(self, context: Context | None = None) -> bool:
+        """Check if control should be released."""
+
+        _context: Context | None = self._context
+
+        if context:
+            _context = context
+
+        # Release if context not set
+        if not _context:
+            return True
+
+        _LOGGER.warning(
+            "%s: SHOULD RESTRICT? CONTEXT: %s PARENT: %s",
+            self.area.name,
+            str(_context.id),
+            str(_context.parent_id),
+        )
+
+        # Don't release if it's our own context
+        if any(
+            item.startswith(LIGHT_GROUP_CONTEXT_PREFIX)
+            for item in (_context.id, _context.parent_id)
+            if item is not None
+        ):
+            return False
+
+        # Don't release if it's Adaptive Lighting's context
+        if any(
+            ADAPTIVE_LIGHTING_CONTEXT_TOKEN in item
+            for item in (_context.id, _context.parent_id)
+            if item is not None
+        ):
+            return False
+
+        # Release by default
+        return True
+
+    def async_update_group_state(self) -> None:
+        """Recompute aggregate state, then check who triggered it."""
+        super().async_update_group_state()
+
+        if not self._should_release_control():
+            return
+
+        self._manual_mode_set_or_reset()
+
     async def async_turn_on(self, **kwargs) -> None:
         """Handle turn on service call.
 
@@ -763,13 +814,8 @@ class AreaLightGroup(MagicLightGroup):
         unless they have the magic context prefix (programmatic/internal calls).
         """
         # Only enter manual mode if context is not magic
-        if not self._context or not self._context.id.startswith(
-            LIGHT_GROUP_CONTEXT_PREFIX
-        ):
-            if self.area.is_occupied():
-                self._manual_mode_set()
-            else:
-                self._manual_mode_reset()
+        if self._should_release_control():
+            self._manual_mode_set_or_reset()
 
         await super().async_turn_on(**kwargs)
 
@@ -780,12 +826,7 @@ class AreaLightGroup(MagicLightGroup):
         unless they have the magic context prefix (programmatic/internal calls).
         """
         # Only enter manual mode if context is not magic
-        if not self._context or not self._context.id.startswith(
-            LIGHT_GROUP_CONTEXT_PREFIX
-        ):
-            if self.area.is_occupied():
-                self._manual_mode_set()
-            else:
-                self._manual_mode_reset()
+        if self._should_release_control():
+            self._manual_mode_set_or_reset()
 
         await super().async_turn_off(**kwargs)

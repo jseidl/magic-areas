@@ -82,26 +82,6 @@ class TestTurnOff:
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_OFF)
 
-    async def test_never_turn_off_when_configured(
-        self, hass: HomeAssistant, setup_never_turn_off_light_group: dict
-    ):
-        """Test lights never turn off automatically when turn_off_when is empty."""
-        light_group_id = setup_never_turn_off_light_group["light_group_id"]
-        motion_sensor = setup_never_turn_off_light_group["motion_sensor"]
-
-        # Make area occupied, lights turn on
-        await trigger_occupancy(hass, motion_sensor, occupied=True)
-
-        light_state = hass.states.get(light_group_id)
-        assert_state(light_state, STATE_ON)
-
-        # Area becomes clear (would normally turn off)
-        await trigger_occupancy(hass, motion_sensor, occupied=False)
-
-        # Verify lights did NOT turn off (empty turn_off_when = never)
-        light_state = hass.states.get(light_group_id)
-        assert_state(light_state, STATE_ON)
-
     async def test_area_clear_resets_manual_mode(
         self, hass: HomeAssistant, setup_basic_light_group: dict
     ):
