@@ -155,6 +155,35 @@ async def setup_entities_sensor_current_multiple(
     return mock_sensor_entities
 
 
+@pytest.fixture(name="entities_sensor_aqi_multiple")
+async def setup_entities_sensor_aqi_multiple(
+    hass: HomeAssistant,
+) -> list[MockSensor]:
+    """Create multiple mock AQI sensors and setup the system with it.
+
+    Home Assistant AQI sensors are intentionally unitless (device_class=aqi,
+    state_class=measurement, no unit_of_measurement) -- deliberately not
+    setting native_unit_of_measurement/unit_of_measurement here, unlike the
+    other fixtures above, to reproduce that.
+    """
+    nr_entities = 3
+    mock_sensor_entities = []
+    for i in range(nr_entities):
+        random_value = randint(0, 500)
+        mock_sensor_entities.append(
+            MockSensor(
+                name=f"aqi_sensor_{i}",
+                unique_id=f"aqi_sensor_{i}",
+                native_value=random_value,
+                device_class=SensorDeviceClass.AQI,
+            )
+        )
+    await setup_mock_entities(
+        hass, SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: mock_sensor_entities}
+    )
+    return mock_sensor_entities
+
+
 # Tests
 
 
@@ -371,3 +400,27 @@ async def test_aggregates_sensor_sum(
     assert round(float(aggregate_sensor_state.state), 2) == round(
         sum(changed_values), 2
     )
+
+
+async def test_aggregates_sensor_aqi_unitless(
+    hass: HomeAssistant,
+    entities_sensor_aqi_multiple: list[MockSensor],
+    _setup_integration_aggregates,
+) -> None:
+    """AQI sensors are unitless in HA and must still be aggregated (#631)."""
+
+    aggregate_sensor_id = f"{SENSOR_DOMAIN}.magic_areas_aggregates_kitchen_aggregate_aqi"
+
+    entity_values = []
+    for mock_entity in entities_sensor_aqi_multiple:
+        mock_state = hass.states.get(mock_entity.entity_id)
+        assert mock_state is not None
+        assert "unit_of_measurement" not in mock_state.attributes
+        entity_values.append(int(mock_state.state))
+
+    aggregate_sensor_state = hass.states.get(aggregate_sensor_id)
+    assert aggregate_sensor_state is not None
+    assert round(float(aggregate_sensor_state.state), 2) == round(
+        mean(entity_values), 2
+    )
+    assert "unit_of_measurement" not in aggregate_sensor_state.attributes

@@ -58,7 +58,7 @@ def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
     """Create the aggregate sensors for the area."""
 
     eligible_entities: dict[str, list[str]] = {}
-    unit_of_measurement_map: dict[str, list[str]] = {}
+    unit_of_measurement_map: dict[str, list[str | None]] = {}
 
     aggregates = []
 
@@ -83,28 +83,21 @@ def create_aggregate_sensors(area: MagicArea) -> list[Entity]:
             )
             continue
 
-        if (
-            ATTR_UNIT_OF_MEASUREMENT not in entity_state.attributes
-            or not entity_state.attributes[ATTR_UNIT_OF_MEASUREMENT]
-        ):
-            _LOGGER.debug(
-                "Entity %s does not have unit_of_measurement defined",
-                entity[ATTR_ENTITY_ID],
-            )
-            continue
-
         device_class = entity_state.attributes[ATTR_DEVICE_CLASS]
 
         # Dictionary of sensors by device class.
         if device_class not in eligible_entities:
             eligible_entities[device_class] = []
 
-        # Dictionary of seen unit of measurements by device class.
+        # Dictionary of seen unit of measurements by device class. Some
+        # device classes (e.g. SensorDeviceClass.AQI) are intentionally
+        # unitless in Home Assistant, so a missing unit_of_measurement must
+        # not disqualify the entity -- just record None for it below.
         if device_class not in unit_of_measurement_map:
             unit_of_measurement_map[device_class] = []
 
         unit_of_measurement_map[device_class].append(
-            entity_state.attributes[ATTR_UNIT_OF_MEASUREMENT]
+            entity_state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
         )
         eligible_entities[device_class].append(entity[ATTR_ENTITY_ID])
 
