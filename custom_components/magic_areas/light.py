@@ -772,13 +772,6 @@ class AreaLightGroup(MagicLightGroup):
         if not _context:
             return True
 
-        _LOGGER.warning(
-            "%s: SHOULD RESTRICT? CONTEXT: %s PARENT: %s",
-            self.area.name,
-            str(_context.id),
-            str(_context.parent_id),
-        )
-
         # Don't release if it's our own context
         if any(
             item.startswith(LIGHT_GROUP_CONTEXT_PREFIX)
