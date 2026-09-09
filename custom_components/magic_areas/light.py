@@ -253,8 +253,10 @@ class AreaLightGroup(MagicLightGroup):
 
     async def _setup_listeners(self, _=None) -> None:
         """Set up listeners for area state chagne."""
-        async_dispatcher_connect(
-            self.hass, EVENT_MAGICAREAS_AREA_STATE_CHANGED, self.area_state_changed
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, EVENT_MAGICAREAS_AREA_STATE_CHANGED, self.area_state_changed
+            )
         )
         self.async_on_remove(
             async_track_state_change_event(

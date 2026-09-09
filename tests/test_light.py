@@ -13,6 +13,7 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import DATA_DISPATCHER
 
 from custom_components.magic_areas.const import (
     CONF_ENABLED_FEATURES,
@@ -21,6 +22,7 @@ from custom_components.magic_areas.const import (
     CONF_OVERHEAD_LIGHTS_ACT_ON,
     CONF_OVERHEAD_LIGHTS_STATES,
     DOMAIN,
+    EVENT_MAGICAREAS_AREA_STATE_CHANGED,
     LIGHT_GROUP_ACT_ON_OCCUPANCY_CHANGE,
     AreaStates,
 )
@@ -174,3 +176,32 @@ async def test_light_group_basic(
     # Check light group is off
     light_group_state = hass.states.get(light_group_entity_id)
     assert_state(light_group_state, STATE_OFF)
+
+
+async def test_light_group_releases_listeners_on_reload(
+    hass: HomeAssistant,
+    entities_light_one: list[MockLight],
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    light_groups_config_entry: MockConfigEntry,
+    _setup_integration_light_groups,
+) -> None:
+    """Test that light groups unsubscribe from the area state dispatcher on reload.
+
+    A leaked subscription keeps the previous AreaLightGroup instance alive and
+    reacting to area state changes. That instance holds the MagicArea object
+    from before the reload, whose states are frozen, so it acts on state the
+    area no longer has.
+    """
+
+    def subscriber_count() -> int:
+        dispatchers = hass.data.get(DATA_DISPATCHER, {})
+        return len(dispatchers.get(EVENT_MAGICAREAS_AREA_STATE_CHANGED, {}))
+
+    subscribers_before = subscriber_count()
+    assert subscribers_before > 0
+
+    for _ in range(3):
+        await hass.config_entries.async_reload(light_groups_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert subscriber_count() == subscribers_before

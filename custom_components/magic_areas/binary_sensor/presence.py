@@ -668,8 +668,10 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
 
     async def _setup_listeners(self) -> None:
         # Setup state change listener
-        async_dispatcher_connect(
-            self.hass, MagicAreasEvents.AREA_STATE_CHANGED, self._area_state_changed
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, MagicAreasEvents.AREA_STATE_CHANGED, self._area_state_changed
+            )
         )
 
         self._setup_tracking_listeners()
