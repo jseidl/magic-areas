@@ -33,6 +33,7 @@ from custom_components.magic_areas.const import (
     AREA_TYPE_EXTERIOR,
     AREA_TYPE_INTERIOR,
     AREA_TYPE_META,
+    CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
     CONF_ENABLED_FEATURES,
     CONF_EXCLUDE_ENTITIES,
     CONF_FEATURE_AGGREGATION,
@@ -46,8 +47,10 @@ from custom_components.magic_areas.const import (
     CONF_TYPE,
     CONFIGURABLE_AREA_STATE_MAP,
     DATA_AREA_OBJECT,
+    DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
     DEFAULT_IGNORE_DIAGNOSTIC_ENTITIES,
     DEFAULT_PRESENCE_DEVICE_PLATFORMS,
+    DOOR_TRANSITION_DEVICE_CLASSES,
     MAGIC_AREAS_COMPONENTS,
     MAGIC_AREAS_COMPONENTS_GLOBAL,
     MAGIC_AREAS_COMPONENTS_META,
@@ -438,6 +441,39 @@ class MagicArea:
                 f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{self.slug}"
             )
             sensors.append(wasp_in_the_box_sensor_id)
+
+        # Append Door Transition Occupancy sensor as a presence_sensor.
+        # It pulses "on" whenever a door in the area transitions (opens or
+        # closes), acting as an earlier presence signal than motion/PIR
+        # sensors (see discussion #610). Only created when a timeout is
+        # configured and the area actually has door-classed sensors.
+        if self.get_door_transition_sensors() and self.config.get(
+            CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+            DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+        ):
+            door_transition_sensor_id = f"{BINARY_SENSOR_DOMAIN}.magic_areas_door_transition_occupancy_{self.slug}"
+            sensors.append(door_transition_sensor_id)
+
+        return sensors
+
+    def get_door_transition_sensors(self) -> list[str]:
+        """Return binary_sensor entities in the area considered "doors".
+
+        Used to feed the door-transition occupancy sensor, not for regular
+        presence tracking (a door's static open/closed state is unrelated
+        to whether the area is occupied, only its *transitions* are).
+        """
+
+        sensors: list[str] = []
+
+        for entity in self.entities.get(BINARY_SENSOR_DOMAIN, []):
+            if not entity or ATTR_DEVICE_CLASS not in entity:
+                continue
+
+            if entity[ATTR_DEVICE_CLASS] not in DOOR_TRANSITION_DEVICE_CLASSES:
+                continue
+
+            sensors.append(entity[ATTR_ENTITY_ID])
 
         return sensors
 
