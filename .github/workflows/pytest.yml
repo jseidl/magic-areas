@@ -32,13 +32,13 @@ jobs:
       - name: Get latest HA stable version from PyPI
         run: |
           VERSIONS=$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]')
-          STABLE=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -Vr | head -n1)
-          echo "HA_STABLE_VERSION=$STABLE" >> $GITHUB_ENV
+          HA_MAJOR_VERSION=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -Vr | head -n1)
+          echo "HA_MAJOR_VERSION=$HA_MAJOR_VERSION" >> $GITHUB_ENV
 
       - name: Run tox for stable
-        run: tox -e ha-stable
+        run: tox -e ha-major
         env:
-          HA_STABLE_VERSION: ${{ env.HA_STABLE_VERSION }}
+          HA_MAJOR_VERSION: ${{ env.HA_MAJOR_VERSION }}
 
   # test-beta:
   #   name: "Test against beta release"
