@@ -1009,7 +1009,6 @@ REGULAR_AREA_BASIC_OPTIONS_SCHEMA = vol.Schema(
 META_AREA_BASIC_OPTIONS_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_TYPE, default=AREA_TYPE_META): AREA_TYPE_META,
-        vol.Optional(CONF_ENABLED_FEATURES, default={}): FEATURES_SCHEMA,
         vol.Optional(CONF_EXCLUDE_ENTITIES, default=[]): cv.entity_ids,
         vol.Optional(
             CONF_RELOAD_ON_REGISTRY_CHANGE, default=DEFAULT_RELOAD_ON_REGISTRY_CHANGE
