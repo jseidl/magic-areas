@@ -530,9 +530,9 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         # Populate metadata
         if self._active_sensors:
-            self._last_active_sensors = self._active_sensors
+            self._last_active_sensors = self._active_sensors.copy()
 
-        self._active_sensors = active_sensors
+        self._active_sensors = active_sensors.copy()
 
         return len(active_sensors) > 0
 
@@ -737,9 +737,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
 
         # Collect all states from child areas
         for area_slug in child_areas:
-            area_entity_id: str = (
-                f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
-            )
+            area_entity_id: str = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
             area_state = self.hass.states.get(area_entity_id)
 
             if not area_state:
