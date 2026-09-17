@@ -428,7 +428,9 @@ class AreaLightGroup(MagicLightGroup):
 
     # Turn on / off decision logic
 
-    def _should_turn_off_on_exterior_bright(self, new_states: set[str]) -> bool:
+    def _should_turn_off_on_exterior_bright(
+        self, new_states: set[str], lost_states: set[str]
+    ) -> bool:
         """Check if lights should turn off due to exterior becoming bright."""
 
         _LOGGER.debug(
@@ -442,6 +444,13 @@ class AreaLightGroup(MagicLightGroup):
             _LOGGER.debug("%s (%s): Light is already off", self.area.name, self.name)
             return False
 
+        # Manual mode blocks all other automatic turn-offs
+        if self.manual_mode:
+            _LOGGER.debug(
+                "%s (%s): Manual mode blocks turn-off", self.area.name, self.name
+            )
+            return False
+
         if LightGroupTurnOffWhen.EXTERIOR_BRIGHT not in self.turn_off_when:
             _LOGGER.debug(
                 "%s (%s): No turn-off triggers configured for Exterior Brightness",
@@ -450,7 +459,7 @@ class AreaLightGroup(MagicLightGroup):
             )
             return False
 
-        return AreaStates.BRIGHT in new_states
+        return AreaStates.BRIGHT in new_states and AreaStates.DARK in lost_states
 
     def _should_turn_off(
         self, current_states: set[str], new_states: set[str], lost_states: set[str]
@@ -697,7 +706,7 @@ class AreaLightGroup(MagicLightGroup):
 
         # Handle exterior area events for EXTERIOR_BRIGHT trigger
         if area_id == "exterior":
-            if self._should_turn_off_on_exterior_bright(new_states):
+            if self._should_turn_off_on_exterior_bright(new_states, lost_states):
                 _LOGGER.debug(
                     "%s (%s): Exterior bright, turning off", self.area.name, self.name
                 )
