@@ -114,7 +114,7 @@ class MagicArea:
 
         self.last_changed: datetime = datetime.now(UTC)
 
-        self.states: set[AreaStates] = set()
+        self.states: set[str] = set()
 
         self.loaded_platforms: list[str] = []
 
@@ -405,10 +405,10 @@ class MagicArea:
         # Load our own entities
         self.load_magic_entities()
 
-    def get_presence_sensors(self) -> list[str]:
+    def get_presence_sensors(self) -> set[str]:
         """Return list of entities used for presence tracking."""
 
-        sensors: list[str] = []
+        sensors: set[str] = set()
 
         valid_presence_platforms = self.config.get(
             PresenceTrackingOptions.DEVICE_PLATFORMS
@@ -431,19 +431,19 @@ class MagicArea:
                     ):
                         continue
 
-                sensors.append(entity[ATTR_ENTITY_ID])
+                sensors.add(entity[ATTR_ENTITY_ID])
 
         # Append presence_hold switch as a presence_sensor
         if self.has_feature(Features.PRESENCE_HOLD):
             presence_hold_switch_id = (
                 f"{SWITCH_DOMAIN}.magic_areas_presence_hold_{self.slug}"
             )
-            sensors.append(presence_hold_switch_id)
+            sensors.add(presence_hold_switch_id)
 
         # Append BLE Tracker monitor as a presence_sensor
         if self.has_feature(Features.BLE_TRACKERS):
             ble_tracker_sensor_id = f"{BINARY_SENSOR_DOMAIN}.magic_areas_ble_trackers_{self.slug}_ble_tracker_monitor"
-            sensors.append(ble_tracker_sensor_id)
+            sensors.add(ble_tracker_sensor_id)
 
         # Append Wasp In The Box sensor as presence monitor
         if self.has_feature(Features.AGGREGATION) and self.has_feature(
@@ -452,7 +452,7 @@ class MagicArea:
             wasp_in_the_box_sensor_id = (
                 f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{self.slug}"
             )
-            sensors.append(wasp_in_the_box_sensor_id)
+            sensors.add(wasp_in_the_box_sensor_id)
 
         return sensors
 
@@ -763,15 +763,15 @@ class MagicMetaArea(MagicArea):
         # Pending debounced reload task
         self._reload_task: asyncio.Task | None = None
 
-    def get_presence_sensors(self) -> list[str]:
+    def get_presence_sensors(self) -> set[str]:
         """Return list of entities used for presence tracking."""
 
-        sensors: list[str] = []
+        sensors: set[str] = set()
 
         # MetaAreas track their children
         for child_area in self.child_areas:
             entity_id = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{child_area}_area_state"
-            sensors.append(entity_id)
+            sensors.add(entity_id)
         return sensors
 
     def get_active_areas(self):

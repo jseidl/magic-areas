@@ -60,9 +60,9 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         self._last_off_time: datetime = datetime.now(UTC) - timedelta(days=2)
         self._clear_timeout_callback: Callable[[], None] | None = None
 
-        self._sensors: list[str] = []
-        self._active_sensors: list[str] = []
-        self._last_active_sensors: list[str] = []
+        self._sensors: set[str] = set()
+        self._active_sensors: set[str] = set()
+        self._last_active_sensors: set[str] = set()
 
         self._load_presence_sensors()
 
@@ -80,7 +80,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         return [STATE_ON] if self.area.is_meta() else valid_states
 
-    def _translate_states_for_display(self, state_slugs: list[str]) -> list[str]:
+    def _translate_states_for_display(self, state_slugs: set[str]) -> set[str]:
         """Convert state slugs to friendly names for display.
 
         Args:
@@ -90,7 +90,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             List of friendly names
 
         """
-        return [self.area.get_state_friendly_name(slug) for slug in state_slugs]
+        return {self.area.get_state_friendly_name(slug) for slug in state_slugs}
 
     # Listeners
 
@@ -209,7 +209,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
     # Public methods
 
-    def get_sensors(self) -> list[str]:
+    def get_sensors(self) -> set[str]:
         """Return sensors used for tracking."""
         return self._sensors
 
@@ -362,7 +362,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         """Return new and lost states for this area."""
 
         last_state: set[str] = set(self.area.states.copy())
-        current_state: set[str] = set(self._get_area_states())
+        current_state: set[str] = self._get_area_states()
 
         if last_state == current_state:
             return (set(), set())
@@ -379,19 +379,19 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             str(lost_states),
         )
 
-        self.area.states = list(current_state)
+        self.area.states = current_state
 
         return (new_states, lost_states)
 
-    def _get_area_states(self) -> list[str]:
+    def _get_area_states(self) -> set[str]:
         """Return states for the area."""
-        states = []
+        states: set = set()
 
         # Get Main occupancy state
         current_state = self._get_occupancy_state()
         last_state = self.area.is_occupied()
 
-        states.append(AreaStates.OCCUPIED if current_state else AreaStates.CLEAR)
+        states.add(AreaStates.OCCUPIED if current_state else AreaStates.CLEAR)
         if current_state != last_state:
             self.area.last_changed = datetime.now(UTC)
             _LOGGER.debug(
@@ -412,30 +412,30 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             AreaStates.OCCUPIED in states
             and (seconds_since_last_change / ONE_MINUTE) >= extended_time
         ):
-            states.append(AreaStates.EXTENDED)
+            states.add(AreaStates.EXTENDED)
 
-        states.extend(self._get_secondary_states())
+        states.update(self._get_secondary_states())
 
         return states
 
-    def _get_secondary_states(self) -> list[str]:
+    def _get_secondary_states(self) -> set[str]:
         """Return secondary states for an area."""
 
-        states: list[str] = []
+        states: set[str] = set()
 
         # Check darkness using resolved light sensor on area
         if self.area.is_area_dark():
-            states.append(AreaStates.DARK)
+            states.add(AreaStates.DARK)
 
         # Check ALL secondary states (sleep + user-defined) from single source
         for state_name, entity_id in self.area.secondary_state_entities.items():
             entity = self.hass.states.get(entity_id)
             if entity and entity.state.lower() in self._valid_on_states():
-                states.append(state_name)
+                states.add(state_name)
 
         # Meta-state bright (if not dark)
         if AreaStates.DARK not in states:
-            states.append(AreaStates.BRIGHT)
+            states.add(AreaStates.BRIGHT)
 
         return states
 
@@ -474,17 +474,17 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             ",".join(valid_states),
         )
 
-        active_sensors = []
-        available_sensors = self._sensors.copy()
+        active_sensors: set = set()
+        available_sensors: set = set(self._sensors)
 
         # Filter out keep-only sensors if the area isn't occupied
         if not self.area.is_occupied():
             keep_only_entities = self.area.config.get(
                 PresenceTrackingOptions.KEEP_ONLY_ENTITIES
             )
-            available_sensors = [
+            available_sensors = {
                 sensor for sensor in self._sensors if sensor not in keep_only_entities
-            ]
+            }
 
         # Loop over all entities and check their state
         for sensor in available_sensors:
@@ -516,7 +516,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
                     _LOGGER.debug(
                         "%s: Valid presence sensor found: %s.", self.area.name, sensor
                     )
-                    active_sensors.append(sensor)
+                    active_sensors.add(sensor)
 
             # Adding pylint exception because this is a last-resort hail-mary catch-all
             # pylint: disable-next=broad-exception-caught
@@ -648,7 +648,7 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
         if last_state is not None and CommonAttributes.STATES in last_state.attributes:
             restored_states = last_state.attributes[CommonAttributes.STATES]
             if isinstance(restored_states, list):
-                self.area.states = list(restored_states)
+                self.area.states = set(restored_states)
                 _LOGGER.info(
                     "%s: Restored area.states from attributes: %s",
                     self.area.name,
