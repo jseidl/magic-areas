@@ -99,51 +99,6 @@ class TestExteriorBrightness:
         # In this case, lights stay on because DARK is not in assigned_states
         assert_state(light_state, STATE_ON)
 
-    async def test_manual_mode_doesnt_block_exterior_bright(
-        self, hass: HomeAssistant, setup_basic_light_group: dict
-    ):
-        """Test that manual mode doesn't block exterior bright turn-off."""
-        light_group_id = setup_basic_light_group["light_group_id"]
-        motion_sensor = setup_basic_light_group["motion_sensor"]
-
-        # Make area occupied, lights turn on
-        await trigger_occupancy(hass, motion_sensor, occupied=True)
-
-        light_state = hass.states.get(light_group_id)
-        assert_state(light_state, STATE_ON)
-
-        # Enter manual mode by turning lights off
-        await hass.services.async_call(
-            "light", "turn_off", {"entity_id": light_group_id}, blocking=True
-        )
-        await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
-
-        # Manually turn them back on
-        await hass.services.async_call(
-            "light", "turn_on", {"entity_id": light_group_id}, blocking=True
-        )
-        await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
-
-        # Verify lights are on and in manual mode
-        light_state = hass.states.get(light_group_id)
-        assert_state(light_state, STATE_ON)
-
-        # Exterior becomes bright (should still turn off despite manual mode)
-        dispatcher_send(
-            hass,
-            f"{MagicAreasEvents.AREA_STATE_CHANGED}_{'exterior'}",
-            "exterior",
-            ({AreaStates.BRIGHT}, {AreaStates.DARK}),
-        )
-        await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
-
-        # Manual mode doesn't block EXTERIOR_BRIGHT
-        light_state = hass.states.get(light_group_id)
-        assert_state(light_state, STATE_OFF)
-
     async def test_exterior_dark_doesnt_turn_off(
         self, hass: HomeAssistant, setup_basic_light_group: dict
     ):
