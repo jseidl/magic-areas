@@ -333,6 +333,13 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         self._report_state_change(states_tuple)
 
+        # Always refresh debug/metadata attributes (active_sensors, presence_sensors,
+        # etc.) even when the occupied/clear state itself didn't change, since sensors
+        # can still join/leave the active set while area remains occupied.
+        if hasattr(self, "_attr_extra_state_attributes"):
+            self._attr_extra_state_attributes.update(self.get_metadata())
+            self.schedule_update_ha_state()
+
         # Safety check: ensure stuck states get cleared
         self._validate_state_consistency()
 
