@@ -246,6 +246,8 @@ async def test_wasp_in_a_box_as_presence(
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
     assert_state(wasp_in_a_box_state, STATE_ON)
 
+    await hass.async_block_till_done()
+
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_ON)
     assert_in_attribute(
@@ -259,6 +261,8 @@ async def test_wasp_in_a_box_as_presence(
 
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
     assert_state(wasp_in_a_box_state, STATE_OFF)
+
+    await hass.async_block_till_done()
 
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
