@@ -8,11 +8,15 @@ person.
 
 import asyncio
 from collections.abc import AsyncGenerator
+from datetime import timedelta
 import logging
 from typing import Any
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -20,6 +24,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from custom_components.magic_areas.binary_sensor.door_occupancy import (
     ATTR_LAST_DOOR_ENTITY_ID,
@@ -130,9 +135,7 @@ async def test_door_transition_opens_and_closes_pulse_occupancy(
     # It should be registered as a presence sensor for the area
     area_state = hass.states.get(AREA_STATE_ENTITY_ID)
     assert_state(area_state, STATE_OFF)
-    assert_in_attribute(
-        area_state, ATTR_PRESENCE_SENSORS, DOOR_TRANSITION_ENTITY_ID
-    )
+    assert_in_attribute(area_state, ATTR_PRESENCE_SENSORS, DOOR_TRANSITION_ENTITY_ID)
 
     # Open the door -> pulse on, area becomes occupied
     hass.states.async_set(door_sensor_entity_id, STATE_ON)
@@ -150,6 +153,12 @@ async def test_door_transition_opens_and_closes_pulse_occupancy(
 
     # Motion never actually saw anything
     assert_state(hass.states.get(motion_sensor_entity_id), STATE_OFF)
+
+    # Let the opening pulse expire (5 s timeout) so the closing assertion
+    # below can only pass if closing starts a new pulse of its own.
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(DOOR_TRANSITION_ENTITY_ID), STATE_OFF)
 
     # Closing the door is *also* a transition and should pulse again
     hass.states.async_set(door_sensor_entity_id, STATE_OFF)
