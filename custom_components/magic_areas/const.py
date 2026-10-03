@@ -163,6 +163,14 @@ WASP_IN_A_BOX_BOX_DEVICE_CLASSES = [
     BinarySensorDeviceClass.GARAGE_DOOR,
 ]
 
+# Door transition occupancy
+# Device classes considered "doors" for the purposes of treating an
+# open/close transition as an early presence signal (see discussion #610).
+DOOR_TRANSITION_DEVICE_CLASSES = [
+    BinarySensorDeviceClass.DOOR,
+    BinarySensorDeviceClass.GARAGE_DOOR,
+]
+
 # Aggregates
 AGGREGATE_SENSOR_CLASSES = (
     SensorDeviceClass.CURRENT,
@@ -234,6 +242,14 @@ class MagicAreasFeatureInfoWaspInABox(MagicAreasFeatureInfo):
     id = "wasp_in_a_box"
     translation_keys = {BINARY_SENSOR_DOMAIN: "wasp_in_a_box"}
     icons = {BINARY_SENSOR_DOMAIN: "mdi:bee"}
+
+
+class MagicAreasFeatureInfoDoorTransitionOccupancy(MagicAreasFeatureInfo):
+    """Feature information for feature: Door transition occupancy."""
+
+    id = "door_transition_occupancy"
+    translation_keys = {BINARY_SENSOR_DOMAIN: "door_transition_occupancy"}
+    icons = {BINARY_SENSOR_DOMAIN: "mdi:door-open"}
 
 
 class MagicAreasFeatureInfoAggregates(MagicAreasFeatureInfo):
@@ -608,6 +624,16 @@ CONF_IGNORE_DIAGNOSTIC_ENTITIES, DEFAULT_IGNORE_DIAGNOSTIC_ENTITIES = (
 CONF_CLEAR_TIMEOUT, DEFAULT_CLEAR_TIMEOUT, DEFAULT_CLEAR_TIMEOUT_META = (
     "clear_timeout",
     1,
+    0,
+)  # cv.positive_int
+
+# Door transition occupancy: unlike CONF_CLEAR_TIMEOUT (minutes), this is
+# expressed in *seconds* since it's meant to bridge the short gap between a
+# door opening/closing and a motion/PIR sensor catching up (discussion #610).
+# 0 disables the feature (default), following the same "0 = disabled"
+# convention used elsewhere (e.g. CONF_WASP_IN_A_BOX_WASP_TIMEOUT).
+CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT, DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT = (
+    "door_transition_occupancy_timeout",
     0,
 )  # cv.positive_int
 CONF_NOTIFICATION_DEVICES, DEFAULT_NOTIFICATION_DEVICES = (
@@ -1033,6 +1059,10 @@ REGULAR_AREA_PRESENCE_TRACKING_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(
             CONF_CLEAR_TIMEOUT, default=DEFAULT_CLEAR_TIMEOUT
         ): cv.positive_int,
+        vol.Optional(
+            CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+            default=DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+        ): cv.positive_int,
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -1071,6 +1101,10 @@ REGULAR_AREA_SCHEMA = vol.Schema(
         ): cv.ensure_list,
         vol.Optional(
             CONF_CLEAR_TIMEOUT, default=DEFAULT_CLEAR_TIMEOUT
+        ): cv.positive_int,
+        vol.Optional(
+            CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+            default=DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
         ): cv.positive_int,
         vol.Optional(CONF_ENABLED_FEATURES, default={}): FEATURES_SCHEMA,
         vol.Optional(CONF_SECONDARY_STATES, default={}): SECONDARY_STATES_SCHEMA,
@@ -1125,6 +1159,11 @@ OPTIONS_PRESENCE_TRACKING = [
     ),
     (CONF_KEEP_ONLY_ENTITIES, [], cv.entity_ids),
     (CONF_CLEAR_TIMEOUT, DEFAULT_CLEAR_TIMEOUT, int),
+    (
+        CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+        DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+        int,
+    ),
 ]
 
 OPTIONS_AREA_META = [

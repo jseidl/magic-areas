@@ -70,6 +70,7 @@ from .const import (
     CONF_CLIMATE_CONTROL_PRESET_OCCUPIED,
     CONF_CLIMATE_CONTROL_PRESET_SLEEP,
     CONF_DARK_ENTITY,
+    CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
     CONF_ENABLED_FEATURES,
     CONF_EXCLUDE_ENTITIES,
     CONF_EXTENDED_TIME,
@@ -747,6 +748,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow, ConfigBase):
             ),
             CONF_CLEAR_TIMEOUT: self._build_selector_number(
                 unit_of_measurement="minutes"
+            ),
+            CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT: self._build_selector_number(
+                unit_of_measurement="seconds"
             ),
         }
 
