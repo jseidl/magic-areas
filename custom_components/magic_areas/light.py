@@ -607,7 +607,7 @@ class AreaLightGroup(MagicLightGroup):
                 return False
 
         # Check if any turn-on trigger fired
-        if not self._check_turn_on_triggers(new_states):
+        if not self._check_turn_on_triggers(new_states, lost_states):
             _LOGGER.debug("%s (%s): No triggers fired.", self.area.name, self.name)
 
             # If we didn't got a hit on any triggers, we still need to check if this light should be turned on if
@@ -640,20 +640,23 @@ class AreaLightGroup(MagicLightGroup):
         )
         return True
 
-    def _check_turn_on_triggers(self, new_states: set[str]) -> bool:
+    def _check_turn_on_triggers(
+        self, new_states: set[str], lost_states: set[str]
+    ) -> bool:
         """Check if any configured turn-on trigger has fired."""
 
         _LOGGER.debug(
-            "%s (%s): Checking turn-on triggers. new_states=%s, turn_on_when=%s",
+            "%s (%s): Checking turn-on triggers. new_states=%s, lost_states=%s, turn_on_when=%s",
             self.area.name,
             self.name,
             new_states,
+            lost_states,
             self.turn_on_when,
         )
 
         # AREA_OCCUPIED: area just became occupied
         if LightGroupTurnOnWhen.AREA_OCCUPIED in self.turn_on_when:
-            if AreaStates.OCCUPIED in new_states:
+            if AreaStates.OCCUPIED in new_states and AreaStates.CLEAR in lost_states:
                 _LOGGER.debug(
                     "%s (%s): AREA_OCCUPIED trigger fired", self.area.name, self.name
                 )
