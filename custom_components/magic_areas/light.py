@@ -341,23 +341,18 @@ class AreaLightGroup(MagicLightGroup):
 
         return Context(id="_".join([LIGHT_GROUP_CONTEXT_PREFIX, uuid.uuid4().hex]))
 
-    def _has_required_states(self, current_states: set[str]) -> bool:
-        """Check if area has any of the required states for this group."""
+    def _has_required_states(self, required_states: set[str]) -> bool:
+        """Check if group is assigned to at least one of the states."""
 
         # Empty configured states is unexpected, fail
         if not self.assigned_states:
             return False
 
-        # Area must have at least one configured state
-        return bool(self.assigned_states.intersection(current_states))
+        # Group must have at least one required states
+        return bool(self.assigned_states.intersection(required_states))
 
     def _get_current_area_states(self) -> set[str]:
-        """Get current states of the area.
-
-        The area state system handles brightness fallback logic internally
-        (area sensor → exterior sensor → sun.sun), so `dark` or `bright`
-        will be present in the returned states based on that fallback chain.
-        """
+        """Get current states of the area."""
 
         return self._apply_state_priority(set(self.area.states))
 
@@ -607,79 +602,55 @@ class AreaLightGroup(MagicLightGroup):
                 return False
 
         # Check if any turn-on trigger fired
-        if not self._check_turn_on_triggers(new_states, lost_states):
-            _LOGGER.debug("%s (%s): No triggers fired.", self.area.name, self.name)
-
-            # If we didn't got a hit on any triggers, we still need to check if this light should be turned on if
-            # 1. If AreaStates.EXTENDED is on current_states and we have AreaStates.EXTENDED
-            # 2. If AreaStates.OCCUPIED is on current_states and we have AreaStates.OCCUPIED, but AreaStates.EXTENDED is NOT in current_states
-            if (
-                AreaStates.EXTENDED in current_states
-                and AreaStates.EXTENDED not in self.assigned_states
-            ):
-                return False
-            if (
-                AreaStates.OCCUPIED in current_states
-                and AreaStates.OCCUPIED not in self.assigned_states
-            ):
-                return False
-
-        # Check if we have required states
-        if not self._has_required_states(current_states):
-            _LOGGER.debug(
-                "%s (%s): Required states not met (need %s, have %s)",
-                self.area.name,
-                self.name,
-                self.assigned_states,
-                current_states,
-            )
-            return False
-
-        _LOGGER.debug(
-            "%s (%s): All conditions met, should turn on", self.area.name, self.name
-        )
-        return True
+        return self._check_turn_on_triggers(current_states, new_states, lost_states)
 
     def _check_turn_on_triggers(
-        self, new_states: set[str], lost_states: set[str]
+        self, current_states: set[str], new_states: set[str], lost_states: set[str]
     ) -> bool:
         """Check if any configured turn-on trigger has fired."""
 
         _LOGGER.debug(
-            "%s (%s): Checking turn-on triggers. new_states=%s, lost_states=%s, turn_on_when=%s",
+            "%s (%s): Checking turn-on triggers. current_states=%s, new_states=%s, lost_states=%s, turn_on_when=%s",
             self.area.name,
             self.name,
+            current_states,
             new_states,
             lost_states,
             self.turn_on_when,
         )
 
+        new_priority_states: set[str] = self._apply_state_priority(new_states)
+
         # AREA_OCCUPIED: area just became occupied
         if LightGroupTurnOnWhen.AREA_OCCUPIED in self.turn_on_when:
             if AreaStates.OCCUPIED in new_states and AreaStates.CLEAR in lost_states:
-                _LOGGER.debug(
-                    "%s (%s): AREA_OCCUPIED trigger fired", self.area.name, self.name
-                )
-                return True
+                if self._has_required_states(new_priority_states):
+                    _LOGGER.debug(
+                        "%s (%s): AREA_OCCUPIED trigger fired",
+                        self.area.name,
+                        self.name,
+                    )
+                    return True
 
         # STATE_GAIN: area gained one of our configured states
         if LightGroupTurnOnWhen.STATE_GAIN in self.turn_on_when:
-            if self.assigned_states.intersection(new_states):
+            if self._has_required_states(current_states):
                 _LOGGER.debug(
                     "%s (%s): STATE_GAIN trigger fired (gained: %s)",
                     self.area.name,
                     self.name,
-                    self.assigned_states.intersection(new_states),
+                    self.assigned_states.intersection(current_states),
                 )
                 return True
 
         # AREA_DARK: area just became dark
         if LightGroupTurnOnWhen.AREA_DARK in self.turn_on_when:
-            if AreaStates.DARK in new_states:
-                _LOGGER.debug(
-                    "%s (%s): AREA_DARK trigger fired", self.area.name, self.name
-                )
-                return True
+            if AreaStates.DARK in new_states and AreaStates.BRIGHT in lost_states:
+                if self._has_required_states(current_states):
+                    _LOGGER.debug(
+                        "%s (%s): AREA_DARK trigger fired", self.area.name, self.name
+                    )
+                    return True
 
         _LOGGER.debug("%s (%s): No turn-on triggers fired", self.area.name, self.name)
         return False
