@@ -384,8 +384,14 @@ def light_group_multi_occupied_and_sleep_config_entry() -> MockConfigEntry:
         LightGroupEntryOptions.NAME.key: "Occupied Group",
         LightGroupEntryOptions.LIGHTS.key: ["light.light_1", "light.light_2"],
         LightGroupEntryOptions.STATES.key: [AreaStates.OCCUPIED],
-        LightGroupEntryOptions.TURN_ON_WHEN.key: [LightGroupTurnOnWhen.STATE_GAIN],
-        LightGroupEntryOptions.TURN_OFF_WHEN.key: [LightGroupTurnOffWhen.STATE_LOSS],
+        LightGroupEntryOptions.TURN_ON_WHEN.key: [
+            LightGroupTurnOnWhen.AREA_OCCUPIED,
+            LightGroupTurnOnWhen.STATE_GAIN,
+        ],
+        LightGroupEntryOptions.TURN_OFF_WHEN.key: [
+            LightGroupTurnOffWhen.AREA_CLEAR,
+            LightGroupTurnOffWhen.STATE_LOSS,
+        ],
         LightGroupEntryOptions.REQUIRE_DARK.key: False,
     }
 
@@ -394,8 +400,14 @@ def light_group_multi_occupied_and_sleep_config_entry() -> MockConfigEntry:
         LightGroupEntryOptions.NAME.key: "Sleep Group",
         LightGroupEntryOptions.LIGHTS.key: ["light.light_3"],
         LightGroupEntryOptions.STATES.key: [AreaStates.SLEEP],
-        LightGroupEntryOptions.TURN_ON_WHEN.key: [LightGroupTurnOnWhen.STATE_GAIN],
-        LightGroupEntryOptions.TURN_OFF_WHEN.key: [LightGroupTurnOffWhen.STATE_LOSS],
+        LightGroupEntryOptions.TURN_ON_WHEN.key: [
+            LightGroupTurnOnWhen.AREA_OCCUPIED,
+            LightGroupTurnOnWhen.STATE_GAIN,
+        ],
+        LightGroupEntryOptions.TURN_OFF_WHEN.key: [
+            LightGroupTurnOffWhen.AREA_CLEAR,
+            LightGroupTurnOffWhen.STATE_LOSS,
+        ],
         LightGroupEntryOptions.REQUIRE_DARK.key: False,
     }
 
@@ -456,8 +468,14 @@ def light_group_user_defined_state_config_entry() -> MockConfigEntry:
         LightGroupEntryOptions.NAME.key: "Occupied Group",
         LightGroupEntryOptions.LIGHTS.key: ["light.light_1", "light.light_2"],
         LightGroupEntryOptions.STATES.key: [AreaStates.OCCUPIED],
-        LightGroupEntryOptions.TURN_ON_WHEN.key: [LightGroupTurnOnWhen.STATE_GAIN],
-        LightGroupEntryOptions.TURN_OFF_WHEN.key: [LightGroupTurnOffWhen.STATE_LOSS],
+        LightGroupEntryOptions.TURN_ON_WHEN.key: [
+            LightGroupTurnOnWhen.AREA_OCCUPIED,
+            LightGroupTurnOnWhen.STATE_GAIN,
+        ],
+        LightGroupEntryOptions.TURN_OFF_WHEN.key: [
+            LightGroupTurnOffWhen.AREA_CLEAR,
+            LightGroupTurnOffWhen.STATE_LOSS,
+        ],
         LightGroupEntryOptions.REQUIRE_DARK.key: False,
     }
 
@@ -466,8 +484,14 @@ def light_group_user_defined_state_config_entry() -> MockConfigEntry:
         LightGroupEntryOptions.NAME.key: "Movie Group",
         LightGroupEntryOptions.LIGHTS.key: ["light.light_3"],
         LightGroupEntryOptions.STATES.key: ["movie_time"],
-        LightGroupEntryOptions.TURN_ON_WHEN.key: [LightGroupTurnOnWhen.STATE_GAIN],
-        LightGroupEntryOptions.TURN_OFF_WHEN.key: [LightGroupTurnOffWhen.STATE_LOSS],
+        LightGroupEntryOptions.TURN_ON_WHEN.key: [
+            LightGroupTurnOnWhen.AREA_OCCUPIED,
+            LightGroupTurnOnWhen.STATE_GAIN,
+        ],
+        LightGroupEntryOptions.TURN_OFF_WHEN.key: [
+            LightGroupTurnOffWhen.AREA_CLEAR,
+            LightGroupTurnOffWhen.STATE_LOSS,
+        ],
         LightGroupEntryOptions.REQUIRE_DARK.key: False,
     }
 

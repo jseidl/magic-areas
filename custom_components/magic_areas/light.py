@@ -619,12 +619,10 @@ class AreaLightGroup(MagicLightGroup):
             self.turn_on_when,
         )
 
-        new_priority_states: set[str] = self._apply_state_priority(new_states)
-
         # AREA_OCCUPIED: area just became occupied
         if LightGroupTurnOnWhen.AREA_OCCUPIED in self.turn_on_when:
             if AreaStates.OCCUPIED in new_states and AreaStates.CLEAR in lost_states:
-                if self._has_required_states(new_priority_states):
+                if self._has_required_states(current_states):
                     _LOGGER.debug(
                         "%s (%s): AREA_OCCUPIED trigger fired",
                         self.area.name,
@@ -634,14 +632,18 @@ class AreaLightGroup(MagicLightGroup):
 
         # STATE_GAIN: area gained one of our configured states
         if LightGroupTurnOnWhen.STATE_GAIN in self.turn_on_when:
-            if self._has_required_states(current_states):
-                _LOGGER.debug(
-                    "%s (%s): STATE_GAIN trigger fired (gained: %s)",
-                    self.area.name,
-                    self.name,
-                    self.assigned_states.intersection(current_states),
-                )
-                return True
+            # Check if it's a exclusive state gain and not just became occupied
+            if not (
+                AreaStates.OCCUPIED in new_states and AreaStates.CLEAR in lost_states
+            ):
+                if self._has_required_states(current_states):
+                    _LOGGER.debug(
+                        "%s (%s): STATE_GAIN trigger fired (gained: %s)",
+                        self.area.name,
+                        self.name,
+                        self.assigned_states.intersection(current_states),
+                    )
+                    return True
 
         # AREA_DARK: area just became dark
         if LightGroupTurnOnWhen.AREA_DARK in self.turn_on_when:
