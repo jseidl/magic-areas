@@ -1,5 +1,6 @@
 """Wasp in a box binary sensor component."""
 
+from datetime import datetime
 import logging
 
 from homeassistant.components.binary_sensor import (
@@ -8,8 +9,17 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.const import STATE_OFF, STATE_ON
-from homeassistant.core import Event, EventStateChangedData, State, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    Event,
+    EventStateChangedData,
+    State,
+    callback,
+)
+from homeassistant.helpers.event import (
+    async_call_later,
+    async_track_state_change_event,
+)
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
@@ -61,6 +71,7 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
 
         self.wasp: bool = False
         self._wasp_timer: ReusableTimer | None = None
+        self._box_check_cancel: CALLBACK_TYPE | None = None
         self._attr_is_on: bool = False
 
         self._wasp_sensors: list[str] = []
@@ -124,6 +135,7 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
         """Call to remove the entity to hass."""
         if self._wasp_timer:
             await self._wasp_timer.async_remove()
+        self._cancel_box_check()
         await super().async_will_remove_from_hass()
 
     @callback
@@ -139,6 +151,11 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
         if new_state is None or old_state is None:
             return
         if new_state.state == old_state.state:
+            return
+
+        # While a delayed box check is pending, ignore wasp changes: the check
+        # reads the live wasp and box states when it runs.
+        if self._box_check_cancel is not None:
             return
 
         self.wasp_in_a_box(wasp_state=new_state.state)
@@ -166,11 +183,25 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
             self.schedule_update_ha_state()
             if self._wasp_timer:
                 self._wasp_timer.cancel()
-            self.hass.loop.call_later(
-                self._delay, self.wasp_in_a_box, None, new_state.state
+            # Replace any check left by the previous box change, so a stale
+            # "box open" check cannot latch the wasp after the box closes.
+            self._cancel_box_check()
+            self._box_check_cancel = async_call_later(
+                self.hass, self._delay, self._async_delayed_box_check
             )
         else:
             self.wasp_in_a_box(box_state=new_state.state)
+
+    def _cancel_box_check(self) -> None:
+        """Cancel the pending delayed box check, if any."""
+        if self._box_check_cancel:
+            self._box_check_cancel()
+            self._box_check_cancel = None
+
+    async def _async_delayed_box_check(self, _now: datetime) -> None:
+        """Evaluate against live wasp and box states once the delay has passed."""
+        self._box_check_cancel = None
+        self.wasp_in_a_box()
 
     def wasp_in_a_box(
         self,
