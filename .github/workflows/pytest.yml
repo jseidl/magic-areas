@@ -16,9 +16,10 @@ jobs:
     name: "Test against stable release"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v7"
 
-      - name: Set up Python
+      - name: "Set up Python"
         uses: actions/setup-python@v7
         with:
           python-version: "3.13"

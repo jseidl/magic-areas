@@ -29,7 +29,7 @@ class AreaSensorGroupSensor(MagicEntity, SensorGroup):
         area: MagicArea,
         device_class: str,
         entity_ids: list[str],
-        unit_of_measurement: str,
+        unit_of_measurement: str | None,
     ) -> None:
         """Initialize an area sensor group sensor."""
 

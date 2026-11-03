@@ -316,7 +316,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         new_states, lost_states = states_tuple
 
         state_changed = any(
-            state in new_states for state in [AreaStates.OCCUPIED, AreaStates.CLEAR]
+            state in new_states for state in (AreaStates.OCCUPIED, AreaStates.CLEAR)
         )
 
         _LOGGER.debug(
@@ -664,10 +664,10 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
 
     async def _setup_listeners(self) -> None:
         # Setup state change listener
-        async_dispatcher_connect(
-            self.hass,
-            f"{MagicAreasEvents.AREA_STATE_CHANGED}_{self.area.id}",
-            self._area_state_changed,
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, MagicAreasEvents.AREA_STATE_CHANGED, self._area_state_changed
+            )
         )
 
         self._setup_tracking_listeners()
@@ -744,9 +744,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
 
         # Collect all states from child areas
         for area_slug in child_areas:
-            area_entity_id: str = (
-                f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
-            )
+            area_entity_id: str = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
             area_state = self.hass.states.get(area_entity_id)
 
             if not area_state:
