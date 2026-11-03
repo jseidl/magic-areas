@@ -2,12 +2,17 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
+from datetime import timedelta
 import logging
 from typing import Any
 from unittest.mock import patch
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from freezegun.api import FrozenDateTimeFactory
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -411,3 +416,166 @@ async def test_wasp_seen_cancels_timer(
     final = hass.states.get(wasp_in_a_box_entity_id)
     assert_state(final, STATE_ON)
     assert_attribute(final, ATTR_WASP, STATE_ON)
+
+
+# Delayed box check
+
+WASP_DELAY = 25
+
+
+@pytest.fixture(name="wasp_in_a_box_delay_config_entry")
+def mock_config_entry_wasp_in_a_box_delay() -> MockConfigEntry:
+    """Fixture for mock configuration entry with a box delay."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data.update(
+        {
+            CONF_ENABLED_FEATURES: {
+                CONF_FEATURE_WASP_IN_A_BOX: {
+                    CONF_WASP_IN_A_BOX_DELAY: WASP_DELAY,
+                    CONF_WASP_IN_A_BOX_WASP_TIMEOUT: 0,
+                },
+                CONF_FEATURE_AGGREGATION: {CONF_AGGREGATES_MIN_ENTITIES: 1},
+            },
+        }
+    )
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+@pytest.fixture(name="_setup_integration_wasp_in_a_box_delay")
+async def setup_integration_wasp_in_a_box_delay(
+    hass: HomeAssistant,
+    wasp_in_a_box_delay_config_entry: MockConfigEntry,
+) -> AsyncGenerator[Any]:
+    """Set up integration with Wasp in a box using a box delay."""
+
+    await init_integration(hass, [wasp_in_a_box_delay_config_entry])
+    yield
+    await shutdown_integration(hass, [wasp_in_a_box_delay_config_entry])
+
+
+# The mock sensors are driven through the entities rather than hass.states, so
+# that their polling refresh cannot reset them while time is moved forward.
+
+
+async def _advance(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    """Move time forward and run anything that became due."""
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+async def test_quick_open_close_does_not_latch(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box_delay,
+) -> None:
+    """Test that a quick look-in does not latch an empty box.
+
+    The box opens, the wasp is seen, and the box closes again before the
+    delay has passed while the motion sensor is still in its hold time.
+    The check scheduled when the box opened must not run with a stale
+    "box open" state and latch the wasp after the box has closed.
+    """
+    motion_sensor, door_sensor = entities_wasp_in_a_box
+    wasp_in_a_box_entity_id = (
+        f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{DEFAULT_MOCK_AREA}"
+    )
+
+    # Box opens, wasp seen at the threshold
+    door_sensor.turn_on()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, 2)
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+
+    # Box closes from outside while motion is still held on
+    await _advance(hass, freezer, 9)
+    door_sensor.turn_off()
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(wasp_in_a_box_entity_id), STATE_OFF)
+
+    # The check booked when the box opened would have run here
+    await _advance(hass, freezer, WASP_DELAY - 11 + 1)
+    assert_state(hass.states.get(wasp_in_a_box_entity_id), STATE_OFF)
+
+    # Motion hold ends, then the check booked when the box closed runs
+    motion_sensor.turn_off()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, WASP_DELAY)
+
+    final = hass.states.get(wasp_in_a_box_entity_id)
+    assert_state(final, STATE_OFF)
+    assert_attribute(final, ATTR_BOX, STATE_OFF)
+
+
+async def test_motion_during_delay_waits_for_check(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box_delay,
+) -> None:
+    """Test that wasp changes during the delay wait for the delayed check.
+
+    A motion blip just after the box closes (e.g. the door swinging shut in
+    the sensor's view) must not latch the wasp before the delay has passed;
+    motion still present when the check runs does.
+    """
+    motion_sensor, door_sensor = entities_wasp_in_a_box
+    wasp_in_a_box_entity_id = (
+        f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{DEFAULT_MOCK_AREA}"
+    )
+
+    # Box opens and closes, then a motion blip inside the delay window
+    door_sensor.turn_on()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, WASP_DELAY + 1)
+    door_sensor.turn_off()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, 1)
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(wasp_in_a_box_entity_id), STATE_OFF)
+
+    motion_sensor.turn_off()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, WASP_DELAY)
+    assert_state(hass.states.get(wasp_in_a_box_entity_id), STATE_OFF)
+
+    # Box closed and the delay has passed: motion now latches the wasp
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+    final = hass.states.get(wasp_in_a_box_entity_id)
+    assert_state(final, STATE_ON)
+    assert_attribute(final, ATTR_WASP, STATE_ON)
+    assert_attribute(final, ATTR_BOX, STATE_OFF)
+
+
+async def test_wasp_present_at_delayed_check_latches(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box_delay,
+) -> None:
+    """Test that a wasp still present when the delayed check runs is kept."""
+    motion_sensor, door_sensor = entities_wasp_in_a_box
+    wasp_in_a_box_entity_id = (
+        f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{DEFAULT_MOCK_AREA}"
+    )
+
+    # Walk in, close the box behind you, keep moving
+    door_sensor.turn_on()
+    await hass.async_block_till_done()
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, 5)
+    door_sensor.turn_off()
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, WASP_DELAY + 1)
+
+    final = hass.states.get(wasp_in_a_box_entity_id)
+    assert_state(final, STATE_ON)
+    assert_attribute(final, ATTR_WASP, STATE_ON)
+    assert_attribute(final, ATTR_BOX, STATE_OFF)
