@@ -52,7 +52,7 @@ class TestLightGroupsFeature:
     @pytest.fixture
     async def light_groups_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up light groups feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

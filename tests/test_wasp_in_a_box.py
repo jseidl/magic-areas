@@ -247,6 +247,7 @@ async def test_wasp_in_a_box_as_presence(
     assert_state(wasp_in_a_box_state, STATE_ON)
 
     await hass.async_block_till_done()
+    await asyncio.sleep(1)
 
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_ON)

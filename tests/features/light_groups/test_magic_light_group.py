@@ -132,7 +132,7 @@ class TestMagicLightGroupCallForwarding:
         await asyncio.sleep(0.3)
 
         # All lights should be turned on with brightness
-        for light_id in ["light.light_1", "light.light_2", "light.light_3"]:
+        for light_id in ("light.light_1", "light.light_2", "light.light_3"):
             light_state = hass.states.get(light_id)
             assert_state(light_state, STATE_ON)
             assert light_state.attributes.get(ATTR_BRIGHTNESS) == 200
@@ -144,7 +144,7 @@ class TestMagicLightGroupCallForwarding:
         light_group_id = setup_basic_light_group["light_group_id"]
 
         # Turn on all lights first
-        for light_id in ["light.light_1", "light.light_2", "light.light_3"]:
+        for light_id in ("light.light_1", "light.light_2", "light.light_3"):
             await hass.services.async_call(
                 "light", "turn_on", {"entity_id": light_id}, blocking=True
             )
@@ -173,7 +173,7 @@ class TestMagicLightGroupCallForwarding:
         await asyncio.sleep(0.3)
 
         # Verify light_1 and light_2 have both attributes
-        for light_id in ["light.light_1", "light.light_2"]:
+        for light_id in ("light.light_1", "light.light_2"):
             light_state = hass.states.get(light_id)
             assert_state(light_state, STATE_ON)
             assert light_state.attributes.get(ATTR_BRIGHTNESS) == 150

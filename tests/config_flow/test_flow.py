@@ -139,9 +139,7 @@ class TestOptionsFlowHandler:
     """Test OptionsFlowHandler class."""
 
     @pytest.fixture
-    async def options_flow_setup(
-        self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    async def options_flow_setup(self, hass: HomeAssistant) -> AsyncGenerator[dict]:
         """Set up options flow for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

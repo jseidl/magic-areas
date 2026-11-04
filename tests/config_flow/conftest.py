@@ -270,7 +270,7 @@ def config_flow_test_data() -> dict[str, Any]:
 @pytest.fixture
 async def config_flow_integration_setup(
     hass: HomeAssistant,
-) -> AsyncGenerator[dict[str, Any], None]:
+) -> AsyncGenerator[dict[str, Any]]:
     """Set up integration for config flow testing."""
     # Create config entry
     config_entry = Mock()

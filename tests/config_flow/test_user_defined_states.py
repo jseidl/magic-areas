@@ -39,7 +39,7 @@ class TestUserDefinedStatesHandler:
     @pytest.fixture
     async def user_defined_states_handler_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up user-defined states handler for testing."""
         # Create test entities
         test_binary = MockBinarySensor(

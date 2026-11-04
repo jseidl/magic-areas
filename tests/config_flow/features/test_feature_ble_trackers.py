@@ -44,7 +44,7 @@ class TestBLETrackersFeature:
     @pytest.fixture
     async def ble_trackers_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up BLE trackers feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

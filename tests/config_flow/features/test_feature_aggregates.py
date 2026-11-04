@@ -40,7 +40,7 @@ class TestAggregatesFeature:
     @pytest.fixture
     async def aggregates_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up aggregates feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

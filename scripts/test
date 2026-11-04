@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Which version(s) to run: default = stable
-CHOICE="${1:-stable}"
+CHOICE="${1:-major}"
 
 # Shift the first argument and capture remaining args for pytest
 shift 2>/dev/null || true

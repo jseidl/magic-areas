@@ -47,7 +47,7 @@ class TestAreaAwareMediaPlayerFeature:
     @pytest.fixture
     async def area_aware_media_player_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up area aware media player feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

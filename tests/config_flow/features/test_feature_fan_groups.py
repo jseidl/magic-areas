@@ -45,7 +45,7 @@ class TestFanGroupsFeature:
     @pytest.fixture
     async def fan_groups_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up fan groups feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

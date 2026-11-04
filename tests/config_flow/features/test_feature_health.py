@@ -38,9 +38,7 @@ class TestHealthFeature:
     """Test HealthFeature class."""
 
     @pytest.fixture
-    async def health_feature_setup(
-        self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    async def health_feature_setup(self, hass: HomeAssistant) -> AsyncGenerator[dict]:
         """Set up health feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

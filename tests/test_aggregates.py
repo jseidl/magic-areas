@@ -411,7 +411,9 @@ async def test_aggregates_sensor_aqi_unitless(
 ) -> None:
     """AQI sensors are unitless in HA and must still be aggregated (#631)."""
 
-    aggregate_sensor_id = f"{SENSOR_DOMAIN}.magic_areas_aggregates_kitchen_aggregate_aqi"
+    aggregate_sensor_id = (
+        f"{SENSOR_DOMAIN}.magic_areas_aggregates_kitchen_aggregate_aqi"
+    )
 
     entity_values = []
     for mock_entity in entities_sensor_aqi_multiple:

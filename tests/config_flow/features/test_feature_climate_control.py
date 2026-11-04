@@ -39,7 +39,7 @@ class TestClimateControlFeature:
     @pytest.fixture
     async def climate_control_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up climate control feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

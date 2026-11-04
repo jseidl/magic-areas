@@ -530,7 +530,9 @@ class MockCover(MockEntity, CoverEntity):
         """Return the supported features of the cover."""
         if "supported_feautes" in self._values:
             return self._values["supported_features"]
-        return CoverEntity.supported_features.fget(self)  # pylint: disable=overridden-final-method
+        return CoverEntity.supported_features.fget(
+            self
+        )  # pylint: disable=overridden-final-method
 
     @cached_property
     def is_closed(self) -> bool:

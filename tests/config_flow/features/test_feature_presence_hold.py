@@ -42,7 +42,7 @@ class TestPresenceHoldFeature:
     @pytest.fixture
     async def presence_hold_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up presence hold feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

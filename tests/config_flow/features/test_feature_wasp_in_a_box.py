@@ -42,7 +42,7 @@ class TestWaspInABoxFeature:
     @pytest.fixture
     async def wasp_in_a_box_feature_setup(
         self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[dict]:
         """Set up wasp in a box feature for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)

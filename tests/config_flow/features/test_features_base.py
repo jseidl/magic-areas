@@ -36,9 +36,7 @@ class TestFeatureHandler:
     """Test FeatureHandler base class."""
 
     @pytest.fixture
-    async def feature_handler_setup(
-        self, hass: HomeAssistant
-    ) -> AsyncGenerator[dict, None]:
+    async def feature_handler_setup(self, hass: HomeAssistant) -> AsyncGenerator[dict]:
         """Set up feature handler for testing."""
         # Setup area and entities
         area_registry = async_get_ar(hass)
