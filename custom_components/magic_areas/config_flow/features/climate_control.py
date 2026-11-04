@@ -139,7 +139,7 @@ class ClimateControlFeature(FeatureHandler):
         builder = SchemaBuilder(self.get_config())
         schema = builder.from_option_set(
             ClimateControlOptions,
-            selector_overrides={key: preset_selector for key in _PRESET_KEYS},
+            selector_overrides=dict.fromkeys(_PRESET_KEYS, preset_selector),
             exclude_keys=[ClimateControlOptions.ENTITY_ID.key],
         )
 

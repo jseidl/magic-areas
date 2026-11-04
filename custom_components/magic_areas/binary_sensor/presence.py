@@ -666,7 +666,9 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
         # Setup state change listener
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, MagicAreasEvents.AREA_STATE_CHANGED, self._area_state_changed
+                self.hass,
+                f"{MagicAreasEvents.AREA_STATE_CHANGED}_{self.area.id}",
+                self._area_state_changed,
             )
         )
 
@@ -744,7 +746,9 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
 
         # Collect all states from child areas
         for area_slug in child_areas:
-            area_entity_id: str = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
+            area_entity_id: str = (
+                f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{area_slug}_area_state"
+            )
             area_state = self.hass.states.get(area_entity_id)
 
             if not area_state:
@@ -758,7 +762,7 @@ class MetaAreaStateBinarySensor(AreaStateBinarySensor):
         child_area_count: int = len(child_areas)
 
         # Calculate for built-in secondary states (sleep, dark)
-        for secondary_state in [AreaStates.SLEEP, AreaStates.DARK]:
+        for secondary_state in (AreaStates.SLEEP, AreaStates.DARK):
             if secondary_state not in state_counter:
                 continue
 
