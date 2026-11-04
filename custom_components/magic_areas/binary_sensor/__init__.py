@@ -17,6 +17,9 @@ from custom_components.magic_areas.binary_sensor.base import AreaSensorGroupBina
 from custom_components.magic_areas.binary_sensor.ble_tracker import (
     AreaBLETrackerBinarySensor,
 )
+from custom_components.magic_areas.binary_sensor.door_occupancy import (
+    AreaDoorTransitionOccupancyBinarySensor,
+)
 from custom_components.magic_areas.binary_sensor.presence import (
     AreaStateBinarySensor,
     MetaAreaStateBinarySensor,
@@ -28,12 +31,14 @@ from custom_components.magic_areas.const import (
     CONF_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
     CONF_AGGREGATES_MIN_ENTITIES,
     CONF_BLE_TRACKER_ENTITIES,
+    CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
     CONF_FEATURE_AGGREGATION,
     CONF_FEATURE_BLE_TRACKERS,
     CONF_FEATURE_HEALTH,
     CONF_FEATURE_WASP_IN_A_BOX,
     CONF_HEALTH_SENSOR_DEVICE_CLASSES,
     DEFAULT_AGGREGATES_BINARY_SENSOR_DEVICE_CLASSES,
+    DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
     DEFAULT_HEALTH_SENSOR_DEVICE_CLASSES,
     MagicAreasFeatureInfoAggregates,
     MagicAreasFeatureInfoHealth,
@@ -99,6 +104,9 @@ async def async_setup_entry(
     if area.has_feature(CONF_FEATURE_BLE_TRACKERS):
         entities.extend(create_ble_tracker_sensor(area))
 
+    if not area.is_meta():
+        entities.extend(create_door_transition_occupancy_sensor(area))
+
     # Add all entities
     async_add_entities(entities)
 
@@ -124,6 +132,38 @@ def create_wasp_in_a_box_sensor(
     except Exception as e:  # pylint: disable=broad-exception-caught
         _LOGGER.error(
             "%s: Error creating wasp in a box sensor: %s",
+            area.slug,
+            str(e),
+        )
+        return []
+
+
+def create_door_transition_occupancy_sensor(
+    area: MagicArea,
+) -> list[AreaDoorTransitionOccupancyBinarySensor]:
+    """Add the door transition occupancy sensor for the area.
+
+    Only created when a positive timeout is configured (0 disables it,
+    matching the "0 = disabled" convention used elsewhere in the repo) and
+    the area actually has door-classed binary sensors to track.
+    """
+
+    timeout = area.config.get(
+        CONF_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+        DEFAULT_DOOR_TRANSITION_OCCUPANCY_TIMEOUT,
+    )
+    if timeout <= 0:
+        return []
+
+    door_sensors = area.get_door_transition_sensors()
+    if not door_sensors:
+        return []
+
+    try:
+        return [AreaDoorTransitionOccupancyBinarySensor(area, door_sensors)]
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        _LOGGER.error(
+            "%s: Error creating door transition occupancy sensor: %s",
             area.slug,
             str(e),
         )
