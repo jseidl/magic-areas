@@ -107,7 +107,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             group_lights,
         )
 
-        light_group = AreaLightGroup(area, group_config)
+        light_group = AreaLightGroup(
+            area, {**group_config, LightGroupEntryOptions.LIGHTS.key: group_lights}
+        )
         light_groups.append(light_group)
 
     # Create all groups
