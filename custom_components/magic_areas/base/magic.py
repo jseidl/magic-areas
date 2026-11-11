@@ -288,7 +288,15 @@ class MagicArea:
         entity_registry = entityreg_async_get(self.hass)
         device_registry = devicereg_async_get(self.hass)
 
-        # Add entities from devices in this area
+        # Add entities from devices in this area. As in Home Assistant core, an
+        # entity's own area overrides its device's area, so only entities without
+        # an area of their own inherit this one.
+        #
+        # Note: when the minimum supported Home Assistant version is 2026.9 or
+        # later, replace the `entity.area_id is None` check (here and in
+        # _entity_inherits_area) with er.async_get_effective_area_id(), which
+        # implements the same rule and also handles child devices inheriting
+        # their parent device's area.
         devices_in_area = device_registry.devices.get_devices_for_area_id(self.id)
         for device in devices_in_area:
             entity_list.extend(
@@ -297,18 +305,20 @@ class MagicArea:
                     for entity in entity_registry.entities.get_entries_for_device_id(
                         device.id
                     )
-                    if not self._should_exclude_entity(entity)
+                    if entity.area_id is None
+                    and not self._should_exclude_entity(entity)
                 ]
             )
             self._area_devices.append(device.id)
 
-        # Add entities that are specifically set as this area but device is not or has no device.
+        # Add entities whose own area is this area, whatever their device's area.
+        loaded_entity_ids = {entity.entity_id for entity in entity_list}
         entities_in_area = entity_registry.entities.get_entries_for_area_id(self.id)
         entity_list.extend(
             [
                 entity
                 for entity in entities_in_area
-                if entity.entity_id not in entity_list
+                if entity.entity_id not in loaded_entity_ids
                 and not self._should_exclude_entity(entity)
             ]
         )
@@ -497,24 +507,54 @@ class MagicArea:
                 and "changes" in event_data
                 and "area_id" in event_data["changes"]
             ):
+                old_area_id = event_data["changes"]["area_id"]
+
                 # Removed from our area
-                if event_data["changes"]["area_id"] == self.id:
+                if old_area_id == self.id:
                     return True
 
-                # Is from our area
-                if entity_entry and entity_entry.area_id == self.id:
-                    return True
+                if entity_entry:
+                    # Is now in our area, directly or through its device
+                    if entity_entry.area_id == self.id or self._entity_inherits_area(
+                        entity_entry
+                    ):
+                        return True
+
+                    # Was inheriting our area from its device, and now has an
+                    # area of its own
+                    if (
+                        old_area_id is None
+                        and entity_entry.device_id in self._area_devices
+                    ):
+                        return True
 
                 return False
 
-            if action in ("create", "remove"):
-                # Is from our area
-                if entity_entry and entity_entry.area_id == self.id:
+            if action == "create":
+                # Is from our area, directly or through its device
+                if entity_entry and (
+                    entity_entry.area_id == self.id
+                    or self._entity_inherits_area(entity_entry)
+                ):
+                    return True
+
+            if action == "remove":
+                # The registry entry is already gone when the event fires, so
+                # check whether this area had loaded the entity.
+                if entity_id in self._area_entities:
                     return True
 
             return False
 
         return _entity_registry_filter
+
+    def _entity_inherits_area(self, entity: RegistryEntry) -> bool:
+        """Return if an entity has no area of its own and its device is in this area."""
+        if entity.area_id is not None or entity.device_id is None:
+            return False
+
+        device = devicereg_async_get(self.hass).async_get(entity.device_id)
+        return device is not None and device.area_id == self.id
 
     def resolve_light_entity(self) -> str | None:
         """Resolve which entity to use for darkness detection.
