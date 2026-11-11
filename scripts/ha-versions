@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Print the Home Assistant versions to test against, as KEY=VALUE lines:
+#
+#   eval "$(scripts/ha-versions)"           # in a script
+#   scripts/ha-versions >> "$GITHUB_ENV"    # in a GitHub Actions step
+#
+# pytest-homeassistant-custom-component pins an exact homeassistant version and
+# usually trails the newest HA release by days to weeks. A newer HA than the
+# newest plugin release pins can't be installed alongside it, so the stable,
+# major and previous-stable versions are chosen from the HA releases up to that
+# pin. Beta isn't capped: the plugin rarely pins a current beta, so a beta run
+# may fail to install.
+#
+# Any of HA_STABLE_VERSION, HA_MAJOR_VERSION, HA_PREVIOUS_STABLE_VERSION and
+# HA_BETA_VERSION already set in the environment is kept as is.
+set -euo pipefail
+
+die() { echo "ha-versions: $*" >&2; exit 1; }
+
+PLUGIN_HA_VERSION=$(curl -sf https://pypi.org/pypi/pytest-homeassistant-custom-component/json \
+  | jq -r '.info.requires_dist[] | select(startswith("homeassistant==")) | sub("^homeassistant=="; "")') \
+  || die "could not fetch pytest-homeassistant-custom-component from PyPI"
+[[ -n "$PLUGIN_HA_VERSION" ]] \
+  || die "could not find the Home Assistant version pinned by pytest-homeassistant-custom-component"
+
+VERSIONS=$(curl -sf https://pypi.org/pypi/homeassistant/json | jq -r '.releases | keys | .[]') \
+  || die "could not fetch homeassistant from PyPI"
+
+# Stable releases, oldest first, up to and including the plugin's pin
+TESTABLE=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | sort -V | sed "/^${PLUGIN_HA_VERSION//./\\.}\$/q")
+[[ "$(echo "$TESTABLE" | tail -n1)" == "$PLUGIN_HA_VERSION" ]] \
+  || die "pinned Home Assistant $PLUGIN_HA_VERSION is not a stable release on PyPI"
+
+# Latest testable stable release (any patch version)
+: "${HA_STABLE_VERSION:=$PLUGIN_HA_VERSION}"
+
+# Latest testable major release (x.y.0), and the one before it
+: "${HA_MAJOR_VERSION:=$(echo "$TESTABLE" | grep '\.0$' | tail -n1)}"
+: "${HA_PREVIOUS_STABLE_VERSION:=$(echo "$TESTABLE" | grep '\.0$' | tail -n2 | head -n1)}"
+
+# Latest beta of the newest HA major release
+NEWEST_MAJOR=$(echo "$VERSIONS" | grep -Ev '[a-zA-Z]' | grep '\.0$' | sort -V | tail -n1 | sed -E 's/\.[0-9]+$//')
+: "${HA_BETA_VERSION:=$(echo "$VERSIONS" | grep "^${NEWEST_MAJOR//./\\.}\..*b" | sort -V | tail -n1)}"
+
+echo "HA_STABLE_VERSION=$HA_STABLE_VERSION"
+echo "HA_MAJOR_VERSION=$HA_MAJOR_VERSION"
+echo "HA_PREVIOUS_STABLE_VERSION=$HA_PREVIOUS_STABLE_VERSION"
+echo "HA_BETA_VERSION=$HA_BETA_VERSION"
