@@ -47,6 +47,7 @@ from custom_components.magic_areas.helpers.area import (
     basic_area_from_floor,
     basic_area_from_meta,
     basic_area_from_object,
+    is_reserved_floor_id,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -79,6 +80,16 @@ class ConfigFlow(config_entries.ConfigFlow, ConfigBase, domain=DOMAIN):
         floors = floor_registry.async_list_floors()
 
         for floor in floors:
+            # Floors with a built-in meta-area's id can't have a meta-area: the
+            # entry would be set up as the built-in one. A repair issue explains.
+            if is_reserved_floor_id(floor.floor_id):
+                _LOGGER.warning(
+                    "ConfigFlow: Floor '%s' has the reserved id '%s', so it can't have a meta-area.",
+                    floor.name,
+                    floor.floor_id,
+                )
+                continue
+
             if floor.floor_id in area_ids:
                 _LOGGER.warning(
                     "ConfigFlow: Area with reserved name '%s' prevents using %s Meta area.",

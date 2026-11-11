@@ -19,6 +19,10 @@ from homeassistant.const import (
     EntityCategory,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.area_registry import (
+    EventAreaRegistryUpdatedData,
+    async_get as areareg_async_get,
+)
 from homeassistant.helpers.device_registry import (
     EventDeviceRegistryUpdatedData,
     async_get as devicereg_async_get,
@@ -704,6 +708,26 @@ class MagicArea:
         # Fallback: return slug if not found
         return state_slug
 
+    def make_area_registry_filter(self):
+        """Create area registry filter for this area."""
+
+        @callback
+        def _area_registry_filter(event_data: EventAreaRegistryUpdatedData) -> bool:
+            """Filter area registry events: reload when this area changes floor.
+
+            Floor meta-areas find their children by the floor each area recorded
+            when it loaded, so an area moved to another floor must reload.
+            """
+            if event_data["action"] != "update" or event_data["area_id"] != self.id:
+                return False
+
+            # Update events carry no list of changes, and fire even when nothing
+            # changed, so compare against the floor this area loaded with.
+            area_entry = areareg_async_get(self.hass).async_get_area(self.id)
+            return area_entry is not None and area_entry.floor_id != self.floor_id
+
+        return _area_registry_filter
+
     def make_device_registry_filter(self):
         """Create device register filter for this area."""
 
@@ -896,7 +920,9 @@ class MagicMetaArea(MagicArea):
             self._reload_task.cancel()
         self._reload_task = None
 
-    def _should_reload_for(self, area_type: str, area_id: str) -> bool:
+    def _should_reload_for(
+        self, area_type: str, floor_id: str | None, area_id: str
+    ) -> bool:
         """Return True if this meta-area should reload for the given signal."""
 
         # Don't reload in response to our own AREA_LOADED event
@@ -906,10 +932,16 @@ class MagicMetaArea(MagicArea):
         if self.slug == MetaAreaType.GLOBAL:
             return True
 
-        return area_type == self.slug or area_id in self.child_areas
+        # Floor meta-areas also reload when an area reports their floor: it may
+        # have just moved onto it, so it isn't in child_areas yet.
+        return (
+            area_type == self.slug
+            or area_id in self.child_areas
+            or (self.floor_id is not None and floor_id == self.floor_id)
+        )
 
     async def _handle_loaded_area(
-        self, area_type: str, floor_id: int | None, area_id: str
+        self, area_type: str, floor_id: str | None, area_id: str
     ) -> None:
         """Handle area loaded signals with debouncing."""
         self.logger.debug(
@@ -923,7 +955,7 @@ class MagicMetaArea(MagicArea):
         if not self.hass.is_running:
             return
 
-        if not self._should_reload_for(area_type, area_id):
+        if not self._should_reload_for(area_type, floor_id, area_id):
             return
 
         # Debounce: cancel any pending reload and reschedule.

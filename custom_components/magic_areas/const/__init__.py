@@ -576,6 +576,10 @@ META_AREA_INTERIOR = "Interior"
 META_AREA_EXTERIOR = "Exterior"
 META_AREAS = [META_AREA_GLOBAL, META_AREA_INTERIOR, META_AREA_EXTERIOR]
 
+# Repair issue raised when a floor's id is one of the built-in meta-area ids
+# (global/interior/exterior), which stops it from getting a floor meta-area.
+ISSUE_RESERVED_FLOOR_ID = "reserved_floor_id"
+
 # Area Types
 AREA_TYPES = list(AreaType)
 

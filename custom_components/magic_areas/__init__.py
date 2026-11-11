@@ -7,6 +7,11 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.area_registry import (
+    EVENT_AREA_REGISTRY_UPDATED,
+    EventAreaRegistryUpdatedData,
+)
 from homeassistant.helpers.device_registry import (
     EVENT_DEVICE_REGISTRY_UPDATED,
     EventDeviceRegistryUpdatedData,
@@ -15,10 +20,16 @@ from homeassistant.helpers.entity_registry import (
     EVENT_ENTITY_REGISTRY_UPDATED,
     EventEntityRegistryUpdatedData,
 )
+from homeassistant.helpers.floor_registry import (
+    EVENT_FLOOR_REGISTRY_UPDATED,
+    EventFloorRegistryUpdatedData,
+)
+from homeassistant.helpers.typing import ConfigType
 
 from custom_components.magic_areas.base.magic import MagicArea
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
+    DOMAIN,
     AreaConfigOptions,
     ConfigDomains,
     MagicConfigEntryVersion,
@@ -36,9 +47,32 @@ from custom_components.magic_areas.const.user_defined_states import (
     UserDefinedStateEntryOptions,
     UserDefinedStateOptions,
 )
-from custom_components.magic_areas.helpers.area import get_magic_area_for_config_entry
+from custom_components.magic_areas.helpers.area import (
+    async_update_reserved_floor_issues,
+    get_magic_area_for_config_entry,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+# Home Assistant requires this name. pylint infers the schema helper's return
+# value as a function and wants a snake_case variable name for it.
+# pylint: disable-next=invalid-name
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up Magic Areas: watch for floors whose id clashes with a meta-area."""
+
+    @callback
+    def _async_floor_registry_updated(
+        event: Event[EventFloorRegistryUpdatedData],
+    ) -> None:
+        async_update_reserved_floor_issues(hass)
+
+    async_update_reserved_floor_issues(hass)
+    hass.bus.async_listen(EVENT_FLOOR_REGISTRY_UPDATED, _async_floor_registry_updated)
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
@@ -60,6 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         event: (
             Event[EventEntityRegistryUpdatedData]
             | Event[EventDeviceRegistryUpdatedData]
+            | Event[EventAreaRegistryUpdatedData]
         ),
     ) -> None:
         """Reload integration when entity registry is updated."""
@@ -122,6 +157,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
                     EVENT_DEVICE_REGISTRY_UPDATED,
                     _async_registry_updated,
                     magic_area.make_device_registry_filter(),
+                )
+            )
+            config_entry.async_on_unload(
+                hass.bus.async_listen(
+                    EVENT_AREA_REGISTRY_UPDATED,
+                    _async_registry_updated,
+                    magic_area.make_area_registry_filter(),
                 )
             )
             # Reload once Home Assistant has finished starting to make sure we have all entities.
