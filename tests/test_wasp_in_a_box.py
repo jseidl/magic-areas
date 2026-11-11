@@ -29,6 +29,7 @@ from tests.helpers import (
     assert_attribute,
     assert_in_attribute,
     assert_state,
+    async_advance_time,
     get_basic_config_entry_data,
     init_integration,
     merge_feature_config,
@@ -258,12 +259,10 @@ async def test_wasp_in_a_box_as_presence(
     )
 
     hass.states.async_set(motion_sensor_entity_id, STATE_OFF)
-    await hass.async_block_till_done()
+    await async_advance_time(hass)
 
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
     assert_state(wasp_in_a_box_state, STATE_OFF)
-
-    await hass.async_block_till_done()
 
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_OFF)

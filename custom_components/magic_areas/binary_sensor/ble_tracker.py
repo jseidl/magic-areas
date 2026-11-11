@@ -52,7 +52,7 @@ class AreaBLETrackerBinarySensor(MagicEntity, BinarySensorEntity):
         # Setup the listeners
         await self._setup_listeners()
 
-        self.hass.loop.call_soon_threadsafe(self._update_state, datetime.now(UTC))
+        self._update_state(datetime.now(UTC))
 
         _LOGGER.debug("%s: BLE Tracker monitor sensor initialized", self.area.name)
 
@@ -64,6 +64,7 @@ class AreaBLETrackerBinarySensor(MagicEntity, BinarySensorEntity):
             )
         )
 
+    @callback
     def _sensor_state_change(self, event: Event[EventStateChangedData]) -> None:
         """Call update state from track state change event."""
 
@@ -103,4 +104,4 @@ class AreaBLETrackerBinarySensor(MagicEntity, BinarySensorEntity):
         self._attr_extra_state_attributes[CommonAttributes.ACTIVE_SENSORS.value] = (
             active_sensors
         )
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()

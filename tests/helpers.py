@@ -3,13 +3,17 @@
 import asyncio
 from asyncio import get_running_loop
 from collections.abc import Sequence
+from datetime import timedelta
 import functools
 import logging
 import pathlib
 from typing import Any, NoReturn
 from unittest.mock import Mock, patch
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 import voluptuous as vol
 
 from homeassistant import loader
@@ -394,6 +398,29 @@ def get_basic_config_entry_data(area_id: MockAreaIds) -> dict[str, Any]:
     )
 
     return data
+
+
+async def async_advance_time(
+    hass: HomeAssistant, seconds: float = 1, rounds: int = 3
+) -> None:
+    """Fire timers due within `seconds`, including ones they schedule, and wait for results.
+
+    `hass.async_block_till_done()` does not wait for timers scheduled with
+    `async_call_later`, even zero-delay ones such as a `clear_timeout` of 0, so
+    tests that expect a timeout to elapse must fire it explicitly.
+
+    Timeouts cascade (a child area clearing starts its meta-area's clear
+    timeout), so this runs several rounds. Each round lets timers that are
+    already due run (asyncio moves them from the scheduled heap to the ready
+    queue, where `async_fire_time_changed` can't see them), fires the ones
+    still scheduled, and waits for the resulting work.
+    """
+    for _ in range(rounds):
+        await hass.async_block_till_done()
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        async_fire_time_changed(hass, utcnow() + timedelta(seconds=seconds))
+        await hass.async_block_till_done()
 
 
 def assert_state(entity_state: State | None, expected_value: str) -> None:

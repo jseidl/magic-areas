@@ -23,7 +23,11 @@ from homeassistant.helpers.device_registry import (
     EventDeviceRegistryUpdatedData,
     async_get as devicereg_async_get,
 )
-from homeassistant.helpers.dispatcher import async_dispatcher_connect, dispatcher_send
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_connect,
+    async_dispatcher_send,
+    dispatcher_send,
+)
 from homeassistant.helpers.entity_registry import (
     EventEntityRegistryUpdatedData,
     RegistryEntry,
@@ -123,6 +127,7 @@ class MagicArea:
 
         self.logger.debug("%s: Primed for initialization.", self.name)
 
+    @callback
     def _handle_exterior_loaded(
         self, area_type: str, floor_id: int | None, area_id: str
     ) -> None:
@@ -152,7 +157,7 @@ class MagicArea:
             self.area_light_sensor = new_light_sensor
 
             # Notify presence sensor to update its light sensor listener
-            dispatcher_send(
+            async_dispatcher_send(
                 self.hass,
                 f"{MagicAreasEvents.AREA_LIGHT_SENSOR_CHANGED}_{self.id}",
                 new_light_sensor,
