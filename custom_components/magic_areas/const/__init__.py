@@ -363,6 +363,19 @@ class AreaConfigOptions(OptionSet):
         selector_type="boolean",
     )
 
+    # Entities hidden by an integration (hidden_by == INTEGRATION): ones a
+    # helper such as switch_as_x replaces, or ones an integration hides by
+    # default.
+    IGNORE_INTEGRATION_HIDDEN_ENTITIES = ConfigOption(
+        key="ignore_integration_hidden_entities",
+        default=True,
+        title="Ignore Entities Hidden by Integrations",
+        description="Exclude entities that an integration has hidden, such as a switch replaced by a helper",
+        translation_key="ignore_integration_hidden_entities",
+        validator=cv.boolean,
+        selector_type="boolean",
+    )
+
 
 class PresenceTrackingOptions(OptionSet):
     """Presence tracking configuration options."""
