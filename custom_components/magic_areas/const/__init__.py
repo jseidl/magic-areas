@@ -290,6 +290,13 @@ class ConfigHelper:
         return self._config[key]
 
 
+# Label that regular areas exclude by default (AreaConfigOptions.EXCLUDE_DEFAULT_LABEL).
+# It is looked up by name, falling back to the id Home Assistant generates from
+# that name, so it keeps working if the user renames the label.
+EXCLUDE_DEFAULT_LABEL_NAME = "magic-areas-ignore"
+EXCLUDE_DEFAULT_LABEL_ID = "magic_areas_ignore"
+
+
 # Core Configuration Option Sets
 
 
@@ -320,6 +327,27 @@ class AreaConfigOptions(OptionSet):
         translation_key="include_entities",
         validator=cv.entity_ids,
         selector_type="entity",
+        selector_config={"multiple": True},
+    )
+
+    EXCLUDE_DEFAULT_LABEL = ConfigOption(
+        key="exclude_default_label",
+        default=True,
+        title="Exclude Entities Labelled magic-areas-ignore",
+        description="Ignore entities, and entities of devices, carrying the magic-areas-ignore label",
+        translation_key="exclude_default_label",
+        validator=cv.boolean,
+        selector_type="boolean",
+    )
+
+    EXCLUDE_LABELS = ConfigOption(
+        key="exclude_labels",
+        default=[],
+        title="Exclude Labels",
+        description="Ignore entities, and entities of devices, carrying any of these labels",
+        translation_key="exclude_labels",
+        validator=vol.All(cv.ensure_list, [cv.string]),
+        selector_type="label",
         selector_config={"multiple": True},
     )
 
