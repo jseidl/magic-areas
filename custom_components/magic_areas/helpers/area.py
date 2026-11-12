@@ -15,15 +15,73 @@ from homeassistant.helpers.floor_registry import (
     FloorEntry,
     async_get as floorreg_async_get,
 )
+from homeassistant.helpers.issue_registry import (
+    IssueSeverity,
+    async_create_issue,
+    async_delete_issue,
+    async_get as async_get_issue_registry,
+)
 
 from custom_components.magic_areas.base.magic import BasicArea, MagicArea, MagicMetaArea
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
+    DOMAIN,
+    ISSUE_RESERVED_FLOOR_ID,
     MetaAreaIcons,
     MetaAreaType,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Ids of the built-in meta-areas. Floors with one of these ids can't have a
+# floor meta-area: the id would collide with the built-in one.
+RESERVED_META_AREA_IDS: list[str] = [
+    meta_area_type.value
+    for meta_area_type in MetaAreaType
+    if meta_area_type != MetaAreaType.FLOOR
+]
+
+
+def is_reserved_floor_id(floor_id: str) -> bool:
+    """Return if a floor id clashes with a built-in meta-area id."""
+    return floor_id in RESERVED_META_AREA_IDS
+
+
+def async_update_reserved_floor_issues(hass: HomeAssistant) -> None:
+    """Raise a repair issue for each floor whose id clashes with a meta-area id.
+
+    Clears the issue again once no floor has that id.
+    """
+    floor_registry = floorreg_async_get(hass)
+    for meta_area_id in RESERVED_META_AREA_IDS:
+        issue_id = f"{ISSUE_RESERVED_FLOOR_ID}_{meta_area_id}"
+        floor = floor_registry.async_get_floor(meta_area_id)
+        if floor is None:
+            async_delete_issue(hass, DOMAIN, issue_id)
+            continue
+
+        # This runs on every floor registry change: only log when first raised.
+        if async_get_issue_registry(hass).async_get_issue(DOMAIN, issue_id) is None:
+            _LOGGER.warning(
+                "Floor '%s' has the id '%s', which is reserved for the %s "
+                "meta-area, so it can't have a floor meta-area",
+                floor.name,
+                floor.floor_id,
+                meta_area_id.capitalize(),
+            )
+        async_create_issue(
+            hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=IssueSeverity.WARNING,
+            translation_key=ISSUE_RESERVED_FLOOR_ID,
+            translation_placeholders={
+                "floor_name": floor.name,
+                "floor_id": floor.floor_id,
+                "meta_area": meta_area_id.capitalize(),
+            },
+        )
 
 
 def basic_area_from_meta(area_id: str, name: str | None = None) -> BasicArea:

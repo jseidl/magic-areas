@@ -15,6 +15,13 @@ Magic Areas supports the following types of meta-areas:
 | `Global`        | A top-level meta-area that includes *all* other areas |
 | `$FloorName`    | Groups all areas in a given floor |
 
+!!! note
+    Meta-areas are not created automatically: add each one you want with **Add Integration → Magic Areas**, where they're listed as `(Meta) …`.
+
+    A floor meta-area always contains the areas currently on that floor. Moving an area to another floor reloads it, and both floors' meta-areas pick up the change.
+
+    A floor can't have a meta-area if its ID is `global`, `interior` or `exterior`, because those IDs belong to the built-in meta-areas. Home Assistant creates a floor's ID from the name the floor was first created with (a floor first created as "Exterior" keeps the ID `exterior` after you rename it). Magic Areas raises a repair issue for such floors. To fix one, create a new floor with a different name, move the areas onto it, and delete the old floor.
+
 ## ⚙️ Features Compatible with Meta-Areas
 
 Many Magic Areas features are fully compatible with meta-areas, allowing you to apply automations across broader zones of your home:

@@ -546,5 +546,11 @@
     "exterior": {
       "name": "Exterior"
     }
+  },
+  "issues": {
+    "reserved_floor_id": {
+      "title": "Floor {floor_name} can't have a Magic Areas meta-area",
+      "description": "The floor **{floor_name}** has the ID `{floor_id}`, which Magic Areas uses for its built-in {meta_area} meta-area, so this floor can't have a meta-area of its own.\n\nHome Assistant creates a floor's ID from its name when the floor is created, and doesn't change it if you rename the floor later. To fix this, create a new floor with a different name, move this floor's areas onto it, and delete this floor. You can then add the new floor's meta-area in Magic Areas."
+    }
   }
 }
