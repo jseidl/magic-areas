@@ -9,6 +9,6 @@ cd "$(dirname "$0")/.."
 # Set HA_STABLE_VERSION to override.
 HA_VERSIONS=$(scripts/ha-versions)
 eval "$HA_VERSIONS"
-export HA_STABLE_VERSION
+export HA_MAJOR_VERSION
 
 tox -e lint
