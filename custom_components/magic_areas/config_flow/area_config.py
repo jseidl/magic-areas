@@ -64,6 +64,9 @@ class AreaConfigHandler(DomainHandler):
             exclude_keys.append(AreaConfigOptions.INCLUDE_ENTITIES.key)
             exclude_keys.append(AreaConfigOptions.WINDOWLESS.key)
             exclude_keys.append(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES.key)
+            exclude_keys.append(
+                AreaConfigOptions.IGNORE_INTEGRATION_HIDDEN_ENTITIES.key
+            )
 
         # Get current config (nested under ConfigDomains.AREA)
         current_config = self.get_config()

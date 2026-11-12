@@ -35,6 +35,7 @@ from homeassistant.helpers.dispatcher import (
 from homeassistant.helpers.entity_registry import (
     EventEntityRegistryUpdatedData,
     RegistryEntry,
+    RegistryEntryHider,
     async_get as entityreg_async_get,
 )
 from homeassistant.util import slugify
@@ -263,6 +264,12 @@ class MagicArea:
         """Return if entity belongs to this integration instance."""
         return entity.config_entry_id == self.hass_config.entry_id
 
+    def _ignores_integration_hidden(self) -> bool:
+        """Return if this area ignores entities hidden by an integration."""
+        return bool(
+            self.config.get(AreaConfigOptions.IGNORE_INTEGRATION_HIDDEN_ENTITIES)
+        )
+
     def _should_exclude_entity(self, entity: RegistryEntry) -> bool:
         """Exclude entity."""
 
@@ -272,6 +279,12 @@ class MagicArea:
 
         # Is disabled?
         if entity.disabled:
+            return True
+
+        # Hidden by an integration, e.g. replaced by a helper that wraps it?
+        if self._ignores_integration_hidden() and (
+            entity.hidden_by == RegistryEntryHider.INTEGRATION
+        ):
             return True
 
         # Is in the exclusion list?
@@ -510,6 +523,23 @@ class MagicArea:
             action = event_data["action"]
             entity_registry = entityreg_async_get(self.hass)
             entity_entry = entity_registry.async_get(entity_id)
+
+            # Disabling or hiding an entity changes whether this area uses it:
+            # reload if we loaded the entity, or would load it otherwise.
+            membership_fields = {"disabled_by"}
+            if self._ignores_integration_hidden():
+                membership_fields.add("hidden_by")
+            if (
+                action == "update"
+                and membership_fields & event_data.get("changes", {}).keys()
+                and entity_entry
+                and (
+                    entity_entry.entity_id in self._area_entities
+                    or entity_entry.area_id == self.id
+                    or entity_entry.device_id in self._area_devices
+                )
+            ):
+                return True
 
             if (
                 action == "update"

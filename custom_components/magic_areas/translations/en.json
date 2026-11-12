@@ -252,7 +252,8 @@
           "type": "Area type (interior/exterior)",
           "windowless": "Area has no windows",
           "reload_on_registry_change": "Automatically reload this Magic Area on registry updates",
-          "ignore_diagnostic_entities": "Ignore diagnostic and configuration entities"
+          "ignore_diagnostic_entities": "Ignore diagnostic and configuration entities",
+          "ignore_integration_hidden_entities": "Ignore entities hidden by integrations"
         },
         "data_description": {
           "include_entities": "Magic Areas can consider entities from other areas including other Magic entities. You can use this to make a room's presence binary sensor to act as another room's presence sensor as well.",
@@ -260,7 +261,8 @@
           "type": "Defining an area type allows Meta areas for Interior/Exterior to be created.",
           "windowless": "Mark area as having no windows. Will prevent exterior brightness from being considered as a light sensor.",
           "reload_on_registry_change": "Automatically reload this Magic Area when any entity or device is assigned or moved to an area.",
-          "ignore_diagnostic_entities": "Magic Areas can ignore diagnostic and configuration entities which are usually not relevant."
+          "ignore_diagnostic_entities": "Magic Areas can ignore diagnostic and configuration entities which are usually not relevant.",
+          "ignore_integration_hidden_entities": "Ignore entities that an integration has hidden, such as a switch replaced by a \"Change device type of a switch\" helper, or entities an integration hides by default. Home Assistant's own area targeting skips these too. Entities you hid yourself are still used."
         }
       },
       "presence_tracking": {

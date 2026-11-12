@@ -16,6 +16,7 @@ These options control the general behavior of the area.
 | **Windowless Area** | `bool` | `false` | Enable for areas with no natural light (bathrooms, closets, basements). Prevents fallback to exterior sensors/sun.sun for dark detection. |
 | **Automatic reload on registry updates** | `bool` | `true` | Automatically reloads the area if a new device or entity is added/removed. |
 | **Ignore diagnostic/config entities** | `bool` | `true` | Prevents Magic Areas from using diagnostic/config sensors (e.g., CPU temperature) that could skew aggregates. |
+| **Ignore entities hidden by integrations** | `bool` | `true` | Ignores entities an integration has hidden: for example a switch that a "Change device type of a switch" helper replaces with a light, or entities an integration hides by default. Home Assistant's own area targeting skips these too. Entities you hid yourself are still used. **Include entities** still overrides this. |
 
 ## 🚶 Presence Tracking Options
 
