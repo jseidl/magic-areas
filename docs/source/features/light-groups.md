@@ -89,6 +89,13 @@ Magic Areas automatically determines if an area is dark using:
 !!! warning "💡 Control Switch"
     Turn on the `Light Control ({Area})` switch created by Magic Areas to enable automation. When off, lights respond only to manual control.
 
+## 🔛 Turning On a Light Group
+
+!!! note
+    `light.turn_on` on a Magic Areas light group is not equivalent to turning on a core light group. If any light in the group is already on, the command is forwarded only to the lights that are currently on, and the others are left as they are. If no light is on, all lights are turned on. To turn on every light in an area regardless of state, target the individual lights, or a group whose members are all off.
+
+For example, if an area's accent lamp is on and you call `light.turn_on` on the area's All Lights group, only the accent lamp receives the command. The overhead lights stay off.
+
 ## 🧠 Usage Examples
 
 ### 🚽 Bathroom Lights (Windowless)
