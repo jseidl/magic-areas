@@ -25,6 +25,11 @@ _CASCADE_WAIT = (
     MetaAreaAutoReloadSettings.DELAY + MetaAreaAutoReloadSettings.GLOBAL_DELAY + 1
 )
 
+# Upper bound when polling: each reload takes ~1s+ and they run sequentially
+# (regular -> meta -> global), so real time exceeds the pure debounce sum.
+_CASCADE_TIMEOUT = _CASCADE_WAIT * 3
+_POLL_INTERVAL = 0.25
+
 _LOGGER = logging.getLogger(__name__)
 
 # Constants
@@ -56,6 +61,22 @@ def get_entry_by_area_name(hass: HomeAssistant, area_name: str) -> MagicArea | N
             if entry.runtime_data.id == area_name.lower():
                 return entry.runtime_data
     return None
+
+
+async def wait_for_reload(
+    hass: HomeAssistant,
+    area_name: str,
+    previous_timestamp: datetime,
+    timeout: float = _CASCADE_TIMEOUT,
+) -> None:
+    """Poll until an area's timestamp changes or the timeout elapses."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while loop.time() < deadline:
+        area_object = get_entry_by_area_name(hass, area_name)
+        if area_object and area_object.timestamp != previous_timestamp:
+            return
+        await asyncio.sleep(_POLL_INTERVAL)
 
 
 # Tests
@@ -138,7 +159,13 @@ async def test_meta_reload_from_single_reload(
         assert area_object.timestamp == area_timestamp_map[area_name]
 
     # Sleep so we handle the full reload cascade (regular → non-global meta → global)
-    await asyncio.sleep(_CASCADE_WAIT)
+    # Global is last in the cascade, so wait for it by polling.
+    await wait_for_reload(
+        hass, MockAreaIds.GLOBAL.value, area_timestamp_map[MockAreaIds.GLOBAL.value]
+    )
+    # Let any remaining debounced reloads (that must NOT happen) have a chance
+    # to fire before asserting the negative cases.
+    await asyncio.sleep(1)
 
     # Check corresponding area reloaded
     _assert_has_reloaded(MockAreaIds.KITCHEN.value)
