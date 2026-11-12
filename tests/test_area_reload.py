@@ -17,10 +17,13 @@ from custom_components.magic_areas.const import DOMAIN, MetaAreaAutoReloadSettin
 from tests.const import MockAreaIds
 from tests.mocks import MockBinarySensor
 
-# Total time to wait for the full reload cascade to complete:
-# regular area (DELAY) → non-global meta-areas (DELAY) → global (GLOBAL_DELAY)
-# In practice the debounce windows overlap, so GLOBAL_DELAY covers the full chain.
-_CASCADE_WAIT = MetaAreaAutoReloadSettings.GLOBAL_DELAY + 1
+# Total time to wait for the full reload cascade to complete: the regular area
+# reloads, its non-global meta-areas reload DELAY later, and each of their
+# AREA_LOADED signals restarts Global's GLOBAL_DELAY debounce. Add a second of
+# grace for the reloads themselves.
+_CASCADE_WAIT = (
+    MetaAreaAutoReloadSettings.DELAY + MetaAreaAutoReloadSettings.GLOBAL_DELAY + 1
+)
 
 _LOGGER = logging.getLogger(__name__)
 
