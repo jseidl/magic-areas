@@ -152,7 +152,7 @@ class AreaAwareMediaPlayer(MagicEntity, MediaPlayerEntity):
     def update_state(self):
         """Update entity state and attributes."""
         self.update_attributes()
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
     def set_state(self, state=None):
         """Set the entity state."""

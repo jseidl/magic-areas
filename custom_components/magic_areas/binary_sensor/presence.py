@@ -344,7 +344,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         # can still join/leave the active set while area remains occupied.
         if hasattr(self, "_attr_extra_state_attributes"):
             self._attr_extra_state_attributes.update(self.get_metadata())
-            self.schedule_update_ha_state()
+            self.async_write_ha_state()
 
         # Safety check: ensure stuck states get cleared
         self._validate_state_consistency()

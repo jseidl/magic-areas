@@ -401,6 +401,8 @@ class AreaLightGroup(MagicLightGroup):
             }
         )
 
+        # Must stay thread-safe: called from area_state_changed, which the
+        # dispatcher runs in an executor thread (it uses blocking service calls).
         self.schedule_update_ha_state()
 
     # Turn on / off helpers

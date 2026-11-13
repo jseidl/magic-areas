@@ -34,19 +34,18 @@ class SwitchBase(MagicEntity, SwitchEntity):
             self._attr_extra_state_attributes = dict(last_state.attributes)
 
         self.async_write_ha_state()
-        self.schedule_update_ha_state()
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn on presence hold."""
         self._attr_state = STATE_ON
         self._attr_is_on = True
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off presence hold."""
         self._attr_state = STATE_OFF
         self._attr_is_on = False
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
 
 class ResettableSwitchBase(SwitchBase):
@@ -77,7 +76,7 @@ class ResettableSwitchBase(SwitchBase):
         """Turn on presence hold."""
         self._attr_state = STATE_ON
         self._attr_is_on = True
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
         if self.timeout and not self._timeout_callback:
             self._timeout_callback = async_call_later(
@@ -88,7 +87,7 @@ class ResettableSwitchBase(SwitchBase):
         """Turn off presence hold."""
         self._attr_state = STATE_OFF
         self._attr_is_on = False
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
         if self._timeout_callback:
             self._timeout_callback()

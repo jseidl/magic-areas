@@ -155,7 +155,7 @@ class MagicEntity(RestoreEntity):
             self._attr_state = last_state.state
             self._attr_extra_state_attributes = dict(last_state.attributes)
 
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
 
 
 class BinaryMagicEntity(MagicEntity):
@@ -179,4 +179,4 @@ class BinaryMagicEntity(MagicEntity):
             self._attr_is_on = last_state.state == STATE_ON
             self._attr_extra_state_attributes = dict(last_state.attributes)
 
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
