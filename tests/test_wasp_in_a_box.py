@@ -7,8 +7,8 @@ import logging
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from freezegun.api import FrozenDateTimeFactory
+import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -75,6 +75,52 @@ async def setup_integration_wasp_in_a_box(
     await init_integration(hass, [wasp_in_a_box_config_entry])
     yield
     await shutdown_integration(hass, [wasp_in_a_box_config_entry])
+
+
+WASP_DELAY = 25
+
+
+@pytest.fixture(name="wasp_in_a_box_delay_config_entry")
+def mock_config_entry_wasp_in_a_box_delay() -> MockConfigEntry:
+    """Fixture for mock configuration entry with a box delay."""
+
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(
+        data,
+        WaspInABoxOptions.to_config(
+            {
+                WaspInABoxOptions.DELAY.key: WASP_DELAY,
+                WaspInABoxOptions.WASP_TIMEOUT.key: 0,
+            }
+        ),
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+    )
+
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+@pytest.fixture(name="_setup_integration_wasp_in_a_box_delay")
+async def setup_integration_wasp_in_a_box_delay(
+    hass: HomeAssistant,
+    wasp_in_a_box_delay_config_entry: MockConfigEntry,
+) -> AsyncGenerator[Any]:
+    """Set up integration with Wasp in a box using a box delay."""
+
+    await init_integration(hass, [wasp_in_a_box_delay_config_entry])
+    yield
+    await shutdown_integration(hass, [wasp_in_a_box_delay_config_entry])
+
+
+# Helpers
+
+
+async def _advance(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    """Move time forward and run anything that became due."""
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
 
 
 # Entities
@@ -423,51 +469,8 @@ async def test_wasp_seen_cancels_timer(
 
 
 # Delayed box check
-
-WASP_DELAY = 25
-
-
-@pytest.fixture(name="wasp_in_a_box_delay_config_entry")
-def mock_config_entry_wasp_in_a_box_delay() -> MockConfigEntry:
-    """Fixture for mock configuration entry with a box delay."""
-    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update(
-        {
-            CONF_ENABLED_FEATURES: {
-                CONF_FEATURE_WASP_IN_A_BOX: {
-                    CONF_WASP_IN_A_BOX_DELAY: WASP_DELAY,
-                    CONF_WASP_IN_A_BOX_WASP_TIMEOUT: 0,
-                },
-                CONF_FEATURE_AGGREGATION: {CONF_AGGREGATES_MIN_ENTITIES: 1},
-            },
-        }
-    )
-    return MockConfigEntry(domain=DOMAIN, data=data)
-
-
-@pytest.fixture(name="_setup_integration_wasp_in_a_box_delay")
-async def setup_integration_wasp_in_a_box_delay(
-    hass: HomeAssistant,
-    wasp_in_a_box_delay_config_entry: MockConfigEntry,
-) -> AsyncGenerator[Any]:
-    """Set up integration with Wasp in a box using a box delay."""
-
-    await init_integration(hass, [wasp_in_a_box_delay_config_entry])
-    yield
-    await shutdown_integration(hass, [wasp_in_a_box_delay_config_entry])
-
-
 # The mock sensors are driven through the entities rather than hass.states, so
 # that their polling refresh cannot reset them while time is moved forward.
-
-
-async def _advance(
-    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
-) -> None:
-    """Move time forward and run anything that became due."""
-    freezer.tick(timedelta(seconds=seconds))
-    async_fire_time_changed(hass)
-    await hass.async_block_till_done()
 
 
 async def test_quick_open_close_does_not_latch(

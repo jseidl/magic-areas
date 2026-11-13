@@ -16,10 +16,7 @@ from homeassistant.core import (
     State,
     callback,
 )
-from homeassistant.helpers.event import (
-    async_call_later,
-    async_track_state_change_event,
-)
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
 from custom_components.magic_areas.base.entities import MagicEntity
 from custom_components.magic_areas.base.magic import MagicArea
@@ -100,7 +97,7 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
                 self.wasp = False
                 self._attr_extra_state_attributes[ATTR_WASP] = STATE_OFF
                 self._attr_is_on = self.wasp
-                self.schedule_update_ha_state()
+                self.async_write_ha_state()
 
             self._wasp_timer = ReusableTimer(
                 self.hass, self._wasp_timeout * ONE_MINUTE, forget_wasp
@@ -169,7 +166,7 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
             self._attr_is_on = self.wasp
             self._attr_extra_state_attributes[ATTR_BOX] = new_state.state
             self._attr_extra_state_attributes[ATTR_WASP] = STATE_OFF
-            self.schedule_update_ha_state()
+            self.async_write_ha_state()
             if self._wasp_timer:
                 self._wasp_timer.cancel()
             # Replace any check left by the previous box change, so a stale
@@ -239,4 +236,4 @@ class AreaWaspInABoxBinarySensor(MagicEntity, BinarySensorEntity):
         self._attr_extra_state_attributes[ATTR_WASP] = wasp_state
 
         self._attr_is_on = self.wasp
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()
