@@ -1,0 +1,398 @@
+# Home Assistant Integration Quality Scale Tracking
+# Magic Areas - https://github.com/jseidl/magic-areas
+# Documentation: https://developers.home-assistant.io/docs/core/integration-quality-scale/
+
+---
+# BRONZE TIER
+# Minimum requirements for a production-ready integration
+rules:
+  # Configuration & Setup
+  config-flow:
+    status: done
+    comment: |
+      Full UI-based configuration flow implemented in config_flow.py.
+      - Supports both regular areas and meta-areas (Global, Interior, Exterior, Floors)
+      - Uses data_description in translations for field context
+      - Proper use of ConfigEntry.data and ConfigEntry.options
+      Evidence: custom_components/magic_areas/config_flow.py
+
+  config-flow-test-coverage:
+    status: pending
+    comment: |
+      Comprehensive test coverage for config flow.
+      Tests located in tests/config_flow/ directory.
+      Currently at ~90%
+      Evidence: tests/config_flow/
+
+  test-before-configure:
+    status: done
+    comment: |
+      Config flow validates area existence before configuration.
+      No external connection to test (local only integration).
+      Validates area objects and prevents invalid configurations.
+      Evidence: config_flow.py lines 170-177 (area validation)
+
+  test-before-setup:
+    status: done
+    comment: |
+      Integration checks validity during initialization via async_migrate_entry.
+      Validates config version and prevents downgrade issues.
+      Evidence: __init__.py async_migrate_entry() function
+
+  unique-config-entry:
+    status: done
+    comment: |
+      Uses async_set_unique_id(area_object.id) and _abort_if_unique_id_configured()
+      to prevent duplicate area configurations.
+      Evidence: config_flow.py lines 169-170
+
+  # Entity Requirements
+  entity-unique-id:
+    status: done
+    comment: |
+      All entities implement unique IDs via _generaete_unique_id() method.
+      Format: magicareas_feature_domain_areaname_name
+      Evidence: base/entities.py lines 64, 99-122
+
+  has-entity-name:
+    status: done
+    comment: |
+      All entities set _attr_has_entity_name = True
+      Evidence: base/entities.py line 26
+
+  runtime-data:
+    status: done
+    comment: |
+      Uses ConfigEntry.runtime_data for storing runtime data.
+      Evidence: __init__.py
+
+  entity-event-setup:
+    status: done
+    comment: |
+      Entity events subscribed in correct lifecycle methods.
+      Listeners setup in async_added_to_hass() with proper cleanup.
+      Evidence: binary_sensor/presence.py async_added_to_hass() and async_on_remove()
+
+  # Documentation
+  docs-high-level-description:
+    status: done
+    comment: |
+      Comprehensive high-level description in README.md and docs/source/index.md.
+      Clearly explains presence-aware automation and area intelligence.
+      Evidence: README.md, docs/source/index.md
+
+  docs-installation-instructions:
+    status: done
+    comment: |
+      Step-by-step installation via HACS and manual installation provided.
+      Includes prerequisites and post-install setup.
+      Evidence: docs/source/how-to/installation.md
+
+  docs-removal-instructions:
+    status: done
+    comment: |
+      Standard Home Assistant integration removal process applies.
+      Documented in installation guide.
+      Evidence: docs/source/how-to/installation.md
+
+  # Code Organization
+  common-modules:
+    status: done
+    comment: |
+      Well-organized code structure with common patterns in:
+      - base/ (MagicArea, MagicEntity classes)
+      - helpers/ (area helpers, timers)
+      - const/ (modular constants by feature)
+      Evidence: Project structure
+
+  brands:
+    status: done
+    comment: |
+      Branding assets available.
+      Integration visible in HACS with proper branding.
+      Evidence: HACS default repository listing
+
+  # Service Actions (Exempt - No Custom Actions)
+  action-setup:
+    status: exempt
+    comment: |
+      Integration does not register custom service actions.
+      Only uses standard entity platform services (turn_on, turn_off, etc.)
+
+  docs-actions:
+    status: exempt
+    comment: |
+      No custom service actions to document.
+      Standard entity services documented via entity translations.
+
+  # Polling (Exempt - Event-Driven)
+  appropriate-polling:
+    status: exempt
+    comment: |
+      Integration is event-driven, not polling-based.
+      Reacts to state changes via event listeners.
+      Evidence: async_track_state_change_event throughout codebase
+
+  # Dependencies (Exempt - No External Dependencies)
+  dependency-transparency:
+    status: exempt
+    comment: |
+      No external dependencies (manifest.json requirements: [])
+      Purely local calculation-based integration.
+      Evidence: manifest.json
+
+# SILVER TIER
+# Enhanced reliability and maintainability
+  # Config Entry Management
+  config-entry-unloading:
+    status: done
+    comment: |
+      Full config entry unloading implemented in async_unload_entry.
+      Properly unloads platforms, removes listeners, and cleans up data.
+      Evidence: __init__.py async_unload_entry()
+
+  # Entity Availability
+  entity-unavailable:
+    status: done
+    comment: |
+      Entities (groups/aggregates) follow standard Home Assistant group behavior.
+      Individual presence sensors handle unavailable states correctly.
+      Evidence: binary_sensor/presence.py lines 611-621 (skips unavailable sensors)
+
+  # Integration Metadata
+  integration-owner:
+    status: done
+    comment: |
+      Integration owner defined in manifest.json: @jseidl
+      Evidence: manifest.json codeowners
+
+  # Logging
+  log-when-unavailable:
+    status: done
+    comment: |
+      Logging for unavailable entities handled by Home Assistant core for groups.
+      Presence tracking logs sensor unavailability appropriately.
+      Evidence: binary_sensor/presence.py debug logging
+
+  # Documentation
+  docs-configuration-parameters:
+    status: done
+    comment: |
+      All configuration parameters documented via translations with data_description.
+      Extensive parameter descriptions in en.json and 8 other languages.
+      Evidence: translations/en.json (80+ data_description entries)
+
+  docs-installation-parameters:
+    status: done
+    comment: |
+      Installation parameters documented in installation guide and getting started.
+      UI configuration means most parameters self-documented.
+      Evidence: docs/source/how-to/installation.md, getting-started.md
+
+  # Testing
+  test-coverage:
+    status: pending
+    comment: |
+      Current coverage: ~85%
+      Required for Silver tier: >95%
+      Need to increase coverage by ~10% across all modules.
+      Evidence: Current test coverage reports
+
+  # Performance
+  parallel-updates:
+    status: pending
+    comment: |
+      PARALLEL_UPDATES not specified in platform files.
+      Should add to light.py, fan.py, sensor.py, etc.
+      Evidence: No PARALLEL_UPDATES found in platform files
+
+  # Authentication (Exempt - No Auth)
+  reauthentication-flow:
+    status: exempt
+    comment: |
+      Integration does not require authentication.
+      Purely local, no cloud services or credentials.
+
+  # Service Actions (Exempt)
+  action-exceptions:
+    status: exempt
+    comment: |
+      No custom service actions, therefore no action exceptions to handle.
+
+# GOLD TIER
+# Enhanced user experience and comprehensive documentation
+  # Device Management
+  devices:
+    status: done
+    comment: |
+      Creates devices with DeviceInfo for all areas.
+      Proper identifiers, manufacturer, model, and translations.
+      Evidence: base/entities.py device_info property
+
+  dynamic-devices:
+    status: done
+    comment: |
+      Areas can be dynamically added/removed via config flow.
+      Supports adding new areas without restart.
+      Evidence: Config flow supports iterative area addition
+
+  stale-devices:
+    status: done
+    comment: |
+      Stale/removed entities cleaned up via cleanup_removed_entries()
+      Automatically removes entities when features disabled or entities removed.
+      Evidence: util.py cleanup_removed_entries() used in all platforms
+
+  # Entity Features
+  entity-category:
+    status: done
+    comment: |
+      Control switches properly assigned EntityCategory.CONFIG
+      Evidence: switch/*.py _attr_entity_category = EntityCategory.CONFIG
+
+  entity-device-class:
+    status: done
+    comment: |
+      Device classes used appropriately throughout:
+      - BinarySensorDeviceClass.OCCUPANCY for presence
+      - Sensor device classes for aggregates
+      - Cover, fan, climate device classes preserved
+      Evidence: Throughout codebase
+
+  entity-translations:
+    status: done
+    comment: |
+      Full entity translation support with 9 languages:
+      de, en, es, fr, nl-NL, pl, pt-BR, sv, ta
+      Uses _attr_translation_key and translation_placeholders
+      Evidence: translations/*.json, base/entities.py
+
+  entity-disabled-by-default:
+    status: done
+    comment: |
+      No diagnostic/noisy entities requiring default disabling.
+      Presence sensor attributes can be noisy but are essential for setup/debugging.
+      Design decision: Keep enabled for initial setup support.
+
+  icon-translations:
+    status: pending
+    comment: |
+      Icon translations not yet implemented.
+      Currently uses static icons from feature_info.
+      Evidence: base/entities.py sets _attr_icon statically
+
+  exception-translations:
+    status: pending
+    comment: |
+      Exception messages not yet translatable.
+      Config flow errors in translations but not runtime exceptions.
+      Evidence: No exception translation mechanism found
+
+  # Documentation - Use Cases & Examples
+  docs-data-update:
+    status: done
+    comment: |
+      Presence tracking data update mechanism thoroughly documented.
+      Explains sensor polling, event-driven updates, and state transitions.
+      Evidence: docs/source/concepts/presence-sensing.md
+
+  docs-examples:
+    status: done
+    comment: |
+      Extensive automation examples in implementation ideas library.
+      Room-by-room examples, energy aggregates, climate comfort, etc.
+      Evidence: docs/source/how-to/library/
+
+  docs-known-limitations:
+    status: done
+    comment: |
+      Known limitations documented in troubleshooting and feature docs.
+      Wasp-in-a-box requirements, aggregate prerequisites, etc.
+      Evidence: docs/source/how-to/troubleshooting.md, feature docs
+
+  docs-supported-devices:
+    status: done
+    comment: |
+      Supported device types documented in presence sensing concepts.
+      Lists binary_sensor device classes, media players, device trackers, etc.
+      Evidence: docs/source/concepts/presence-sensing.md
+
+  docs-supported-functions:
+    status: done
+    comment: |
+      All features comprehensively documented with supported functionality.
+      13 features with dedicated documentation pages.
+      Evidence: docs/source/features/*.md (13 feature docs)
+
+  docs-troubleshooting:
+    status: done
+    comment: |
+      Detailed troubleshooting guide with logging setup and common issues.
+      Evidence: docs/source/how-to/troubleshooting.md
+
+  docs-use-cases:
+    status: done
+    comment: |
+      Comprehensive use case documentation with room-by-room implementation ideas.
+      Evidence: docs/source/how-to/library/implementation-ideas-for-every-room.md
+
+  # Advanced Features
+  diagnostics:
+    status: pending
+    comment: |
+      Diagnostics integration not yet implemented.
+      Would be useful for debugging area state and configuration issues.
+      No async_get_config_entry_diagnostics found.
+
+  reconfiguration-flow:
+    status: pending
+    comment: |
+      Reconfiguration flow not implemented.
+      Currently requires going through options flow or removing/re-adding.
+      No async_step_reconfigure found.
+
+  repair-issues:
+    status: pending
+    comment: |
+      Repair issues not implemented.
+      Potential use case: Wasp-in-a-box requires aggregates feature.
+      May not be critical for this integration type.
+      No repair flows found.
+
+  # Discovery (Exempt)
+  discovery:
+    status: exempt
+    comment: |
+      Integration does not implement discovery.
+      Areas are manually configured via UI - appropriate for this integration type.
+
+  discovery-update-info:
+    status: exempt
+    comment: |
+      No discovery implemented, therefore no discovery info updates needed.
+
+# PLATINUM TIER
+# Highest code quality standards
+  # Type Safety
+  strict-typing:
+    status: pending
+    comment: |
+      Integration uses mypy for type checking (configured in pyproject.toml and pre-commit).
+      However, missing TYPE_CHECKING pattern and from __future__ import annotations.
+      Need to add strict typing imports for full Platinum compliance.
+      Evidence: mypy in pre-commit, pyproject.toml; no TYPE_CHECKING imports found
+
+  # Dependencies (Exempt)
+  async-dependency:
+    status: exempt
+    comment: |
+      No external dependencies to be async.
+      Integration is purely local with no external libraries.
+      Evidence: manifest.json requirements: []
+
+  inject-websession:
+    status: exempt
+    comment: |
+      No dependency libraries requiring websession injection.
+      No network calls or HTTP clients used.
+      Evidence: No external dependencies
