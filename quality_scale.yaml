@@ -10,19 +10,21 @@ rules:
   config-flow:
     status: done
     comment: |
-      Full UI-based configuration flow implemented in config_flow.py.
+      Full UI-based configuration flow implemented in the config_flow/ package.
       - Supports both regular areas and meta-areas (Global, Interior, Exterior, Floors)
       - Uses data_description in translations for field context
       - Proper use of ConfigEntry.data and ConfigEntry.options
-      Evidence: custom_components/magic_areas/config_flow.py
+      Evidence: custom_components/magic_areas/config_flow/ (flow.py, features/)
 
   config-flow-test-coverage:
-    status: pending
+    status: done
     comment: |
-      Comprehensive test coverage for config flow.
-      Tests located in tests/config_flow/ directory.
-      Currently at ~90%
-      Evidence: tests/config_flow/
+      Every module of the config_flow/ package is at 100% coverage
+      (20 modules, 1139 statements, 0 missed in the full test suite run).
+      The options flow is tested through Home Assistant's flow manager
+      (hass.config_entries.options), covering menus, every feature handler,
+      validation errors and recovery, and the defensive fallback branches.
+      Evidence: tests/config_flow/ (notably test_options_flow_integration.py)
 
   test-before-configure:
     status: done
@@ -30,41 +32,43 @@ rules:
       Config flow validates area existence before configuration.
       No external connection to test (local only integration).
       Validates area objects and prevents invalid configurations.
-      Evidence: config_flow.py lines 170-177 (area validation)
+      Evidence: config_flow/flow.py lines 119-128 (invalid_area abort) and
+      175-176 (no_more_areas abort)
 
   test-before-setup:
     status: done
     comment: |
       Integration checks validity during initialization via async_migrate_entry.
       Validates config version and prevents downgrade issues.
-      Evidence: __init__.py async_migrate_entry() function
+      Evidence: __init__.py async_migrate_entry() (line 404)
 
   unique-config-entry:
     status: done
     comment: |
       Uses async_set_unique_id(area_object.id) and _abort_if_unique_id_configured()
       to prevent duplicate area configurations.
-      Evidence: config_flow.py lines 169-170
+      Evidence: config_flow/flow.py lines 127-128
 
   # Entity Requirements
   entity-unique-id:
     status: done
     comment: |
-      All entities implement unique IDs via _generaete_unique_id() method.
+      All entities implement unique IDs via the _generaete_unique_id() method
+      (the misspelling is in the code).
       Format: magicareas_feature_domain_areaname_name
-      Evidence: base/entities.py lines 64, 99-122
+      Evidence: base/entities.py lines 66, 99
 
   has-entity-name:
     status: done
     comment: |
       All entities set _attr_has_entity_name = True
-      Evidence: base/entities.py line 26
+      Evidence: base/entities.py line 27
 
   runtime-data:
     status: done
     comment: |
       Uses ConfigEntry.runtime_data for storing runtime data.
-      Evidence: __init__.py
+      Evidence: __init__.py line 173 (set), line 195 (read on unload)
 
   entity-event-setup:
     status: done
@@ -149,7 +153,7 @@ rules:
     comment: |
       Full config entry unloading implemented in async_unload_entry.
       Properly unloads platforms, removes listeners, and cleans up data.
-      Evidence: __init__.py async_unload_entry()
+      Evidence: __init__.py async_unload_entry() (line 193)
 
   # Entity Availability
   entity-unavailable:
@@ -157,7 +161,8 @@ rules:
     comment: |
       Entities (groups/aggregates) follow standard Home Assistant group behavior.
       Individual presence sensors handle unavailable states correctly.
-      Evidence: binary_sensor/presence.py lines 611-621 (skips unavailable sensors)
+      Evidence: binary_sensor/presence.py lines 257, 292 (ignores invalid state
+      changes) and line 520 (skips unavailable sensors)
 
   # Integration Metadata
   integration-owner:
@@ -180,7 +185,7 @@ rules:
     comment: |
       All configuration parameters documented via translations with data_description.
       Extensive parameter descriptions in en.json and 8 other languages.
-      Evidence: translations/en.json (80+ data_description entries)
+      Evidence: translations/en.json (50 data_description entries)
 
   docs-installation-parameters:
     status: done
@@ -193,17 +198,28 @@ rules:
   test-coverage:
     status: pending
     comment: |
-      Current coverage: ~85%
-      Required for Silver tier: >95%
-      Need to increase coverage by ~10% across all modules.
-      Evidence: Current test coverage reports
+      Required for Silver tier: more than 95% coverage in EVERY module
+      (not only overall).
+      Full test suite run: 452 tests passed, 93% overall (3755 statements,
+      246 missed). All config_flow/ modules are at 100%.
+      19 modules are still at or below 95%, from least to most covered:
+      switch/media_player_control (54%), switch/base (68%), switch/__init__ (78%),
+      binary_sensor/__init__ (79%), media_player/__init__ (80%),
+      switch/climate_control (83%), sensor/__init__ (87%), helpers/aggregates (88%),
+      light (88%), base/magic (89%), fan (91%), threshold (91%),
+      binary_sensor/presence (92%), cover (92%), sensor/base (92%),
+      media_player/area_aware_media_player (93%), switch/fan_control (93%),
+      helpers/timer (94%), binary_sensor/wasp_in_a_box (94.6%).
+      Evidence: coverage report from tox -e ha-major
 
   # Performance
   parallel-updates:
     status: pending
     comment: |
       PARALLEL_UPDATES not specified in platform files.
-      Should add to light.py, fan.py, sensor.py, etc.
+      Every platform module must define it: binary_sensor, cover, fan, light,
+      media_player, sensor and switch.
+      Tracked as a separate follow-up.
       Evidence: No PARALLEL_UPDATES found in platform files
 
   # Authentication (Exempt - No Auth)
@@ -227,7 +243,7 @@ rules:
     comment: |
       Creates devices with DeviceInfo for all areas.
       Proper identifiers, manufacturer, model, and translations.
-      Evidence: base/entities.py device_info property
+      Evidence: base/entities.py device_info property (line 125)
 
   dynamic-devices:
     status: done
@@ -241,14 +257,18 @@ rules:
     comment: |
       Stale/removed entities cleaned up via cleanup_removed_entries()
       Automatically removes entities when features disabled or entities removed.
-      Evidence: util.py cleanup_removed_entries() used in all platforms
+      Evidence: util.py cleanup_removed_entries() (line 17), called from the
+      binary_sensor, cover, fan, light, media_player, sensor and switch platforms
 
   # Entity Features
   entity-category:
     status: done
     comment: |
       Control switches properly assigned EntityCategory.CONFIG
-      Evidence: switch/*.py _attr_entity_category = EntityCategory.CONFIG
+      Evidence: _attr_entity_category = EntityCategory.CONFIG in
+      switch/climate_control.py:29, switch/fan_control.py:34,
+      switch/media_player_control.py:24, switch/presence_hold.py:15 and
+      switch/__init__.py:139
 
   entity-device-class:
     status: done
@@ -265,6 +285,8 @@ rules:
       Full entity translation support with 9 languages:
       de, en, es, fr, nl-NL, pl, pt-BR, sv, ta
       Uses _attr_translation_key and translation_placeholders
+      Note: newer config flow error keys exist only in en and es (other
+      languages fall back to English), and sv.json lacks some older keys.
       Evidence: translations/*.json, base/entities.py
 
   entity-disabled-by-default:
@@ -282,11 +304,14 @@ rules:
       Evidence: base/entities.py sets _attr_icon statically
 
   exception-translations:
-    status: pending
+    status: exempt
     comment: |
-      Exception messages not yet translatable.
-      Config flow errors in translations but not runtime exceptions.
-      Evidence: No exception translation mechanism found
+      The integration does not surface user-facing exceptions.
+      The remaining raise statements (ValueError, NotImplementedError) are
+      internal programming errors that are caught and logged, and are not
+      HomeAssistantError exceptions shown to users.
+      Config flow errors are translated through the error section of the
+      translations.
 
   # Documentation - Use Cases & Examples
   docs-data-update:
@@ -352,12 +377,14 @@ rules:
       No async_step_reconfigure found.
 
   repair-issues:
-    status: pending
+    status: done
     comment: |
-      Repair issues not implemented.
-      Potential use case: Wasp-in-a-box requires aggregates feature.
-      May not be critical for this integration type.
-      No repair flows found.
+      Raises an actionable repair issue when a floor has an ID that clashes with
+      a built-in meta-area ID (reserved_floor_id). The issue explains how to fix
+      it, is translated, and is cleared once the floor no longer clashes.
+      Evidence: helpers/area.py async_update_reserved_floor_issues(),
+      translations/en.json issues.reserved_floor_id,
+      tests/test_floor_meta_areas.py test_reserved_floor_id_repair_issue
 
   # Discovery (Exempt)
   discovery:
@@ -377,10 +404,12 @@ rules:
   strict-typing:
     status: pending
     comment: |
-      Integration uses mypy for type checking (configured in pyproject.toml and pre-commit).
-      However, missing TYPE_CHECKING pattern and from __future__ import annotations.
-      Need to add strict typing imports for full Platinum compliance.
-      Evidence: mypy in pre-commit, pyproject.toml; no TYPE_CHECKING imports found
+      mypy runs in pre-commit, but [tool.mypy] in pyproject.toml sets
+      ignore_errors = true, so type errors are not enforced.
+      The rule also requires the integration to be listed in Home Assistant
+      core's .strict-typing, which a custom integration cannot do.
+      TYPE_CHECKING is used in the config_flow/ package only.
+      Evidence: pyproject.toml [tool.mypy], .pre-commit-config.yaml
 
   # Dependencies (Exempt)
   async-dependency:
