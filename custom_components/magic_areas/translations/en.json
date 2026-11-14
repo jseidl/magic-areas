@@ -348,7 +348,9 @@
       "reserved_state_name": "This state name is reserved and cannot be used (conflicts with built-in states like 'occupied', 'dark', etc.)",
       "no_lights_selected": "You must select at least one light",
       "invalid_icon": "Invalid icon format. Use MDI format (e.g., mdi:ceiling-light)",
-      "reserved_name": "This name is reserved and cannot be used. Please choose a different name."
+      "reserved_name": "This name is reserved and cannot be used. Please choose a different name.",
+      "aggregates_required": "Fan Groups require the Aggregates feature. Enable Aggregates first.",
+      "tracked_device_class_not_aggregated": "The Aggregates feature is not aggregating this device class. Add it to the Aggregates sensor device classes."
     }
   },
   "entity": {

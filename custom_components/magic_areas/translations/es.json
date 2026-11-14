@@ -342,7 +342,9 @@
             "reserved_state_name": "Este nombre de estado está reservado y no puede utilizarse (conflicto con estados integrados como 'occupied', 'dark', etc.)",
             "no_lights_selected": "Debe seleccionar al menos una luz",
             "invalid_icon": "Formato de ícono inválido. Use el formato MDI (ej.: mdi:ceiling-light)",
-            "reserved_name": "Este nombre está reservado y no puede utilizarse. Por favor elija un nombre diferente."
+            "reserved_name": "Este nombre está reservado y no puede utilizarse. Por favor elija un nombre diferente.",
+            "aggregates_required": "Los grupos de ventiladores requieren la función Agregados. Actívela primero.",
+            "tracked_device_class_not_aggregated": "La función Agregados no está agregando esta clase de dispositivo. Añádala a las clases de dispositivo de sensor de Agregados."
         }
     },
     "entity": {
