@@ -42,8 +42,9 @@ async def async_setup_entry(
 
     fan_entities: list[str] = [e["entity_id"] for e in area.entities[FAN_DOMAIN]]
 
+    fan_groups: list[AreaFanGroup] = []
     try:
-        fan_groups: list[AreaFanGroup] = [AreaFanGroup(area, fan_entities)]
+        fan_groups = [AreaFanGroup(area, fan_entities)]
         if fan_groups:
             async_add_entities(fan_groups)
     except Exception as e:  # pylint: disable=broad-exception-caught

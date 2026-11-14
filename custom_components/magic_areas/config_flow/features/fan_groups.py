@@ -10,7 +10,13 @@ from custom_components.magic_areas.config_flow.helpers import (
     SelectorBuilder,
     StateOptionsBuilder,
 )
-from custom_components.magic_areas.const import AreaConfigOptions, AreaType, Features
+from custom_components.magic_areas.const import (
+    AreaConfigOptions,
+    AreaType,
+    ConfigDomains,
+    Features,
+)
+from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 
 
@@ -52,6 +58,17 @@ class FanGroupsFeature(FeatureHandler):
         schema = builder.from_option_set(FanGroupOptions, selector_overrides=selectors)
 
         if user_input is not None:
+            errors = self._validate_aggregates_dependency(user_input)
+            if errors:
+                return StepResult(
+                    type="form",
+                    step_id=step_id,
+                    data_schema=SchemaBuilder(user_input).from_option_set(
+                        FanGroupOptions, selector_overrides=selectors
+                    ),
+                    errors=errors,
+                )
+
             self.save_config(user_input)
             return StepResult(type="create_entry")
 
@@ -60,6 +77,29 @@ class FanGroupsFeature(FeatureHandler):
             step_id=step_id,
             data_schema=schema,
         )
+
+    def _validate_aggregates_dependency(self, user_input: dict) -> dict[str, str]:
+        """Check the tracked aggregate sensor will exist.
+
+        Fan groups track the aggregate sensor of a device class, so the Aggregates
+        feature must be enabled and must aggregate the tracked device class.
+        """
+        tracked_key = FanGroupOptions.TRACKED_DEVICE_CLASS.key
+        tracked_device_class = user_input.get(
+            tracked_key, FanGroupOptions.TRACKED_DEVICE_CLASS.default
+        )
+
+        enabled_features = self.area_options.get(ConfigDomains.FEATURES, {})
+        if Features.AGGREGATION.value not in enabled_features:
+            return {tracked_key: "aggregates_required"}
+
+        aggregated_device_classes = AggregateOptions.SENSOR_DEVICE_CLASSES.get_from(
+            AggregateOptions.get_feature_config(self.area_options)
+        )
+        if tracked_device_class not in aggregated_device_classes:
+            return {tracked_key: "tracked_device_class_not_aggregated"}
+
+        return {}
 
     def get_summary(self, config: dict) -> str:
         """Generate summary."""

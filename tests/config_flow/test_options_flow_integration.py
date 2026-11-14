@@ -17,7 +17,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.components.climate.const import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 
 from custom_components.magic_areas.config_flow.domain_handlers import (
     DomainStepResult,
@@ -29,6 +29,7 @@ from custom_components.magic_areas.config_flow.user_defined_states import (
 )
 from custom_components.magic_areas.const import DOMAIN, ConfigDomains
 from custom_components.magic_areas.const.climate_control import ClimateControlOptions
+from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 from custom_components.magic_areas.const.light_groups import LightGroupEntryOptions
 from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
 from custom_components.magic_areas.const.user_defined_states import (
@@ -227,25 +228,80 @@ class TestFeatureSteps:
     async def test_fan_groups_submit_saves_and_returns_to_menu(
         self, hass: HomeAssistant, options_flow_entry
     ):
-        """Test submitting the fan groups step directly on the flow.
+        """Test submitting the fan groups form through the real flow."""
+        result = await _start_flow(hass, options_flow_entry["config_entry"])
+        flow_id = result["flow_id"]
 
-        The flow manager cannot be used for the submit: the tracked device class
-        selector currently has no options, so schema validation rejects any value.
-        """
-        flow = await _direct_flow(hass, options_flow_entry["config_entry"])
-
-        form = await flow.async_step_feature_fan_groups(None)
-        assert form["type"] is FlowResultType.FORM
-
-        result = await flow.async_step_feature_fan_groups(
-            {"required_state": "occupied", "setpoint": 25.0}
+        await _goto(hass, flow_id, "feature_fan_groups")
+        result = await _submit(
+            hass,
+            flow_id,
+            {
+                FanGroupOptions.REQUIRED_STATE.key: "occupied",
+                FanGroupOptions.TRACKED_DEVICE_CLASS.key: "humidity",
+                FanGroupOptions.SETPOINT.key: 25.0,
+            },
         )
-
         assert result["type"] is FlowResultType.MENU
         assert result["step_id"] == "show_menu"
-        assert (
-            flow.area_options[ConfigDomains.FEATURES]["fan_groups"]["setpoint"] == 25.0
+
+        result = await _goto(hass, flow_id, "finish")
+        await hass.async_block_till_done()
+
+        saved = result["data"][ConfigDomains.FEATURES]["fan_groups"]
+        assert saved[FanGroupOptions.TRACKED_DEVICE_CLASS.key] == "humidity"
+        assert saved[FanGroupOptions.SETPOINT.key] == 25.0
+
+    async def test_fan_groups_rejects_unsupported_device_class(
+        self, hass: HomeAssistant, options_flow_entry
+    ):
+        """Test a device class that fan groups cannot track is rejected."""
+        result = await _start_flow(hass, options_flow_entry["config_entry"])
+        flow_id = result["flow_id"]
+
+        await _goto(hass, flow_id, "feature_fan_groups")
+        with pytest.raises(InvalidData):
+            await _submit(
+                hass,
+                flow_id,
+                {FanGroupOptions.TRACKED_DEVICE_CLASS.key: "illuminance"},
+            )
+
+    async def test_fan_groups_requires_tracked_class_to_be_aggregated(
+        self, hass: HomeAssistant, options_flow_entry
+    ):
+        """Test the tracked device class must be aggregated by the Aggregates feature."""
+        result = await _start_flow(hass, options_flow_entry["config_entry"])
+        flow_id = result["flow_id"]
+
+        await _goto(hass, flow_id, "feature_fan_groups")
+        result = await _submit(
+            hass,
+            flow_id,
+            {FanGroupOptions.TRACKED_DEVICE_CLASS.key: "carbon_dioxide"},
         )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "feature_fan_groups"
+        assert result["errors"] == {
+            FanGroupOptions.TRACKED_DEVICE_CLASS.key: "tracked_device_class_not_aggregated"
+        }
+
+    async def test_fan_groups_requires_aggregates_feature(
+        self, hass: HomeAssistant, options_flow_entry
+    ):
+        """Test fan groups cannot be configured while Aggregates is disabled."""
+        flow = await _direct_flow(hass, options_flow_entry["config_entry"])
+        flow.area_options[ConfigDomains.FEATURES].pop("aggregates")
+
+        await flow.async_step_feature_fan_groups(None)
+        result = await flow.async_step_feature_fan_groups({})
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {
+            FanGroupOptions.TRACKED_DEVICE_CLASS.key: "aggregates_required"
+        }
+        assert "setpoint" not in flow.area_options[ConfigDomains.FEATURES]["fan_groups"]
 
     async def test_light_groups_add_edit_delete(
         self, hass: HomeAssistant, options_flow_entry

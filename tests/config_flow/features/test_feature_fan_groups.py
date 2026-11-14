@@ -32,7 +32,11 @@ from custom_components.magic_areas.const import (
     ConfigDomains,
     ConfigHelper,
 )
-from custom_components.magic_areas.const.fan_groups import FanGroupOptions
+from custom_components.magic_areas.const.aggregates import AggregateOptions
+from custom_components.magic_areas.const.fan_groups import (
+    FAN_GROUPS_ALLOWED_TRACKED_DEVICE_CLASS,
+    FanGroupOptions,
+)
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import get_basic_config_entry_data, setup_mock_entities
@@ -92,6 +96,8 @@ class TestFanGroupsFeature:
         # Create config entry
         config_entry = Mock()
         config_entry.options = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+        # Fan groups depend on the Aggregates feature
+        config_entry.options[ConfigDomains.FEATURES]["aggregates"] = {}
 
         # Create area config dict with proper structure
         area_config_data = {
@@ -214,6 +220,78 @@ class TestFanGroupsFeature:
         assert ConfigDomains.FEATURES in config_entry.options
         assert "fan_groups" in config_entry.options[ConfigDomains.FEATURES]
         assert config_entry.options[ConfigDomains.FEATURES]["fan_groups"] == user_input
+
+    async def test_handle_step_rejects_when_aggregates_disabled(
+        self, fan_groups_feature_setup
+    ):
+        """Test the form errors and saves nothing without the Aggregates feature."""
+        handler = fan_groups_feature_setup["handler"]
+        config_entry = fan_groups_feature_setup["config_entry"]
+        config_entry.options[ConfigDomains.FEATURES].pop("aggregates")
+
+        result = await handler.handle_step("main", {})
+
+        assert result.type == "form"
+        assert result.step_id == "main"
+        assert result.errors == {
+            FanGroupOptions.TRACKED_DEVICE_CLASS.key: "aggregates_required"
+        }
+        assert "fan_groups" not in config_entry.options[ConfigDomains.FEATURES]
+
+    async def test_handle_step_rejects_class_not_aggregated(
+        self, fan_groups_feature_setup
+    ):
+        """Test the tracked class must be one the Aggregates feature aggregates."""
+        handler = fan_groups_feature_setup["handler"]
+        config_entry = fan_groups_feature_setup["config_entry"]
+
+        result = await handler.handle_step(
+            "main", {FanGroupOptions.TRACKED_DEVICE_CLASS.key: "carbon_dioxide"}
+        )
+
+        assert result.type == "form"
+        assert result.errors == {
+            FanGroupOptions.TRACKED_DEVICE_CLASS.key: "tracked_device_class_not_aggregated"
+        }
+        assert "fan_groups" not in config_entry.options[ConfigDomains.FEATURES]
+
+    async def test_handle_step_accepts_class_aggregated_by_config(
+        self, fan_groups_feature_setup
+    ):
+        """Test a non-default class is accepted once Aggregates tracks it."""
+        handler = fan_groups_feature_setup["handler"]
+        config_entry = fan_groups_feature_setup["config_entry"]
+        config_entry.options[ConfigDomains.FEATURES]["aggregates"] = {
+            AggregateOptions.SENSOR_DEVICE_CLASSES.key: ["carbon_dioxide"]
+        }
+
+        result = await handler.handle_step(
+            "main", {FanGroupOptions.TRACKED_DEVICE_CLASS.key: "carbon_dioxide"}
+        )
+
+        assert result.type == "create_entry"
+
+    def test_tracked_device_class_selector_offers_allowed_classes(self):
+        """Test the tracked device class selector is populated from the constant."""
+        selector = SelectorBuilder.from_option_set(FanGroupOptions)[
+            FanGroupOptions.TRACKED_DEVICE_CLASS.key
+        ]
+
+        assert selector.config["options"] == [
+            str(device_class)
+            for device_class in FAN_GROUPS_ALLOWED_TRACKED_DEVICE_CLASS
+        ]
+        assert (
+            FanGroupOptions.TRACKED_DEVICE_CLASS.default in selector.config["options"]
+        )
+
+    def test_tracked_device_class_selector_rejects_unsupported_class(self):
+        """Test the generated schema only accepts supported device classes."""
+        schema = SchemaBuilder().from_option_set(FanGroupOptions)
+
+        assert schema({FanGroupOptions.TRACKED_DEVICE_CLASS.key: "carbon_dioxide"})
+        with pytest.raises(voluptuous.Invalid):
+            schema({FanGroupOptions.TRACKED_DEVICE_CLASS.key: "illuminance"})
 
     def test_auto_generated_schema_with_state_selector_override(
         self, fan_groups_feature_setup

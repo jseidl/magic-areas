@@ -9,6 +9,24 @@ from custom_components.magic_areas.const import (
     FeatureOptionSet,
 )
 
+FAN_GROUPS_ALLOWED_TRACKED_DEVICE_CLASS = [
+    SensorDeviceClass.TEMPERATURE,
+    SensorDeviceClass.HUMIDITY,
+    SensorDeviceClass.CO,
+    SensorDeviceClass.CO2,
+    SensorDeviceClass.AQI,
+    SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+    SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+    SensorDeviceClass.NITROGEN_DIOXIDE,
+    SensorDeviceClass.NITROGEN_MONOXIDE,
+    SensorDeviceClass.GAS,
+    SensorDeviceClass.OZONE,
+    SensorDeviceClass.PM1,
+    SensorDeviceClass.PM10,
+    SensorDeviceClass.PM25,
+    SensorDeviceClass.SULPHUR_DIOXIDE,
+]
+
 
 class FanGroupOptions(FeatureOptionSet):
     """Fan group feature configuration options."""
@@ -37,7 +55,12 @@ class FanGroupOptions(FeatureOptionSet):
         translation_key="fan_tracked_device_class",
         validator=str,
         selector_type="select",
-        selector_config={"options": []},  # Will be populated dynamically
+        selector_config={
+            "options": [
+                str(device_class)
+                for device_class in FAN_GROUPS_ALLOWED_TRACKED_DEVICE_CLASS
+            ],
+        },
     )
 
     SETPOINT = ConfigOption(
@@ -54,22 +77,3 @@ class FanGroupOptions(FeatureOptionSet):
             "step": 0.5,
         },
     )
-
-
-FAN_GROUPS_ALLOWED_TRACKED_DEVICE_CLASS = [
-    SensorDeviceClass.TEMPERATURE,
-    SensorDeviceClass.HUMIDITY,
-    SensorDeviceClass.CO,
-    SensorDeviceClass.CO2,
-    SensorDeviceClass.AQI,
-    SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
-    SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
-    SensorDeviceClass.NITROGEN_DIOXIDE,
-    SensorDeviceClass.NITROGEN_MONOXIDE,
-    SensorDeviceClass.GAS,
-    SensorDeviceClass.OZONE,
-    SensorDeviceClass.PM1,
-    SensorDeviceClass.PM10,
-    SensorDeviceClass.PM25,
-    SensorDeviceClass.SULPHUR_DIOXIDE,
-]
