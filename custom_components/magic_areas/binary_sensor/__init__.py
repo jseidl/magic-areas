@@ -83,9 +83,9 @@ async def async_setup_entry(
         if illuminance_threshold_sensor:
             entities.append(illuminance_threshold_sensor)
 
-        # Wasp in a box
-        if area.has_feature(Features.WASP_IN_A_BOX) and not area.is_meta():
-            entities.extend(create_wasp_in_a_box_sensor(area))
+    # Wasp in a box (checks the Aggregates dependency itself)
+    if area.has_feature(Features.WASP_IN_A_BOX) and not area.is_meta():
+        entities.extend(create_wasp_in_a_box_sensor(area))
 
     if area.has_feature(Features.HEALTH):
         entities.extend(create_health_sensors(area))
@@ -107,9 +107,6 @@ def create_wasp_in_a_box_sensor(
     area: MagicArea,
 ) -> list[AreaWaspInABoxBinarySensor]:
     """Add the Wasp in a box sensor for the area."""
-
-    if not area.has_feature(Features.WASP_IN_A_BOX):
-        return []
 
     # Check aggregates dependency
     if not area.has_feature(Features.AGGREGATION):
@@ -133,9 +130,6 @@ def create_wasp_in_a_box_sensor(
 
 def create_ble_tracker_sensor(area: MagicArea) -> list[AreaBLETrackerBinarySensor]:
     """Add the BLE tracker sensor for the area."""
-    if not area.has_feature(Features.BLE_TRACKERS):
-        return []
-
     if not area.config.get(BleTrackerOptions.ENTITIES):
         return []
 
@@ -156,9 +150,6 @@ def create_ble_tracker_sensor(area: MagicArea) -> list[AreaBLETrackerBinarySenso
 
 def create_health_sensors(area: MagicArea) -> list[AreaHealthBinarySensor]:
     """Add the health sensors for the area."""
-    if not area.has_feature(Features.HEALTH):
-        return []
-
     if BINARY_SENSOR_DOMAIN not in area.entities:
         return []
 

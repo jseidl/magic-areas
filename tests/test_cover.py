@@ -12,6 +12,7 @@ from homeassistant.components.cover import CoverDeviceClass
 from homeassistant.components.cover.const import DOMAIN as COVER_DOMAIN
 from homeassistant.const import ATTR_DEVICE_CLASS, ATTR_ENTITY_ID, STATE_OPEN
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from custom_components.magic_areas.const import DOMAIN, Features
 
@@ -114,3 +115,47 @@ async def test_cover_group_basic(
             assert (
                 child_cover.entity_id in group_entity_state.attributes[ATTR_ENTITY_ID]
             )
+
+
+async def test_cover_group_not_created_without_covers(
+    hass: HomeAssistant,
+    cover_groups_config_entry: MockConfigEntry,
+) -> None:
+    """Test an area with no covers gets no cover groups."""
+    await init_integration(hass, [cover_groups_config_entry])
+
+    assert not [
+        entity_id
+        for entity_id in hass.states.async_entity_ids(COVER_DOMAIN)
+        if "magic_areas_cover_groups" in entity_id
+    ]
+
+    await shutdown_integration(hass, [cover_groups_config_entry])
+
+
+async def test_stale_cover_entities_are_cleaned_up_on_reload(
+    hass: HomeAssistant,
+    entities_sensor_cover_all_classes_multiple: list[MockCover],
+    cover_groups_config_entry: MockConfigEntry,
+) -> None:
+    """Test a leftover Magic Areas cover entity is removed when the entry reloads."""
+    await init_integration(hass, [cover_groups_config_entry])
+    registry = er.async_get(hass)
+    stale = registry.async_get_or_create(
+        COVER_DOMAIN,
+        DOMAIN,
+        "stale_cover_group",
+        config_entry=cover_groups_config_entry,
+    )
+    current_group_id = (
+        f"{COVER_DOMAIN}.magic_areas_cover_groups_kitchen_cover_group_door"
+    )
+    assert registry.async_get(stale.entity_id) is not None
+
+    await hass.config_entries.async_reload(cover_groups_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert registry.async_get(stale.entity_id) is None
+    assert registry.async_get(current_group_id) is not None
+
+    await shutdown_integration(hass, [cover_groups_config_entry])

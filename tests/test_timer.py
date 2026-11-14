@@ -1,6 +1,7 @@
 """Tests for the Reusable Timer helper."""
 
 from datetime import datetime
+from unittest.mock import patch
 
 from homeassistant.core import HomeAssistant
 
@@ -69,3 +70,31 @@ async def test_async_remove_cancels(hass: HomeAssistant, patch_async_call_later)
     await hass.async_block_till_done()
 
     assert "at" not in fired
+
+
+async def test_superseded_timer_does_not_fire(hass: HomeAssistant):
+    """Test a scheduled callback is skipped once the timer was started again."""
+    calls = []
+    scheduled = []
+
+    async def callback(now: datetime):
+        calls.append(now)
+
+    def capture(_hass, _delay, action):
+        scheduled.append(action)
+        return lambda: None
+
+    timer = ReusableTimer(hass, 60, callback)
+    with patch(
+        "custom_components.magic_areas.helpers.timer.async_call_later",
+        side_effect=capture,
+    ):
+        timer.start()
+        timer.start()
+
+    # Both callbacks were queued; only the one from the latest start() may run.
+    await scheduled[0](datetime.now())
+    assert not calls
+
+    await scheduled[1](datetime.now())
+    assert len(calls) == 1

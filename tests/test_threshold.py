@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 import logging
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -164,3 +165,31 @@ async def test_threshold_sensor_light(
     # Ensure threhsold sensor is cleared
     threshold_sensor_state = hass.states.get(threshold_sensor_id)
     assert_state(threshold_sensor_state, STATE_OFF)
+
+
+async def test_threshold_sensor_creation_error_is_contained(
+    hass: HomeAssistant,
+    entities_sensor_illuminance_multiple: list[MockSensor],
+    threshold_config_entry: MockConfigEntry,
+    caplog,
+) -> None:
+    """Test a failing threshold sensor does not stop the area from loading."""
+
+    with patch(
+        "custom_components.magic_areas.threshold.AreaThresholdSensor",
+        side_effect=RuntimeError("boom"),
+    ):
+        await init_integration(hass, [threshold_config_entry])
+
+    threshold_sensor_id = (
+        f"{BINARY_SENSOR_DOMAIN}.magic_areas_threshold_kitchen_threshold_light"
+    )
+    area_sensor_id = (
+        f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_kitchen_area_state"
+    )
+
+    assert hass.states.get(threshold_sensor_id) is None
+    assert hass.states.get(area_sensor_id) is not None
+    assert "Error creating calculated light sensor: boom" in caplog.text
+
+    await shutdown_integration(hass, [threshold_config_entry])

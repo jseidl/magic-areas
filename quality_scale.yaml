@@ -200,16 +200,14 @@ rules:
     comment: |
       Required for Silver tier: more than 95% coverage in EVERY module
       (not only overall).
-      Full test suite run: 452 tests passed, 93% overall (3755 statements,
-      246 missed). All config_flow/ modules are at 100%.
-      19 modules are still at or below 95%, from least to most covered:
-      switch/media_player_control (54%), switch/base (68%), switch/__init__ (78%),
-      binary_sensor/__init__ (79%), media_player/__init__ (80%),
-      switch/climate_control (83%), sensor/__init__ (87%), helpers/aggregates (88%),
-      light (88%), base/magic (89%), fan (91%), threshold (91%),
-      binary_sensor/presence (92%), cover (92%), sensor/base (92%),
-      media_player/area_aware_media_player (93%), switch/fan_control (93%),
-      helpers/timer (94%), binary_sensor/wasp_in_a_box (94.6%).
+      Last full test suite run: 452 tests passed, 93% overall. All config_flow/
+      modules are at 100%.
+      Since then these modules were raised above 95% (targeted test runs, not yet
+      confirmed by a full run): switch/*, binary_sensor/__init__,
+      binary_sensor/wasp_in_a_box, media_player/*, sensor/*, helpers/aggregates,
+      helpers/timer, threshold, cover, fan.
+      Modules still at or below 95% in the last full run, least covered first:
+      light (88%), base/magic (89%), binary_sensor/presence (92%).
       Evidence: coverage report from tox -e ha-major
 
   # Performance

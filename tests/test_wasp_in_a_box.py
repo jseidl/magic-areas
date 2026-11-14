@@ -586,3 +586,130 @@ async def test_wasp_present_at_delayed_check_latches(
     assert_state(final, STATE_ON)
     assert_attribute(final, ATTR_WASP, STATE_ON)
     assert_attribute(final, ATTR_BOX, STATE_OFF)
+
+
+WASP_ENTITY_ID = f"{BINARY_SENSOR_DOMAIN}.magic_areas_wasp_in_a_box_{DEFAULT_MOCK_AREA}"
+MOTION_AGGREGATE_ID = f"{BINARY_SENSOR_DOMAIN}.magic_areas_aggregates_{DEFAULT_MOCK_AREA}_aggregate_motion"
+DOOR_AGGREGATE_ID = (
+    f"{BINARY_SENSOR_DOMAIN}.magic_areas_aggregates_{DEFAULT_MOCK_AREA}_aggregate_door"
+)
+
+
+async def test_removed_aggregates_are_ignored(
+    hass: HomeAssistant,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box,
+) -> None:
+    """Test an aggregate disappearing does not change the wasp in a box state."""
+    hass.states.async_remove(MOTION_AGGREGATE_ID)
+    hass.states.async_remove(DOOR_AGGREGATE_ID)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(WASP_ENTITY_ID)
+    assert_state(state, STATE_OFF)
+    assert_attribute(state, ATTR_WASP, STATE_OFF)
+    assert_attribute(state, ATTR_BOX, STATE_OFF)
+
+
+async def test_attribute_only_updates_are_ignored(
+    hass: HomeAssistant,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box,
+) -> None:
+    """Test aggregate updates that keep the same state do not re-run the logic."""
+    for aggregate_id in (MOTION_AGGREGATE_ID, DOOR_AGGREGATE_ID):
+        hass.states.async_set(aggregate_id, STATE_OFF, {"refreshed": True})
+    await hass.async_block_till_done()
+
+    state = hass.states.get(WASP_ENTITY_ID)
+    assert_state(state, STATE_OFF)
+    assert_attribute(state, ATTR_WASP, STATE_OFF)
+    assert_attribute(state, ATTR_BOX, STATE_OFF)
+
+
+async def test_box_change_with_missing_wasp_aggregate(
+    hass: HomeAssistant,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box,
+) -> None:
+    """Test the box logic treats a missing wasp aggregate as no wasp."""
+    _motion_sensor, door_sensor = entities_wasp_in_a_box
+    hass.states.async_remove(MOTION_AGGREGATE_ID)
+    await hass.async_block_till_done()
+
+    door_sensor.turn_on()
+    await hass.async_block_till_done()
+    await asyncio.sleep(0.5)
+
+    state = hass.states.get(WASP_ENTITY_ID)
+    assert_state(state, STATE_OFF)
+    assert_attribute(state, ATTR_WASP, STATE_OFF)
+    assert_attribute(state, ATTR_BOX, STATE_ON)
+
+
+async def test_wasp_change_with_missing_box_aggregate(
+    hass: HomeAssistant,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    _setup_integration_wasp_in_a_box,
+) -> None:
+    """Test the wasp logic treats a missing box aggregate as a closed box."""
+    motion_sensor, _door_sensor = entities_wasp_in_a_box
+    hass.states.async_remove(DOOR_AGGREGATE_ID)
+    await hass.async_block_till_done()
+
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+    await asyncio.sleep(0.5)
+
+    state = hass.states.get(WASP_ENTITY_ID)
+    assert_state(state, STATE_ON)
+    assert_attribute(state, ATTR_WASP, STATE_ON)
+    assert_attribute(state, ATTR_BOX, STATE_OFF)
+
+
+@pytest.fixture(name="delay_and_timeout_config_entry")
+def mock_config_entry_delay_and_timeout() -> MockConfigEntry:
+    """Config entry with both a box delay and a wasp timeout."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(
+        data,
+        WaspInABoxOptions.to_config(
+            {
+                WaspInABoxOptions.DELAY.key: WASP_DELAY,
+                WaspInABoxOptions.WASP_TIMEOUT.key: 1,
+            }
+        ),
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+    )
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+async def test_box_change_cancels_the_wasp_timer(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_wasp_in_a_box: list[MockBinarySensor],
+    delay_and_timeout_config_entry: MockConfigEntry,
+) -> None:
+    """Test a box change during the delay stops the pending wasp timeout."""
+    await init_integration(hass, [delay_and_timeout_config_entry])
+    motion_sensor, door_sensor = entities_wasp_in_a_box
+
+    # Wasp seen, then gone: the forget timer starts.
+    motion_sensor.turn_on()
+    await hass.async_block_till_done()
+    motion_sensor.turn_off()
+    await hass.async_block_till_done()
+
+    # Opening the box cancels that timer and waits for the delayed check.
+    door_sensor.turn_on()
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(WASP_ENTITY_ID), STATE_OFF)
+
+    # Past the wasp timeout the wasp would have been forgotten anyway; the box
+    # staying open means it stays off and nothing raises.
+    await _advance(hass, freezer, 61)
+    state = hass.states.get(WASP_ENTITY_ID)
+    assert_state(state, STATE_OFF)
+    assert_attribute(state, ATTR_BOX, STATE_ON)
+
+    await shutdown_integration(hass, [delay_and_timeout_config_entry])

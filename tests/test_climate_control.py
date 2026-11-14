@@ -20,14 +20,16 @@ from homeassistant.components.climate.const import (
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.magic_areas.const import DOMAIN
+from custom_components.magic_areas.const import DOMAIN, AreaStates, MagicAreasEvents
 from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
 from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
     assert_attribute,
     assert_state,
+    async_mock_service,
     get_basic_config_entry_data,
     init_integration,
     setup_mock_entities,
@@ -204,3 +206,93 @@ async def test_climate_control_logic(
 
     climate_state = hass.states.get(MOCK_CLIMATE_ENTITY_ID)
     assert_attribute(climate_state, ATTR_PRESET_MODE, PRESET_AWAY)
+
+
+async def _send_area_states(
+    hass: HomeAssistant, new_states: set[str], lost_states: set[str]
+) -> None:
+    """Send the event the presence sensor dispatches when area states change."""
+    async_dispatcher_send(
+        hass,
+        f"{MagicAreasEvents.AREA_STATE_CHANGED}_{DEFAULT_MOCK_AREA.value}",
+        DEFAULT_MOCK_AREA.value,
+        (new_states, lost_states),
+    )
+    await hass.async_block_till_done()
+
+
+async def _enable_climate_control(hass: HomeAssistant) -> None:
+    """Turn the climate control switch on."""
+    await hass.services.async_call(
+        SWITCH_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: CLIMATE_CONTROL_SWITCH_ENTITY_ID},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+
+async def test_climate_control_disabled_ignores_state_changes(
+    hass: HomeAssistant,
+    entities_climate_one: list[MockClimate],
+    _setup_integration_climate_control,
+) -> None:
+    """Test no preset is applied while the control switch is off."""
+    calls = async_mock_service(
+        hass=hass, domain=CLIMATE_DOMAIN, service=SERVICE_SET_PRESET_MODE
+    )
+
+    await _send_area_states(hass, {AreaStates.OCCUPIED}, {AreaStates.CLEAR})
+
+    assert not calls
+
+
+async def test_climate_control_ignores_unchanged_states(
+    hass: HomeAssistant,
+    entities_climate_one: list[MockClimate],
+    _setup_integration_climate_control,
+) -> None:
+    """Test an event whose gained and lost states are equal is ignored."""
+    calls = async_mock_service(
+        hass=hass, domain=CLIMATE_DOMAIN, service=SERVICE_SET_PRESET_MODE
+    )
+    await _enable_climate_control(hass)
+
+    await _send_area_states(hass, {AreaStates.OCCUPIED}, {AreaStates.OCCUPIED})
+
+    assert not calls
+
+
+async def test_climate_control_reapplies_current_states_when_only_losing_one(
+    hass: HomeAssistant,
+    entities_climate_one: list[MockClimate],
+    _setup_integration_climate_control,
+) -> None:
+    """Test leaving a state with nothing gained re-evaluates the area's states."""
+    calls = async_mock_service(
+        hass=hass, domain=CLIMATE_DOMAIN, service=SERVICE_SET_PRESET_MODE
+    )
+    await _enable_climate_control(hass)
+
+    # The area is clear, so losing sleep applies the "clear" preset.
+    await _send_area_states(hass, set(), {AreaStates.SLEEP})
+
+    assert len(calls) == 1
+    assert calls[0].data[ATTR_ENTITY_ID] == MOCK_CLIMATE_ENTITY_ID
+    assert calls[0].data[ATTR_PRESET_MODE] == PRESET_AWAY
+
+
+async def test_climate_control_preset_failure_is_logged(
+    hass: HomeAssistant,
+    entities_climate_one: list[MockClimate],
+    _setup_integration_climate_control,
+    caplog,
+) -> None:
+    """Test a preset service call that cannot be made is logged, not raised."""
+    await _enable_climate_control(hass)
+    # Without the service, the call raises ServiceNotFound before it is dispatched.
+    hass.services.async_remove(CLIMATE_DOMAIN, SERVICE_SET_PRESET_MODE)
+
+    await _send_area_states(hass, {AreaStates.CLEAR}, {AreaStates.OCCUPIED})
+
+    assert "Error applying preset" in caplog.text

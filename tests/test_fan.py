@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -23,6 +24,7 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from custom_components.magic_areas.const import DOMAIN, AreaStates
 from custom_components.magic_areas.const.aggregates import AggregateOptions
@@ -361,3 +363,175 @@ async def test_fan_group_logic(
 
     fan_group_state = hass.states.get(fan_group_entity_id)
     assert_state(fan_group_state, STATE_OFF)
+
+
+async def test_fan_group_not_created_without_fans(
+    hass: HomeAssistant,
+    fan_groups_config_entry: MockConfigEntry,
+) -> None:
+    """Test an area with no fans gets no fan group."""
+    await init_integration(hass, [fan_groups_config_entry])
+
+    fan_group_entity_id = (
+        f"{FAN_DOMAIN}.magic_areas_fan_groups_{DEFAULT_MOCK_AREA}_fan_group"
+    )
+    assert hass.states.get(fan_group_entity_id) is None
+
+    await shutdown_integration(hass, [fan_groups_config_entry])
+
+
+async def test_fan_group_creation_error_is_contained(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    fan_groups_config_entry: MockConfigEntry,
+    caplog,
+) -> None:
+    """Test a failing fan group is logged and does not stop the area from loading."""
+    with patch(
+        "custom_components.magic_areas.fan.AreaFanGroup",
+        side_effect=RuntimeError("boom"),
+    ):
+        await init_integration(hass, [fan_groups_config_entry])
+
+    fan_group_entity_id = (
+        f"{FAN_DOMAIN}.magic_areas_fan_groups_{DEFAULT_MOCK_AREA}_fan_group"
+    )
+    area_sensor_id = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{DEFAULT_MOCK_AREA}_area_state"
+    assert hass.states.get(fan_group_entity_id) is None
+    assert hass.states.get(area_sensor_id) is not None
+    assert "Error creating fan group: boom" in caplog.text
+
+    await shutdown_integration(hass, [fan_groups_config_entry])
+
+
+async def test_stale_fan_entities_are_cleaned_up_on_reload(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    fan_groups_config_entry: MockConfigEntry,
+) -> None:
+    """Test a leftover Magic Areas fan entity is removed when the entry reloads."""
+    await init_integration(hass, [fan_groups_config_entry])
+    registry = er.async_get(hass)
+    stale = registry.async_get_or_create(
+        FAN_DOMAIN,
+        DOMAIN,
+        "stale_fan_group",
+        config_entry=fan_groups_config_entry,
+    )
+    fan_group_entity_id = (
+        f"{FAN_DOMAIN}.magic_areas_fan_groups_{DEFAULT_MOCK_AREA}_fan_group"
+    )
+    assert registry.async_get(stale.entity_id) is not None
+
+    await hass.config_entries.async_reload(fan_groups_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert registry.async_get(stale.entity_id) is None
+    assert registry.async_get(fan_group_entity_id) is not None
+
+    await shutdown_integration(hass, [fan_groups_config_entry])
+
+
+FAN_GROUP_ID = f"{FAN_DOMAIN}.magic_areas_fan_groups_{DEFAULT_MOCK_AREA}_fan_group"
+FAN_CONTROL_ID = (
+    f"{SWITCH_DOMAIN}.magic_areas_fan_groups_{DEFAULT_MOCK_AREA}_fan_control"
+)
+TEMPERATURE_AGGREGATE_ID = (
+    f"{SENSOR_DOMAIN}.magic_areas_aggregates_{DEFAULT_MOCK_AREA}_aggregate_temperature"
+)
+
+
+async def _enable_fan_control(hass: HomeAssistant) -> None:
+    """Turn the fan control switch on."""
+    await hass.services.async_call(
+        SWITCH_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: FAN_CONTROL_ID},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+
+async def test_fan_control_ignores_states_other_than_the_required_one(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    entities_sensor_temperature_one: MockSensor,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+) -> None:
+    """Test the fans stay off while the area is occupied but not in the required state."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(
+        data,
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+        FanGroupOptions.to_config(
+            {
+                FanGroupOptions.REQUIRED_STATE.key: AreaStates.EXTENDED,
+                FanGroupOptions.SETPOINT.key: SETPOINT_VALUE,
+            }
+        ),
+    )
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+    await _enable_fan_control(hass)
+
+    # Occupied, but not yet "extended", so the fans must not start even though
+    # the tracked temperature is over the setpoint.
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
+    hass.states.async_set(
+        TEMPERATURE_AGGREGATE_ID,
+        str(int(SETPOINT_VALUE * 2)),
+        attributes={"unit_of_measurement": UnitOfTemperature.CELSIUS},
+    )
+    await hass.async_block_till_done()
+
+    assert_state(hass.states.get(FAN_GROUP_ID), STATE_OFF)
+
+    await shutdown_integration(hass, [config_entry])
+
+
+async def test_fan_control_turns_fans_off_when_setpoint_is_no_longer_reached(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    entities_sensor_temperature_one: MockSensor,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_fan_groups,
+) -> None:
+    """Test running fans stop once the tracked value falls below the setpoint."""
+    await _enable_fan_control(hass)
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
+
+    hass.states.async_set(
+        TEMPERATURE_AGGREGATE_ID,
+        str(int(SETPOINT_VALUE * 2)),
+        attributes={"unit_of_measurement": UnitOfTemperature.CELSIUS},
+    )
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(FAN_GROUP_ID), STATE_ON)
+
+    hass.states.async_set(
+        TEMPERATURE_AGGREGATE_ID,
+        str(int(SETPOINT_VALUE / 2)),
+        attributes={"unit_of_measurement": UnitOfTemperature.CELSIUS},
+    )
+    await hass.async_block_till_done()
+
+    assert_state(hass.states.get(FAN_GROUP_ID), STATE_OFF)
+
+
+async def test_fan_control_warns_when_tracked_sensor_is_missing(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    entities_sensor_temperature_one: MockSensor,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_fan_groups,
+    caplog,
+) -> None:
+    """Test a missing tracked aggregate is reported and the fans are left alone."""
+    await _enable_fan_control(hass)
+    hass.states.async_remove(TEMPERATURE_AGGREGATE_ID)
+    await hass.async_block_till_done()
+
+    await trigger_occupancy(hass, entities_binary_sensor_motion_one[0], occupied=True)
+
+    assert "is not found" in caplog.text
+    assert_state(hass.states.get(FAN_GROUP_ID), STATE_OFF)
