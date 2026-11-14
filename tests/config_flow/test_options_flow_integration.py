@@ -7,8 +7,8 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-import voluptuous as vol
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -19,9 +19,7 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
 
-from custom_components.magic_areas.config_flow.domain_handlers import (
-    DomainStepResult,
-)
+from custom_components.magic_areas.config_flow.domain_handlers import DomainStepResult
 from custom_components.magic_areas.config_flow.features.base import StepResult
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
 from custom_components.magic_areas.config_flow.user_defined_states import (
