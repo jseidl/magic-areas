@@ -248,6 +248,8 @@
         "description": "Configure basic options for the area. Area type is used for the Interior/Exterior/Global [Meta-areas]({url_meta_areas}) and you can fine-tune which entities are analyzed by Magic Areas by using the include/exclude entities options.",
         "data": {
           "include_entities": "Include entities to this area",
+          "exclude_default_label": "Exclude entities labelled magic-areas-ignore",
+          "exclude_labels": "Exclude entities with these labels",
           "exclude_entities": "Exclude entities from being analyzed",
           "type": "Area type (interior/exterior)",
           "windowless": "Area has no windows",
@@ -257,6 +259,8 @@
         },
         "data_description": {
           "include_entities": "Magic Areas can consider entities from other areas including other Magic entities. You can use this to make a room's presence binary sensor to act as another room's presence sensor as well.",
+          "exclude_default_label": "Entities carrying the `magic-areas-ignore` label, and all entities of devices carrying it, will be completely ignored by Magic Areas. If you don't have this label yet, create it with **Add new label…** in any label picker, then add it to the entities or devices you want Magic Areas to ignore.",
+          "exclude_labels": "Entities carrying any of these labels, and all entities of devices carrying them, will be completely ignored by Magic Areas.",
           "exclude_entities": "Entities listed here will be completely ignored by Magic Areas. Use this if you have entities throwing your data off like device temperature sensors.",
           "type": "Defining an area type allows Meta areas for Interior/Exterior to be created.",
           "windowless": "Mark area as having no windows. Will prevent exterior brightness from being considered as a light sensor.",

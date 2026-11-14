@@ -67,6 +67,7 @@ class AreaConfigHandler(DomainHandler):
             exclude_keys.append(
                 AreaConfigOptions.IGNORE_INTEGRATION_HIDDEN_ENTITIES.key
             )
+            exclude_keys.append(AreaConfigOptions.EXCLUDE_DEFAULT_LABEL.key)
 
         # Get current config (nested under ConfigDomains.AREA)
         current_config = self.get_config()

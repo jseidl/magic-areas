@@ -38,11 +38,14 @@ from homeassistant.helpers.entity_registry import (
     RegistryEntryHider,
     async_get as entityreg_async_get,
 )
+from homeassistant.helpers.label_registry import async_get as labelreg_async_get
 from homeassistant.util import slugify
 
 from custom_components.magic_areas.const import (
     BUILTIN_AREA_STATES,
     DOMAIN,
+    EXCLUDE_DEFAULT_LABEL_ID,
+    EXCLUDE_DEFAULT_LABEL_NAME,
     INVALID_STATES,
     MAGIC_AREAS_COMPONENTS,
     MAGIC_AREAS_COMPONENTS_GLOBAL,
@@ -108,6 +111,7 @@ class MagicArea:
         # Faster lookup lists
         self._area_entities: list[str] = []
         self._area_devices: list[str] = []
+        self._excluded_labels: set[str] = set()
 
         # Timestamp for initialization / reload tests
         self.timestamp: datetime = datetime.now(UTC)
@@ -291,6 +295,10 @@ class MagicArea:
         if entity.entity_id in self.config.get(AreaConfigOptions.EXCLUDE_ENTITIES):
             return True
 
+        # Does it, or its device, carry an excluded label?
+        if self._has_excluded_label(entity):
+            return True
+
         # Are we excluding DIAGNOSTIC and CONFIG?
         if self.config.get(AreaConfigOptions.IGNORE_DIAGNOSTIC_ENTITIES):
             if entity.entity_category in [
@@ -301,11 +309,43 @@ class MagicArea:
 
         return False
 
+    def _resolve_excluded_labels(self) -> set[str]:
+        """Return the ids of labels whose entities and devices this area ignores."""
+        label_ids = set(self.config.get(AreaConfigOptions.EXCLUDE_LABELS))
+
+        # Regular areas also ignore the default label, when it exists.
+        if not self.is_meta() and self.config.get(
+            AreaConfigOptions.EXCLUDE_DEFAULT_LABEL
+        ):
+            label_registry = labelreg_async_get(self.hass)
+            default_label = label_registry.async_get_label_by_name(
+                EXCLUDE_DEFAULT_LABEL_NAME
+            ) or label_registry.async_get_label(EXCLUDE_DEFAULT_LABEL_ID)
+            if default_label:
+                label_ids.add(default_label.label_id)
+
+        return label_ids
+
+    def _has_excluded_label(self, entity: RegistryEntry) -> bool:
+        """Return if an entity, or its device, carries an excluded label."""
+        if not self._excluded_labels:
+            return False
+
+        if entity.labels & self._excluded_labels:
+            return True
+
+        if entity.device_id is None:
+            return False
+
+        device = devicereg_async_get(self.hass).async_get(entity.device_id)
+        return device is not None and bool(device.labels & self._excluded_labels)
+
     async def load_entities(self) -> None:
         """Load entities into entity list."""
 
         entity_list: list[RegistryEntry] = []
         include_entities = self.config.get(AreaConfigOptions.INCLUDE_ENTITIES)
+        self._excluded_labels = self._resolve_excluded_labels()
 
         entity_registry = entityreg_async_get(self.hass)
         device_registry = devicereg_async_get(self.hass)
@@ -532,6 +572,20 @@ class MagicArea:
             if (
                 action == "update"
                 and membership_fields & event_data.get("changes", {}).keys()
+                and entity_entry
+                and (
+                    entity_entry.entity_id in self._area_entities
+                    or entity_entry.area_id == self.id
+                    or entity_entry.device_id in self._area_devices
+                )
+            ):
+                return True
+
+            # Labels can exclude entities: reload if we loaded this entity, or
+            # would load it without its labels
+            if (
+                action == "update"
+                and "labels" in event_data.get("changes", {})
                 and entity_entry
                 and (
                     entity_entry.entity_id in self._area_entities
@@ -936,6 +990,7 @@ class MagicMetaArea(MagicArea):
 
         entity_registry = entityreg_async_get(self.hass)
         entity_list: list[RegistryEntry] = []
+        self._excluded_labels = self._resolve_excluded_labels()
 
         for area in self._iter_magic_areas():
             if area.slug not in self.child_areas:
@@ -968,6 +1023,11 @@ class MagicMetaArea(MagicArea):
                             entity[ATTR_ENTITY_ID],
                         )
                         continue
+
+                    # Skip entities carrying an excluded label
+                    if self._has_excluded_label(entity_entry):
+                        continue
+
                     entity_list.append(entity_entry)
 
         self.load_entity_list(entity_list)

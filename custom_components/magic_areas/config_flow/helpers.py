@@ -18,6 +18,8 @@ from homeassistant.helpers.selector import (
     BooleanSelectorConfig,
     EntitySelector,
     EntitySelectorConfig,
+    LabelSelector,
+    LabelSelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -418,6 +420,11 @@ class SelectorBuilder:
             if "include_entities" in selector_config:
                 config_dict["include_entities"] = selector_config["include_entities"]
             return EntitySelector(EntitySelectorConfig(**config_dict))
+
+        if selector_type == "label":
+            return LabelSelector(
+                LabelSelectorConfig(multiple=selector_config.get("multiple", False))
+            )
 
         if selector_type == "number":
             config_dict = {

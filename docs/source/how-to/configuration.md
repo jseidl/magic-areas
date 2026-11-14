@@ -12,11 +12,26 @@ These options control the general behavior of the area.
 |--------|------|---------|-------------|
 | **Area type** | `string` | `interior` | Defines the area type. Options: `interior`, `exterior`. Used for meta-area calculations. |
 | **Include entities** | `list<entity>` | `[]` | Force-add entities to the area, even if not assigned to it in Home Assistant. |
+| **Exclude entities labelled `magic-areas-ignore`** | `bool` | `true` | Ignore entities carrying the `magic-areas-ignore` label, and all entities of devices carrying it. Regular areas only. See [Excluding entities with labels](#excluding-entities-with-labels). |
+| **Exclude entities with these labels** | `list<label>` | `[]` | Ignore entities carrying any of these labels, and all entities of devices carrying them. |
 | **Exclude entities** | `list<entity>` | `[]` | Force-remove entities from the area. Useful if you want them in Home Assistant but excluded from Magic Areas calculations. |
 | **Windowless Area** | `bool` | `false` | Enable for areas with no natural light (bathrooms, closets, basements). Prevents fallback to exterior sensors/sun.sun for dark detection. |
 | **Automatic reload on registry updates** | `bool` | `true` | Automatically reloads the area if a new device or entity is added/removed. |
 | **Ignore diagnostic/config entities** | `bool` | `true` | Prevents Magic Areas from using diagnostic/config sensors (e.g., CPU temperature) that could skew aggregates. |
 | **Ignore entities hidden by integrations** | `bool` | `true` | Ignores entities an integration has hidden: for example a switch that a "Change device type of a switch" helper replaces with a light, or entities an integration hides by default. Home Assistant's own area targeting skips these too. Entities you hid yourself are still used. **Include entities** still overrides this. |
+
+### 🏷️ Excluding entities with labels
+
+Instead of listing entities one by one in **Exclude entities**, you can mark the ones Magic Areas should ignore where you manage them: on the entity or device itself.
+
+1. Create a label named `magic-areas-ignore` (for example from **Settings → Labels**, or with **Add new label…** in any label picker).
+2. Add it to the entities, or whole devices, that Magic Areas should ignore. Labelling a device ignores all of its entities.
+
+Every regular area ignores this label unless you turn off **Exclude entities labelled `magic-areas-ignore`** for it. You don't need to change any area's options. To use other labels instead, or as well, pick them in **Exclude entities with these labels**.
+
+Entities listed in **Include entities** are always included, even if they carry an excluded label. Adding or removing a label reloads the affected area automatically, as long as **Automatic reload on registry updates** is on.
+
+Meta-areas don't use `magic-areas-ignore`, but they also have **Exclude entities with these labels**, which excludes child-area Magic Areas entities that carry those labels. After changing labels on those entities, reload the meta-area (or restart Home Assistant) for the change to take effect.
 
 ## 🚶 Presence Tracking Options
 
