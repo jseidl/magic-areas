@@ -159,6 +159,14 @@ class TestPresenceHoldFeature:
         summary = handler.get_summary(test_config)
         assert "300" in summary
 
+    def test_get_summary_no_timeout(self, presence_hold_feature_setup):
+        """Test the summary when the timeout is disabled."""
+        handler = presence_hold_feature_setup["handler"]
+
+        summary = handler.get_summary({PresenceHoldOptions.TIMEOUT.key: 0})
+
+        assert summary == "No timeout"
+
     async def test_handle_step_main_no_input(self, presence_hold_feature_setup):
         """Test handling main step without input."""
         handler = presence_hold_feature_setup["handler"]

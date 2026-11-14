@@ -269,6 +269,51 @@ class TestClimateControlFeature:
         assert result.errors is not None
         assert ClimateControlOptions.ENTITY_ID.key in result.errors
 
+    async def test_handle_step_unknown_step_falls_back_to_select_entity(
+        self, climate_control_feature_setup
+    ):
+        """Test an unknown step id is routed to the entity selection step."""
+        handler = climate_control_feature_setup["handler"]
+
+        result = await handler.handle_step("not_a_step", None)
+
+        assert result.type == "form"
+        assert result.step_id == "select_entity"
+        assert result.data_schema is not None
+
+    async def test_handle_step_select_entity_unregistered_entity(
+        self, climate_control_feature_setup
+    ):
+        """Test an entity missing from the registry is rejected."""
+        handler = climate_control_feature_setup["handler"]
+
+        result = await handler.handle_step(
+            "select_entity", {ClimateControlOptions.ENTITY_ID.key: "climate.ghost"}
+        )
+
+        assert result.type == "form"
+        assert result.step_id == "select_entity"
+        assert result.errors == {ClimateControlOptions.ENTITY_ID.key: "invalid_entity"}
+
+    async def test_handle_step_select_presets_without_entity_restarts(
+        self, climate_control_feature_setup
+    ):
+        """Test the presets step without a chosen entity goes back to selection."""
+        handler = climate_control_feature_setup["handler"]
+
+        result = await handler.handle_step("select_presets", None)
+
+        assert result.type == "form"
+        assert result.step_id == "select_entity"
+
+    def test_get_summary_without_entity(self, climate_control_feature_setup):
+        """Test the summary when only presets are stored."""
+        handler = climate_control_feature_setup["handler"]
+
+        summary = handler.get_summary({ClimateControlOptions.PRESET_CLEAR.key: "away"})
+
+        assert summary == "Not configured"
+
     async def test_handle_step_select_presets_no_input(
         self, climate_control_feature_setup
     ):

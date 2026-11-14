@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from unittest.mock import Mock
 
 import pytest
+import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -15,7 +16,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.area_registry import async_get as async_get_ar
 
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.config_flow.features.base import StepResult
+from custom_components.magic_areas.config_flow.features.base import (
+    FeatureHandler,
+    StepResult,
+)
 from custom_components.magic_areas.config_flow.features.presence_hold import (
     PresenceHoldFeature,
 )
@@ -190,6 +194,40 @@ class TestFeatureHandler:
 
         schema = handler.build_schema(options, selectors)
         assert schema is not None
+
+    def test_default_get_summary(self, feature_handler_setup):
+        """Test the base FeatureHandler summary."""
+        handler = feature_handler_setup["handler"]
+
+        assert FeatureHandler.get_summary(handler, {}) == "Not configured"
+        assert FeatureHandler.get_summary(handler, {"a": 1}) == "Configured"
+
+    async def test_validate_and_save_saves_valid_input(self, feature_handler_setup):
+        """Test validate_and_save stores validated input."""
+        handler = feature_handler_setup["handler"]
+        config_entry = feature_handler_setup["config_entry"]
+        schema = vol.Schema({vol.Required("timeout"): vol.Coerce(int)})
+
+        success, errors = await handler.validate_and_save(schema, {"timeout": "7"})
+
+        assert success is True
+        assert errors is None
+        assert config_entry.options[ConfigDomains.FEATURES]["presence_hold"] == {
+            "timeout": 7
+        }
+
+    async def test_validate_and_save_reports_errors(self, feature_handler_setup):
+        """Test validate_and_save returns errors and saves nothing for bad input."""
+        handler = feature_handler_setup["handler"]
+        config_entry = feature_handler_setup["config_entry"]
+        schema = vol.Schema({vol.Required("timeout"): vol.Coerce(int)})
+
+        success, errors = await handler.validate_and_save(schema, {"timeout": "abc"})
+
+        assert success is False
+        assert errors is not None
+        assert "timeout" in errors
+        assert "presence_hold" not in config_entry.options[ConfigDomains.FEATURES]
 
     def test_cleanup(self, feature_handler_setup):
         """Test cleanup method."""

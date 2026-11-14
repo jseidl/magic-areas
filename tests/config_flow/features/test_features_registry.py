@@ -1,11 +1,14 @@
 """Tests for config_flow.features registry."""
 
-from unittest.mock import Mock
+import importlib
+from unittest.mock import Mock, patch
 
 import pytest
 
+from custom_components.magic_areas.config_flow import features as features_module
 from custom_components.magic_areas.config_flow.features import (
     get_available_features,
+    get_configurable_features,
     get_feature_handler,
 )
 from custom_components.magic_areas.config_flow.flow import OptionsFlowHandler
@@ -184,3 +187,66 @@ class TestFeaturesRegistry:
             assert not isinstance(handler, type)
             assert hasattr(handler, "handle_step")
             assert callable(handler.handle_step)
+
+
+class TestConfigurableFeatures:
+    """Test get_configurable_features filtering."""
+
+    @staticmethod
+    def _flow_for(area_type: AreaType) -> Mock:
+        """Create a flow whose area reports the given type."""
+        flow = create_mock_flow(area_type)
+        flow.area.is_meta.return_value = area_type == AreaType.META
+        return flow
+
+    def test_regular_area_lists_all_configurable_features(self):
+        """Test a regular area gets every feature with options."""
+        configurable = get_configurable_features(self._flow_for(AreaType.INTERIOR))
+
+        assert Features.LIGHT_GROUPS in configurable
+        assert Features.FAN_GROUPS in configurable
+
+    def test_meta_area_excludes_non_configurable_features(self):
+        """Test meta areas do not get light or fan groups."""
+        configurable = get_configurable_features(self._flow_for(AreaType.META))
+
+        assert Features.LIGHT_GROUPS not in configurable
+        assert Features.FAN_GROUPS not in configurable
+        assert Features.AGGREGATION in configurable
+
+    def test_features_without_options_are_skipped(self):
+        """Test an option set with no ConfigOption is not configurable."""
+        flow = self._flow_for(AreaType.INTERIOR)
+
+        with patch.object(
+            features_module.AggregateOptions, "has_configuration", return_value=False
+        ):
+            configurable = get_configurable_features(flow)
+
+        assert Features.AGGREGATION not in configurable
+
+
+class TestFeatureModuleLoading:
+    """Test the dynamic feature module loader."""
+
+    def test_load_failure_is_logged_and_does_not_raise(self, caplog):
+        """Test a module that fails to import only produces a warning."""
+        with patch.object(importlib, "import_module", side_effect=RuntimeError("boom")):
+            features_module._load_features()  # pylint: disable=protected-access
+
+        assert "Failed to load feature module" in caplog.text
+        assert "boom" in caplog.text
+
+    def test_private_modules_are_not_imported(self):
+        """Test modules starting with an underscore are skipped by the loader."""
+        with (
+            patch.object(
+                features_module.pkgutil,
+                "iter_modules",
+                return_value=[(None, "_private", False)],
+            ),
+            patch.object(importlib, "import_module") as import_module,
+        ):
+            features_module._load_features()  # pylint: disable=protected-access
+
+        import_module.assert_not_called()

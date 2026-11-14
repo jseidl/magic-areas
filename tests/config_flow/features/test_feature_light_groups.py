@@ -1,9 +1,10 @@
 """Tests for light groups feature handler."""
 
 from collections.abc import AsyncGenerator
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
+import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -773,6 +774,153 @@ class TestLightGroupsFeature:
     # ========================================================================
     # Summary Tests
     # ========================================================================
+
+    async def test_select_group_lists_existing_groups(self, light_groups_feature_setup):
+        """Test the select group form offers every configured group."""
+        handler = light_groups_feature_setup["handler"]
+        config_entry = light_groups_feature_setup["config_entry"]
+        config_entry.options[ConfigDomains.FEATURES] = {
+            "light_groups": {
+                "groups": [
+                    {
+                        LightGroupEntryOptions.NAME.key: "Zebra",
+                        LightGroupEntryOptions.LIGHTS.key: ["light.test_light"],
+                        LightGroupEntryOptions.STATES.key: [AreaStates.OCCUPIED.value],
+                    },
+                    {
+                        LightGroupEntryOptions.NAME.key: "Alpha",
+                        LightGroupEntryOptions.LIGHTS.key: [
+                            "light.overhead_light",
+                            "light.task_light",
+                        ],
+                    },
+                ]
+            }
+        }
+
+        result = await handler.handle_step("select_group", None)
+
+        assert result.type == "form"
+        assert result.step_id == "select_group"
+        assert result.data_schema is not None
+        assert result.data_schema({"group_index": "1"}) == {"group_index": 1}
+        with pytest.raises(vol.Invalid):
+            result.data_schema({"group_index": 7})
+
+    async def test_select_group_invalid_index_returns_menu(
+        self, light_groups_feature_setup
+    ):
+        """Test selecting a group that does not exist returns to the main menu."""
+        handler = light_groups_feature_setup["handler"]
+
+        result = await handler.handle_step("select_group", {"group_index": 3})
+
+        assert result.type == "menu"
+        assert result.step_id == "main"
+
+    async def test_delete_group_form_lists_groups(self, light_groups_feature_setup):
+        """Test the delete form is built from the configured groups."""
+        handler = light_groups_feature_setup["handler"]
+        config_entry = light_groups_feature_setup["config_entry"]
+        config_entry.options[ConfigDomains.FEATURES] = {
+            "light_groups": {
+                "groups": [
+                    {
+                        LightGroupEntryOptions.NAME.key: "Only",
+                        LightGroupEntryOptions.LIGHTS.key: ["light.test_light"],
+                    }
+                ]
+            }
+        }
+
+        result = await handler.handle_step("delete_group", None)
+
+        assert result.type == "form"
+        assert result.step_id == "delete_group"
+        assert result.data_schema({"group_index": 0}) == {
+            "group_index": 0,
+            "confirm": False,
+        }
+
+    async def test_edit_group_validation_errors(self, light_groups_feature_setup):
+        """Test the edit form reports blank, empty-lights and reserved-name errors."""
+        handler = light_groups_feature_setup["handler"]
+        config_entry = light_groups_feature_setup["config_entry"]
+        config_entry.options[ConfigDomains.FEATURES] = {
+            "light_groups": {
+                "groups": [
+                    {
+                        LightGroupEntryOptions.NAME.key: "Original",
+                        LightGroupEntryOptions.LIGHTS.key: ["light.test_light"],
+                    }
+                ]
+            }
+        }
+        await handler.handle_step("select_group", {"group_index": 0})
+
+        blank = await handler.handle_step(
+            "edit_group",
+            {
+                LightGroupEntryOptions.NAME.key: "  ",
+                LightGroupEntryOptions.LIGHTS.key: [],
+            },
+        )
+        assert blank.type == "form"
+        assert blank.errors == {
+            "name": "malformed_input",
+            "lights": "no_lights_selected",
+        }
+
+        reserved = await handler.handle_step(
+            "edit_group",
+            {
+                LightGroupEntryOptions.NAME.key: "All Lights",
+                LightGroupEntryOptions.LIGHTS.key: ["light.test_light"],
+            },
+        )
+        assert reserved.type == "form"
+        assert reserved.errors == {"name": "reserved_name"}
+
+    async def test_build_group_schema_without_lights(self, light_groups_feature_setup):
+        """Test the group schema still builds when the area has no lights."""
+        handler = light_groups_feature_setup["handler"]
+        light_groups_feature_setup["flow"].all_lights = None
+
+        schema = handler._build_group_schema()  # pylint: disable=protected-access
+
+        assert LightGroupEntryOptions.LIGHTS.key in {str(key) for key in schema.schema}
+
+    async def test_build_group_schema_empty_schema_is_reported(
+        self, light_groups_feature_setup, caplog
+    ):
+        """Test an empty generated schema is logged and returned empty."""
+        handler = light_groups_feature_setup["handler"]
+
+        with patch(
+            "custom_components.magic_areas.config_flow.features.light_groups."
+            "SchemaBuilder.from_option_set",
+            return_value=vol.Schema({}),
+        ):
+            schema = handler._build_group_schema()  # pylint: disable=protected-access
+
+        assert not schema.schema
+        assert "empty schema returned" in caplog.text
+
+    async def test_build_group_schema_exception_returns_empty_schema(
+        self, light_groups_feature_setup, caplog
+    ):
+        """Test an exception while building the schema is contained."""
+        handler = light_groups_feature_setup["handler"]
+
+        with patch(
+            "custom_components.magic_areas.config_flow.features.light_groups."
+            "SchemaBuilder.from_option_set",
+            side_effect=RuntimeError("schema exploded"),
+        ):
+            schema = handler._build_group_schema()  # pylint: disable=protected-access
+
+        assert not schema.schema
+        assert "schema exploded" in caplog.text
 
     def test_get_summary_no_groups(self, light_groups_feature_setup):
         """Test summary with no groups."""

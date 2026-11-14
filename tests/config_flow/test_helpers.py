@@ -27,7 +27,9 @@ from custom_components.magic_areas.config_flow.helpers import (
 from custom_components.magic_areas.const import (
     AreaConfigOptions,
     AreaStates,
+    ConfigDomains,
     ConfigOption,
+    OptionSet,
 )
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
@@ -620,3 +622,119 @@ class TestSchemaBuilder:
         # Check that schema contains the expected fields
         schema_keys = list(schema.schema.keys())
         assert len(schema_keys) > 0
+
+
+class _SelectorFailureOptions(OptionSet):
+    """Option set with one valid option and one that cannot build a selector."""
+
+    CONFIG_DOMAIN = ConfigDomains.AREA
+
+    GOOD = ConfigOption(key="good", default=True, selector_type="boolean")
+    BAD = ConfigOption(key="bad", default="", selector_type="unknown")
+
+
+class _CallableOnlyOptions(OptionSet):
+    """Option set with a callable validator and no selector."""
+
+    CONFIG_DOMAIN = ConfigDomains.AREA
+
+    CALLABLE = ConfigOption(key="callable_only", default="", validator=str)
+
+
+class _MixedValidatorOptions(OptionSet):
+    """Option set covering internal, non-callable and missing validators."""
+
+    CONFIG_DOMAIN = ConfigDomains.AREA
+
+    HIDDEN = ConfigOption(key="hidden", default="", internal=True)
+    LISTED = ConfigOption(key="listed", default=[], validator=[str])
+    PLAIN = ConfigOption(key="plain", default="value")
+
+
+class TestResolveGroups:
+    """Test FlowEntityContext.resolve_groups."""
+
+    def test_flattens_nested_lists_and_deduplicates(self):
+        """Test nested lists are flattened and duplicates removed in order."""
+        resolved = FlowEntityContext.resolve_groups([["a", "b"], "c", "a"])
+
+        assert resolved == ["a", "b", "c"]
+
+
+class TestLightTrackingEntities:
+    """Test discovery of light tracking entities."""
+
+    async def test_light_device_class_binary_sensor_is_eligible(
+        self, hass: HomeAssistant
+    ):
+        """Test a binary sensor with the light device class is offered."""
+        light_sensor = MockBinarySensor(
+            name="daylight",
+            unique_id="test_daylight",
+            device_class=BinarySensorDeviceClass.LIGHT,
+        )
+        motion_sensor = MockBinarySensor(
+            name="motion",
+            unique_id="test_motion",
+            device_class=BinarySensorDeviceClass.MOTION,
+        )
+        await setup_mock_entities(
+            hass,
+            BINARY_SENSOR_DOMAIN,
+            {DEFAULT_MOCK_AREA: [light_sensor, motion_sensor]},
+        )
+
+        config_entry = Mock()
+        config_entry.options = {}
+        magic_area = Mock(spec=MagicArea)
+        magic_area.id = DEFAULT_MOCK_AREA.value
+        magic_area.name = DEFAULT_MOCK_AREA.value
+        magic_area.entities = {
+            BINARY_SENSOR_DOMAIN: [
+                {"entity_id": light_sensor.entity_id, "device_class": "light"},
+                {"entity_id": motion_sensor.entity_id, "device_class": "motion"},
+            ]
+        }
+
+        context = FlowEntityContext(hass, magic_area, config_entry)
+
+        assert light_sensor.entity_id in context.light_tracking_entities
+        assert motion_sensor.entity_id not in context.light_tracking_entities
+
+
+class TestOptionSetBuildersEdgeCases:
+    """Test builder behavior with unusual option sets."""
+
+    def test_selector_builder_rejects_non_option_set(self):
+        """Test SelectorBuilder.from_option_set only accepts OptionSet classes."""
+        with pytest.raises(TypeError, match="Expected OptionSet subclass"):
+            SelectorBuilder.from_option_set(dict)
+
+    def test_selector_builder_skips_options_that_fail(self):
+        """Test an option whose selector cannot be built is skipped."""
+        selectors = SelectorBuilder.from_option_set(_SelectorFailureOptions)
+
+        assert "good" in selectors
+        assert "bad" not in selectors
+
+    def test_schema_builder_rejects_non_option_set(self):
+        """Test SchemaBuilder.from_option_set only accepts OptionSet classes."""
+        with pytest.raises(TypeError, match="Expected OptionSet subclass"):
+            SchemaBuilder().from_option_set(dict)
+
+    def test_schema_builder_empty_schema_for_callable_only_validator(self, caplog):
+        """Test a callable-only validator aborts with an empty schema."""
+        schema = SchemaBuilder().from_option_set(_CallableOnlyOptions)
+
+        assert not schema.schema
+        assert "only a callable validator" in caplog.text
+
+    def test_schema_builder_internal_non_callable_and_default_validators(self):
+        """Test internal options are skipped and other validators are resolved."""
+        schema = SchemaBuilder().from_option_set(_MixedValidatorOptions)
+
+        keys = {str(key): validator for key, validator in schema.schema.items()}
+        assert "hidden" not in keys
+        assert keys["listed"] == [str]
+        assert "plain" in keys
+        assert schema({}) == {"listed": [], "plain": "value"}

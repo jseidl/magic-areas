@@ -1,6 +1,7 @@
 """Tests for config_flow.base module."""
 
 from enum import StrEnum
+from unittest.mock import Mock
 
 import pytest
 import voluptuous as vol
@@ -212,6 +213,26 @@ class TestConfigBase:
         result = schema({"option1": True, "option2": 1})
         assert result["option1"] is True
         assert result["option2"] == 1
+
+    def test_build_selector_select_without_options(self):
+        """Test building a select selector with no options defaults to empty list."""
+        config_base = ConfigBase()
+
+        selector = config_base.build_selector_select()
+
+        assert isinstance(selector, SelectSelector)
+        assert selector.config is not None
+        assert selector.config["options"] == []
+
+    def test_build_options_schema_falls_back_to_config_entry_options(self):
+        """Test saved options are read from the config entry when not provided."""
+        config_base = ConfigBase()
+        config_base.config_entry = Mock(options={"option1": "from_entry"})
+
+        schema = config_base.build_options_schema([("option1", "default1", str)])
+
+        option1_key = next(key for key in schema.schema if "option1" in str(key))
+        assert option1_key.description == {"suggested_value": "from_entry"}
 
     def test_build_options_schema_no_config_entry(self):
         """Test building schema when no config entry is available."""
