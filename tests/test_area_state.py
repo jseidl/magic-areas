@@ -1,19 +1,26 @@
 """Test for area changes and how the system handles it."""
 
 from collections.abc import AsyncGenerator
+from datetime import timedelta
 import logging
 from typing import Any
+from unittest.mock import patch
 
+from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
 from homeassistant.const import STATE_OFF, STATE_ON
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, StateMachine
 
+from custom_components.magic_areas.binary_sensor.presence import AreaStateTrackerEntity
 from custom_components.magic_areas.const import (
     DOMAIN,
     AreaAttributes,
@@ -348,3 +355,155 @@ async def test_keep_only_sensors(
     assert_in_attribute(
         area_binary_sensor, CommonAttributes.STATES.value, AreaStates.CLEAR
     )
+
+
+# Extended state, timeouts and defensive branches
+
+AREA_SENSOR_ID = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{DEFAULT_MOCK_AREA}_area_state"
+EXTENDED_TIME_MINUTES = 2
+EXTENDED_TIMEOUT_MINUTES = 3
+
+
+@pytest.fixture(name="extended_config_entry")
+def mock_config_entry_extended() -> MockConfigEntry:
+    """Config entry with short extended time and extended timeout."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data.update(
+        SecondaryStateOptions.to_config(
+            {
+                SecondaryStateOptions.EXTENDED_TIME.key: EXTENDED_TIME_MINUTES,
+                SecondaryStateOptions.EXTENDED_TIMEOUT.key: EXTENDED_TIMEOUT_MINUTES,
+            }
+        )
+    )
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+async def _advance(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    """Move time forward and run anything that became due."""
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+async def test_area_becomes_extended_after_extended_time(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    extended_config_entry: MockConfigEntry,
+) -> None:
+    """Test an area that stays occupied long enough gains the extended state."""
+    await init_integration(hass, [extended_config_entry])
+    motion_sensor_id = entities_binary_sensor_motion_one[0].entity_id
+
+    hass.states.async_set(motion_sensor_id, STATE_ON)
+    await hass.async_block_till_done()
+    area_state = hass.states.get(AREA_SENSOR_ID)
+    assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.OCCUPIED)
+    assert_in_attribute(
+        area_state, CommonAttributes.STATES.value, AreaStates.EXTENDED, negate=True
+    )
+
+    await _advance(hass, freezer, EXTENDED_TIME_MINUTES * 60 + 1)
+
+    assert_in_attribute(
+        hass.states.get(AREA_SENSOR_ID),
+        CommonAttributes.STATES.value,
+        AreaStates.EXTENDED,
+    )
+
+    await shutdown_integration(hass, [extended_config_entry])
+
+
+async def test_extended_area_clears_after_the_extended_timeout(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    extended_config_entry: MockConfigEntry,
+) -> None:
+    """Test an extended area waits for the extended timeout, not the clear timeout."""
+    await init_integration(hass, [extended_config_entry])
+    motion_sensor_id = entities_binary_sensor_motion_one[0].entity_id
+
+    hass.states.async_set(motion_sensor_id, STATE_ON)
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, EXTENDED_TIME_MINUTES * 60 + 1)
+
+    # The configured clear timeout is 0, so only the extended timeout can keep
+    # the area occupied after the motion stops.
+    hass.states.async_set(motion_sensor_id, STATE_OFF)
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    # An update before the timeout elapses leaves the area occupied.
+    await _advance(hass, freezer, 61)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    await _advance(hass, freezer, EXTENDED_TIMEOUT_MINUTES * 60)
+    area_state = hass.states.get(AREA_SENSOR_ID)
+    assert_state(area_state, STATE_OFF)
+    assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.CLEAR)
+
+    await shutdown_integration(hass, [extended_config_entry])
+
+
+async def test_secondary_sensor_removal_is_ignored(
+    hass: HomeAssistant,
+    secondary_states_sensors: list[MockBinarySensor],
+    _setup_integration_secondary_states,
+) -> None:
+    """Test a secondary state sensor losing its state does not change the area."""
+    sleep_sensor = secondary_states_sensors[0]
+
+    hass.states.async_remove(sleep_sensor.entity_id)
+    await hass.async_block_till_done()
+
+    area_state = hass.states.get(AREA_SENSOR_ID)
+    assert_state(area_state, STATE_OFF)
+    assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.CLEAR)
+
+
+async def test_sensor_read_failure_is_logged(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_basic,
+    caplog,
+) -> None:
+    """Test a failure reading a presence sensor is logged and does not break the area."""
+    motion_sensor_id = entities_binary_sensor_motion_one[0].entity_id
+    original_get = StateMachine.get
+
+    def failing_get(self, entity_id):
+        if entity_id == motion_sensor_id:
+            raise RuntimeError("boom")
+        return original_get(self, entity_id)
+
+    with patch.object(StateMachine, "get", failing_get):
+        hass.states.async_set(motion_sensor_id, STATE_ON)
+        await hass.async_block_till_done()
+
+    assert "Error getting entity state for" in caplog.text
+    assert hass.states.get(AREA_SENSOR_ID) is not None
+
+
+async def test_inconsistent_occupied_state_schedules_a_clear_timeout(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_basic,
+    caplog,
+) -> None:
+    """Test the safety net warns and reschedules when occupied with nothing pending."""
+    motion_sensor_id = entities_binary_sensor_motion_one[0].entity_id
+    await trigger_occupancy(hass, motion_sensor_id, occupied=True)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    # With no clear timeout ever scheduled, the area is occupied with no active
+    # sensors and nothing pending: the state the safety net exists for.
+    with patch.object(AreaStateTrackerEntity, "_set_clear_timeout") as set_timeout:
+        hass.states.async_set(motion_sensor_id, STATE_OFF)
+        await hass.async_block_till_done()
+
+    assert "State inconsistency detected" in caplog.text
+    assert set_timeout.called

@@ -30,7 +30,7 @@ from custom_components.magic_areas.const import DOMAIN, AreaStates
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.fan_groups import FanGroupOptions
 
-from tests.const import DEFAULT_MOCK_AREA
+from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
 from tests.helpers import (
     assert_in_attribute,
     assert_state,
@@ -535,3 +535,55 @@ async def test_fan_control_warns_when_tracked_sensor_is_missing(
 
     assert "is not found" in caplog.text
     assert_state(hass.states.get(FAN_GROUP_ID), STATE_OFF)
+
+
+async def test_fan_control_requires_aggregates(
+    hass: HomeAssistant, entities_fan_multiple: list[MockFan], caplog
+) -> None:
+    """Test fan groups without Aggregates warns and creates no control switch."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(data, FanGroupOptions.to_config({}))
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+
+    assert hass.states.get(FAN_CONTROL_ID) is None
+    assert "Fan Groups feature requires Aggregates feature" in caplog.text
+
+    await shutdown_integration(hass, [config_entry])
+
+
+async def test_fan_control_not_created_for_meta_areas(hass: HomeAssistant) -> None:
+    """Test the fan control switch is never created for a meta area."""
+    data = get_basic_config_entry_data(MockAreaIds.INTERIOR)
+    merge_feature_config(
+        data,
+        FanGroupOptions.to_config({}),
+        AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+    )
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry], areas=[MockAreaIds.INTERIOR])
+
+    meta_control_id = f"{SWITCH_DOMAIN}.magic_areas_fan_groups_interior_fan_control"
+    assert hass.states.get(meta_control_id) is None
+
+    await shutdown_integration(hass, [config_entry])
+
+
+async def test_fan_control_creation_error_is_contained(
+    hass: HomeAssistant,
+    entities_fan_multiple: list[MockFan],
+    fan_groups_config_entry: MockConfigEntry,
+    caplog,
+) -> None:
+    """Test a failing fan control switch is logged and the fan group still loads."""
+    with patch(
+        "custom_components.magic_areas.switch.FanControlSwitch",
+        side_effect=RuntimeError("boom"),
+    ):
+        await init_integration(hass, [fan_groups_config_entry])
+
+    assert hass.states.get(FAN_CONTROL_ID) is None
+    assert hass.states.get(FAN_GROUP_ID) is not None
+    assert "Error loading fan control switch: boom" in caplog.text
+
+    await shutdown_integration(hass, [fan_groups_config_entry])

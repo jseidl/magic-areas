@@ -713,3 +713,108 @@ async def test_box_change_cancels_the_wasp_timer(
     assert_attribute(state, ATTR_BOX, STATE_ON)
 
     await shutdown_integration(hass, [delay_and_timeout_config_entry])
+
+
+BINARY_SENSOR_MODULE = "custom_components.magic_areas.binary_sensor"
+
+
+def _make_binary_sensor(
+    device_class: BinarySensorDeviceClass, index: int = 1
+) -> MockBinarySensor:
+    """Create a mock binary sensor of the given device class."""
+    return MockBinarySensor(
+        name=f"{device_class.value}_{index}",
+        unique_id=f"{device_class.value}_{index}",
+        device_class=device_class,
+    )
+
+
+async def _setup_binary_area(
+    hass: HomeAssistant,
+    sensors: list[MockBinarySensor],
+    *feature_configs: dict,
+) -> MockConfigEntry:
+    """Register the sensors, enable the given features and load the integration."""
+    if sensors:
+        await setup_mock_entities(
+            hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: sensors}
+        )
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(data, *feature_configs)
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+    return config_entry
+
+
+@pytest.fixture(name="config_entries_to_unload")
+async def fixture_config_entries_to_unload(
+    hass: HomeAssistant,
+) -> AsyncGenerator[list[MockConfigEntry]]:
+    """Unload every entry registered by a test once it is done."""
+    entries: list[MockConfigEntry] = []
+    yield entries
+    await shutdown_integration(hass, entries)
+
+
+class TestWaspInABoxSetup:
+    """Test the wasp in a box sensor creation rules."""
+
+    async def test_wasp_requires_aggregates_feature(
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
+    ):
+        """Test enabling wasp in a box without Aggregates warns and skips it."""
+        config_entries_to_unload.append(
+            await _setup_binary_area(
+                hass,
+                [
+                    _make_binary_sensor(BinarySensorDeviceClass.MOTION),
+                    _make_binary_sensor(BinarySensorDeviceClass.DOOR),
+                ],
+                WaspInABoxOptions.to_config({}),
+            )
+        )
+
+        assert hass.states.get(WASP_ENTITY_ID) is None
+        assert "Wasp in a Box feature requires Aggregates feature" in caplog.text
+
+    async def test_wasp_created_with_aggregates(
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
+    ):
+        """Test wasp in a box is created, without a warning, when Aggregates is on."""
+        config_entries_to_unload.append(
+            await _setup_binary_area(
+                hass,
+                [
+                    _make_binary_sensor(BinarySensorDeviceClass.MOTION),
+                    _make_binary_sensor(BinarySensorDeviceClass.DOOR),
+                ],
+                WaspInABoxOptions.to_config({}),
+                AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+            )
+        )
+
+        assert hass.states.get(WASP_ENTITY_ID) is not None
+        assert "Wasp in a Box feature requires Aggregates feature" not in caplog.text
+
+    async def test_wasp_creation_error_is_contained(
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
+    ):
+        """Test a failing wasp in a box sensor does not break the platform."""
+        with patch(
+            f"{BINARY_SENSOR_MODULE}.AreaWaspInABoxBinarySensor",
+            side_effect=RuntimeError("boom"),
+        ):
+            config_entries_to_unload.append(
+                await _setup_binary_area(
+                    hass,
+                    [
+                        _make_binary_sensor(BinarySensorDeviceClass.MOTION),
+                        _make_binary_sensor(BinarySensorDeviceClass.DOOR),
+                    ],
+                    WaspInABoxOptions.to_config({}),
+                    AggregateOptions.to_config({AggregateOptions.MIN_ENTITIES.key: 1}),
+                )
+            )
+
+        assert hass.states.get(WASP_ENTITY_ID) is None
+        assert "Error creating wasp in a box sensor: boom" in caplog.text

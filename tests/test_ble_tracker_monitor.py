@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -21,10 +22,11 @@ from tests.helpers import (
     assert_state,
     get_basic_config_entry_data,
     init_integration,
+    merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
 )
-from tests.mocks import MockSensor
+from tests.mocks import MockBinarySensor, MockSensor
 
 # Fixtures
 
@@ -140,3 +142,76 @@ async def test_ble_tracker_presence_sensor(
 
     area_sensor_state = hass.states.get(area_sensor_entity_id)
     assert_state(area_sensor_state, STATE_OFF)
+
+
+SLUG = DEFAULT_MOCK_AREA.value
+
+
+BLE_ENTITY_ID = (
+    f"{BINARY_SENSOR_DOMAIN}.magic_areas_ble_trackers_{SLUG}_ble_tracker_monitor"
+)
+
+
+BINARY_SENSOR_MODULE = "custom_components.magic_areas.binary_sensor"
+
+
+async def _setup_binary_area(
+    hass: HomeAssistant,
+    sensors: list[MockBinarySensor],
+    *feature_configs: dict,
+) -> MockConfigEntry:
+    """Register the sensors, enable the given features and load the integration."""
+    if sensors:
+        await setup_mock_entities(
+            hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: sensors}
+        )
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    merge_feature_config(data, *feature_configs)
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+    return config_entry
+
+
+@pytest.fixture(name="config_entries_to_unload")
+async def fixture_config_entries_to_unload(
+    hass: HomeAssistant,
+) -> AsyncGenerator[list[MockConfigEntry]]:
+    """Unload every entry registered by a test once it is done."""
+    entries: list[MockConfigEntry] = []
+    yield entries
+    await shutdown_integration(hass, entries)
+
+
+class TestBleTrackerSetup:
+    """Test the BLE tracker sensor creation rules."""
+
+    async def test_no_ble_sensor_without_configured_entities(
+        self, hass: HomeAssistant, config_entries_to_unload
+    ):
+        """Test the BLE tracker monitor is not created without tracked entities."""
+        config_entries_to_unload.append(
+            await _setup_binary_area(hass, [], BleTrackerOptions.to_config({}))
+        )
+
+        assert hass.states.get(BLE_ENTITY_ID) is None
+
+    async def test_ble_creation_error_is_contained(
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
+    ):
+        """Test a failing BLE tracker sensor does not break the platform."""
+        with patch(
+            f"{BINARY_SENSOR_MODULE}.AreaBLETrackerBinarySensor",
+            side_effect=RuntimeError("boom"),
+        ):
+            config_entries_to_unload.append(
+                await _setup_binary_area(
+                    hass,
+                    [],
+                    BleTrackerOptions.to_config(
+                        {BleTrackerOptions.ENTITIES.key: ["sensor.ble_tracker_1"]}
+                    ),
+                )
+            )
+
+        assert hass.states.get(BLE_ENTITY_ID) is None
+        assert "Error creating BLE tracker sensor: boom" in caplog.text

@@ -4,12 +4,14 @@ import copy
 import json
 import pathlib
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
+from homeassistant.components.repairs import ConfirmRepairFlow
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -388,3 +390,25 @@ async def test_wasp_issues_clear_when_aggregates_become_available(
         assert not _entry_issues(hass)
     finally:
         await shutdown_integration(hass, [entry])
+
+
+# Fix flow selection
+
+
+@pytest.mark.parametrize(
+    ("issue_id", "data"),
+    [
+        pytest.param("reserved_floor_id_exterior", None, id="other-issue"),
+        pytest.param(
+            MagicAreasIssue.AREA_NOT_FOUND.value, None, id="area-not-found-no-data"
+        ),
+    ],
+)
+async def test_other_issues_get_a_plain_confirm_flow(
+    hass: HomeAssistant, issue_id: str, data: dict[str, str] | None
+) -> None:
+    """Issues without an entry to remove fall back to the standard confirm flow."""
+    flow = await async_create_fix_flow(hass, issue_id, data)
+
+    assert isinstance(flow, ConfirmRepairFlow)
+    assert not isinstance(flow, AreaNotFoundRepairFlow)

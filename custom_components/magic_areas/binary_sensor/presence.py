@@ -1,6 +1,5 @@
 """Main presence tracking entity for Magic Areas."""
 
-import asyncio
 from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -213,10 +212,6 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
     # Public methods
 
-    def get_sensors(self) -> set[str]:
-        """Return sensors used for tracking."""
-        return self._sensors
-
     def get_metadata(self) -> dict:
         """Return metadata information about the area's occupancy."""
         return {
@@ -309,10 +304,6 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             self._remove_clear_timeout()
 
         self._update_state(datetime.now(UTC))
-
-    async def _async_update_state(self, timeout: int) -> None:
-        await asyncio.sleep(timeout)
-        self._update_state()
 
     @callback
     def _update_state(self, extra: datetime | None = None) -> None:

@@ -22,7 +22,12 @@ from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_ON, STATE_OFF, STAT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.magic_areas.const import DOMAIN, AreaStates, MagicAreasEvents
+from custom_components.magic_areas.const import (
+    DOMAIN,
+    AreaStates,
+    Features,
+    MagicAreasEvents,
+)
 from custom_components.magic_areas.const.climate_control import ClimateControlOptions
 
 from tests.const import DEFAULT_MOCK_AREA
@@ -296,3 +301,21 @@ async def test_climate_control_preset_failure_is_logged(
     await _send_area_states(hass, {AreaStates.CLEAR}, {AreaStates.OCCUPIED})
 
     assert "Error applying preset" in caplog.text
+
+
+async def test_climate_control_without_entity_is_contained(
+    hass: HomeAssistant, caplog
+) -> None:
+    """Test climate control without a climate entity logs and creates no switch."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data["features"][Features.CLIMATE_CONTROL] = {}
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+
+    assert hass.states.get(CLIMATE_CONTROL_SWITCH_ENTITY_ID) is None
+    assert "Error loading climate control switch: Climate entity not set" in (
+        caplog.text
+    )
+    assert hass.states.get(AREA_SENSOR_ENTITY_ID) is not None
+
+    await shutdown_integration(hass, [config_entry])
