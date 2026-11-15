@@ -1,15 +1,39 @@
 """Test for meta area changes and how the system handles it."""
 
+import asyncio
 import logging
 
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.sun.const import STATE_ABOVE_HORIZON
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import AreaStates
+from custom_components.magic_areas.const import (
+    DOMAIN,
+    AreaStates,
+    CommonAttributes,
+    ConfigDomains,
+)
+from custom_components.magic_areas.const.secondary_states import SecondaryStateOptions
+from custom_components.magic_areas.const.user_defined_states import (
+    UserDefinedStateEntryOptions,
+    UserDefinedStateOptions,
+)
 
 from tests.const import MockAreaIds
-from tests.helpers import assert_state, trigger_occupancy
+from tests.helpers import (
+    assert_in_attribute,
+    assert_state,
+    get_basic_config_entry_data,
+    init_integration,
+    safe_set_state,
+    setup_mock_entities,
+    shutdown_integration,
+    trigger_occupancy,
+)
 from tests.mocks import MockBinarySensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -177,3 +201,173 @@ async def test_meta_area_primary_state_change(
 
     second_floor_area_sensor_state = hass.states.get(second_floor_area_sensor_entity_id)
     assert_state(second_floor_area_sensor_state, STATE_OFF)
+
+
+# Meta area secondary state calculation
+
+CHILD_AREAS = [MockAreaIds.KITCHEN, MockAreaIds.LIVING_ROOM, MockAreaIds.DINING_ROOM]
+INTERIOR_SENSOR_ID = (
+    f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_"
+    f"{MockAreaIds.INTERIOR.value}_area_state"
+)
+KITCHEN_SENSOR_ID = (
+    f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_"
+    f"{MockAreaIds.KITCHEN.value}_area_state"
+)
+
+# Whether the meta area gains the state with 0, 1, 2 and 3 of its 3 child areas
+# in that state, for each calculation mode.
+EXPECTED_BY_MODE = {
+    "any": [False, True, True, True],
+    "all": [False, False, False, True],
+    "majority": [False, False, True, True],
+}
+
+
+async def _setup_interior_with_children(
+    hass: HomeAssistant, mode: str, kind: str
+) -> tuple[list[MockConfigEntry], list[MockBinarySensor]]:
+    """Set up three interior areas and the interior meta area.
+
+    Each child area gets one sensor that drives either its sleep state or a
+    user-defined state called "Movie Time" (kind is "sleep" or "movie_time").
+    """
+    sensors = {
+        area: MockBinarySensor(
+            name=f"{kind}_sensor_{area.value}",
+            unique_id=f"{kind}_sensor_{area.value}",
+            device_class=None,
+        )
+        for area in CHILD_AREAS
+    }
+    await setup_mock_entities(
+        hass,
+        BINARY_SENSOR_DOMAIN,
+        {area: [sensor] for area, sensor in sensors.items()},
+    )
+
+    entries: list[MockConfigEntry] = []
+    for area, sensor in sensors.items():
+        data = get_basic_config_entry_data(area)
+        if kind == "sleep":
+            data.update(
+                SecondaryStateOptions.to_config(
+                    {SecondaryStateOptions.SLEEP_ENTITY.key: sensor.entity_id}
+                )
+            )
+        else:
+            data[ConfigDomains.USER_DEFINED_STATES.value] = {
+                UserDefinedStateOptions.STATES.key: [
+                    {
+                        UserDefinedStateEntryOptions.NAME.key: "Movie Time",
+                        UserDefinedStateEntryOptions.ENTITY.key: sensor.entity_id,
+                    }
+                ]
+            }
+        entries.append(MockConfigEntry(domain=DOMAIN, data=data))
+
+    meta_data = get_basic_config_entry_data(MockAreaIds.INTERIOR)
+    meta_data.update(
+        SecondaryStateOptions.to_config(
+            {SecondaryStateOptions.CALCULATION_MODE.key: mode}
+        )
+    )
+    entries.append(MockConfigEntry(domain=DOMAIN, data=meta_data))
+
+    await init_integration(hass, entries, areas=CHILD_AREAS)
+    return entries, list(sensors.values())
+
+
+# The state as shown in the area's "states" attribute: user-defined states are
+# reported by their friendly name, built-in ones by their slug.
+STATE_SHOWN_FOR_KIND = {"sleep": "sleep", "movie_time": "Movie Time"}
+
+
+@pytest.mark.parametrize("kind", ["sleep", "movie_time"])
+@pytest.mark.parametrize("mode", list(EXPECTED_BY_MODE))
+async def test_meta_area_calculates_secondary_states(
+    hass: HomeAssistant, mode: str, kind: str
+) -> None:
+    """Test each calculation mode decides when the meta area gains a state."""
+    entries, sensors = await _setup_interior_with_children(hass, mode, kind)
+    try:
+        for active_children, expected in enumerate(EXPECTED_BY_MODE[mode]):
+            if active_children > 0:
+                await safe_set_state(hass, sensors[active_children - 1], True)
+
+            assert_in_attribute(
+                hass.states.get(INTERIOR_SENSOR_ID),
+                CommonAttributes.STATES.value,
+                STATE_SHOWN_FOR_KIND[kind],
+                negate=not expected,
+            )
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+async def test_meta_area_ignores_children_without_a_states_attribute(
+    hass: HomeAssistant,
+) -> None:
+    """Test a child area that reports no states does not count towards the meta area."""
+    entries, sensors = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        await safe_set_state(hass, sensors[0], True)
+        assert_in_attribute(
+            hass.states.get(INTERIOR_SENSOR_ID),
+            CommonAttributes.STATES.value,
+            "sleep",
+        )
+
+        # Replace the kitchen's state with one that has no attributes at all.
+        hass.states.async_set(KITCHEN_SENSOR_ID, STATE_OFF)
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.5)
+
+        assert_in_attribute(
+            hass.states.get(INTERIOR_SENSOR_ID),
+            CommonAttributes.STATES.value,
+            "sleep",
+            negate=True,
+        )
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+async def test_meta_area_ignores_children_without_a_state_entity(
+    hass: HomeAssistant,
+) -> None:
+    """Test a child area whose state entity is gone does not count towards the meta area."""
+    entries, sensors = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        hass.states.async_remove(KITCHEN_SENSOR_ID)
+        await hass.async_block_till_done()
+
+        await safe_set_state(hass, sensors[1], True)
+
+        assert_in_attribute(
+            hass.states.get(INTERIOR_SENSOR_ID),
+            CommonAttributes.STATES.value,
+            "sleep",
+        )
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+async def test_meta_area_is_bright_when_its_children_are_not_dark(
+    hass: HomeAssistant,
+) -> None:
+    """Test the meta area reports bright once no child area is dark."""
+    hass.states.async_set("sun.sun", STATE_ABOVE_HORIZON)
+    entries, _ = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        await asyncio.sleep(0.5)
+        interior_state = hass.states.get(INTERIOR_SENSOR_ID)
+
+        assert_in_attribute(
+            interior_state, CommonAttributes.STATES.value, AreaStates.BRIGHT
+        )
+        assert_in_attribute(
+            interior_state, CommonAttributes.STATES.value, AreaStates.DARK, negate=True
+        )
+    finally:
+        await shutdown_integration(hass, entries)

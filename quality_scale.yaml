@@ -200,14 +200,12 @@ rules:
     comment: |
       Required for Silver tier: more than 95% coverage in EVERY module
       (not only overall).
-      Last full test suite run: 452 tests passed, 93% overall. All config_flow/
-      modules are at 100%.
-      Since then these modules were raised above 95% (targeted test runs, not yet
-      confirmed by a full run): switch/*, binary_sensor/__init__,
-      binary_sensor/wasp_in_a_box, media_player/*, sensor/*, helpers/aggregates,
-      helpers/timer, threshold, cover, fan.
-      Modules still at or below 95% in the last full run, least covered first:
-      light (88%), base/magic (89%), binary_sensor/presence (92%).
+      Last full test suite run: 552 passed, 97% overall (before tests were moved
+      to their feature files). All config_flow/ modules are at 100%.
+      Since that run, binary_sensor/presence.py and repairs.py were raised to
+      100% (targeted runs, not yet confirmed by a full run).
+      Modules still at or below 95% in the last full run:
+      base/magic (89%, 48 lines missed) and light (89%, 28 lines missed).
       Evidence: coverage report from tox -e ha-major
 
   # Performance

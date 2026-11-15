@@ -17,7 +17,7 @@ from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
-from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, StateMachine
 
 from custom_components.magic_areas.binary_sensor.presence import AreaStateTrackerEntity
@@ -507,3 +507,77 @@ async def test_inconsistent_occupied_state_schedules_a_clear_timeout(
 
     assert "State inconsistency detected" in caplog.text
     assert set_timeout.called
+
+
+# Guards that keep the tracker safe regardless of its caller
+# pylint: disable=protected-access
+
+
+def _tracker(hass: HomeAssistant) -> AreaStateTrackerEntity:
+    """Return the presence tracker entity of the default area."""
+    return hass.data[BINARY_SENSOR_DOMAIN].get_entity(AREA_SENSOR_ID)
+
+
+async def test_valid_on_states_accepts_additional_states(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_basic,
+) -> None:
+    """Test extra states can be added to the states that count as active."""
+    tracker = _tracker(hass)
+
+    default_states = tracker._valid_on_states()
+    extended_states = tracker._valid_on_states(["custom_on"])
+
+    assert STATE_ON in default_states
+    assert "custom_on" not in default_states
+    assert "custom_on" in extended_states
+    assert set(default_states) <= set(extended_states)
+    # The caller's list is never modified.
+    assert tracker._valid_on_states() == default_states
+
+
+async def test_clear_timeout_is_not_scheduled_for_a_clear_area(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_basic,
+) -> None:
+    """Test a clear timeout is only ever scheduled for an occupied area."""
+    tracker = _tracker(hass)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_OFF)
+
+    assert tracker._set_clear_timeout() is False
+    assert tracker._is_on_clear_timeout() is False
+
+
+async def test_clear_timeout_cannot_be_exceeded_for_a_clear_area(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    _setup_integration_basic,
+) -> None:
+    """Test a clear area never reports an exceeded clear timeout."""
+    tracker = _tracker(hass)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_OFF)
+
+    assert tracker._timeout_exceeded() is False
+
+
+async def test_unavailable_secondary_sensor_is_ignored(
+    hass: HomeAssistant,
+    secondary_states_sensors: list[MockBinarySensor],
+    _setup_integration_secondary_states,
+) -> None:
+    """Test a secondary state sensor going unavailable does not change the area."""
+    sleep_sensor = secondary_states_sensors[0]
+    await trigger_secondary_state(hass, sleep_sensor, active=True)
+    assert_in_attribute(
+        hass.states.get(AREA_SENSOR_ID), CommonAttributes.STATES.value, AreaStates.SLEEP
+    )
+
+    hass.states.async_set(sleep_sensor.entity_id, STATE_UNAVAILABLE)
+    await hass.async_block_till_done()
+
+    # The unavailable report is ignored, so the area keeps its last sleep state.
+    assert_in_attribute(
+        hass.states.get(AREA_SENSOR_ID), CommonAttributes.STATES.value, AreaStates.SLEEP
+    )
