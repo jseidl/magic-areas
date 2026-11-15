@@ -43,6 +43,9 @@ from custom_components.magic_areas.util import cleanup_removed_entries
 
 _LOGGER = logging.getLogger(__name__)
 
+# Push-based entities (no polling, no external I/O): no concurrency limit needed.
+PARALLEL_UPDATES = 0
+
 ADAPTIVE_LIGHTING_CONTEXT_TOKEN: str = ":al:"
 
 # Entry Setup

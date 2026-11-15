@@ -25,6 +25,9 @@ from custom_components.magic_areas.util import cleanup_removed_entries
 
 _LOGGER = logging.getLogger(__name__)
 
+# Push-based entities (no polling, no external I/O): no concurrency limit needed.
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

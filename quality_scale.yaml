@@ -212,13 +212,14 @@ rules:
 
   # Performance
   parallel-updates:
-    status: pending
+    status: done
     comment: |
-      PARALLEL_UPDATES not specified in platform files.
-      Every platform module must define it: binary_sensor, cover, fan, light,
-      media_player, sensor and switch.
-      Tracked as a separate follow-up.
-      Evidence: No PARALLEL_UPDATES found in platform files
+      PARALLEL_UPDATES = 0 defined in every platform module: binary_sensor,
+      cover, fan, light, media_player, sensor and switch.
+      Entities are push-based (should_poll is False) and perform no external
+      I/O, so no concurrency limit is needed.
+      Evidence: PARALLEL_UPDATES in custom_components/magic_areas/{binary_sensor,
+      media_player,sensor,switch}/__init__.py, cover.py, fan.py, light.py
 
   # Authentication (Exempt - No Auth)
   reauthentication-flow:

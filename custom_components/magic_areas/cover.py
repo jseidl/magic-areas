@@ -23,6 +23,9 @@ from custom_components.magic_areas.helpers.area import get_area_from_config_entr
 from custom_components.magic_areas.util import cleanup_removed_entries
 
 _LOGGER = logging.getLogger(__name__)
+
+# Push-based entities (no polling, no external I/O): no concurrency limit needed.
+PARALLEL_UPDATES = 0
 DEPENDENCIES = ["magic_areas"]
 
 
