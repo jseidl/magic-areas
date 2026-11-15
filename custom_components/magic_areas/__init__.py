@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.area_registry import (
     EVENT_AREA_REGISTRY_UPDATED,
@@ -50,6 +51,12 @@ from custom_components.magic_areas.const.user_defined_states import (
 from custom_components.magic_areas.helpers.area import (
     async_update_reserved_floor_issues,
     get_magic_area_for_config_entry,
+)
+from custom_components.magic_areas.helpers.issues import (
+    async_clear_area_not_found_issue,
+    async_delete_entry_issues,
+    async_raise_area_not_found_issue,
+    async_update_dependency_issues,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -128,8 +135,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         magic_area: MagicArea | None = get_magic_area_for_config_entry(
             hass, config_entry
         )
-        assert magic_area is not None
+        if magic_area is None:
+            # The area was removed from Home Assistant: raise a fixable repair
+            # issue (which can remove this entry) and fail the setup cleanly.
+            async_raise_area_not_found_issue(hass, config_entry)
+            raise ConfigEntryError(f"{config_entry.title}: Area not found on registry")
+
+        async_clear_area_not_found_issue(hass, config_entry)
         await magic_area.initialize()
+        async_update_dependency_issues(hass, config_entry, magic_area)
 
         _LOGGER.debug(
             "%s: Magic Area (%s) created: %s",
@@ -196,6 +210,11 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     return await hass.config_entries.async_unload_platforms(
         config_entry, area.available_platforms()
     )
+
+
+async def async_remove_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Remove the repair issues of a config entry which is being deleted."""
+    async_delete_entry_issues(hass, config_entry)
 
 
 # ============================================================================

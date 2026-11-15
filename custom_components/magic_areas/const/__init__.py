@@ -617,9 +617,26 @@ META_AREA_INTERIOR = "Interior"
 META_AREA_EXTERIOR = "Exterior"
 META_AREAS = [META_AREA_GLOBAL, META_AREA_INTERIOR, META_AREA_EXTERIOR]
 
-# Repair issue raised when a floor's id is one of the built-in meta-area ids
-# (global/interior/exterior), which stops it from getting a floor meta-area.
-ISSUE_RESERVED_FLOOR_ID = "reserved_floor_id"
+
+class MagicAreasIssue(StrEnum):
+    """Repair issue keys.
+
+    Values are used as the translation key (matching `issues.<value>` in the
+    translation files) and as the prefix of the issue id.
+    """
+
+    # A floor's id is one of the built-in meta-area ids (global/interior/exterior),
+    # which stops it from getting a floor meta-area.
+    RESERVED_FLOOR_ID = "reserved_floor_id"
+    # A config entry points to an area that no longer exists.
+    AREA_NOT_FOUND = "area_not_found"
+    # A feature is enabled which needs the Aggregates feature.
+    MISSING_AGGREGATES = "missing_aggregates"
+    # Wasp in a Box has no (usable) wasp sensors.
+    WASP_NO_WASP_SENSORS = "wasp_no_wasp_sensors"
+    # Wasp in a Box has no (usable) box sensors.
+    WASP_NO_BOX_SENSORS = "wasp_no_box_sensors"
+
 
 # Area Types
 AREA_TYPES = list(AreaType)

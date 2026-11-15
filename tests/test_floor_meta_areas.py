@@ -14,11 +14,7 @@ from homeassistant.helpers import (
 )
 
 from custom_components.magic_areas.base.magic import MagicArea, MagicMetaArea
-from custom_components.magic_areas.const import (
-    CONF_AREA_ID,
-    DOMAIN,
-    ISSUE_RESERVED_FLOOR_ID,
-)
+from custom_components.magic_areas.const import CONF_AREA_ID, DOMAIN, MagicAreasIssue
 
 from tests.const import MockAreaIds, MockFloorIds
 from tests.helpers import (
@@ -31,7 +27,7 @@ AREA = MockAreaIds.KITCHEN  # on MockFloorIds.FIRST_FLOOR
 OLD_FLOOR_META = MockAreaIds.FIRST_FLOOR
 NEW_FLOOR_META = MockAreaIds.SECOND_FLOOR
 
-RESERVED_FLOOR_ISSUE = f"{ISSUE_RESERVED_FLOOR_ID}_exterior"
+RESERVED_FLOOR_ISSUE = f"{MagicAreasIssue.RESERVED_FLOOR_ID}_exterior"
 
 
 def _config_entry(area: MockAreaIds) -> MockConfigEntry:
@@ -141,7 +137,7 @@ async def test_reserved_floor_id_repair_issue(hass: HomeAssistant) -> None:
         assert issue is not None
         assert issue.severity == ir.IssueSeverity.WARNING
         assert not issue.is_fixable
-        assert issue.translation_key == ISSUE_RESERVED_FLOOR_ID
+        assert issue.translation_key == MagicAreasIssue.RESERVED_FLOOR_ID
         assert issue.translation_placeholders == {
             "floor_name": "Outside",
             "floor_id": "exterior",

@@ -26,7 +26,7 @@ from custom_components.magic_areas.base.magic import BasicArea, MagicArea, Magic
 from custom_components.magic_areas.const import (
     CONF_AREA_ID,
     DOMAIN,
-    ISSUE_RESERVED_FLOOR_ID,
+    MagicAreasIssue,
     MetaAreaIcons,
     MetaAreaType,
 )
@@ -54,7 +54,7 @@ def async_update_reserved_floor_issues(hass: HomeAssistant) -> None:
     """
     floor_registry = floorreg_async_get(hass)
     for meta_area_id in RESERVED_META_AREA_IDS:
-        issue_id = f"{ISSUE_RESERVED_FLOOR_ID}_{meta_area_id}"
+        issue_id = f"{MagicAreasIssue.RESERVED_FLOOR_ID}_{meta_area_id}"
         floor = floor_registry.async_get_floor(meta_area_id)
         if floor is None:
             async_delete_issue(hass, DOMAIN, issue_id)
@@ -75,7 +75,7 @@ def async_update_reserved_floor_issues(hass: HomeAssistant) -> None:
             issue_id,
             is_fixable=False,
             severity=IssueSeverity.WARNING,
-            translation_key=ISSUE_RESERVED_FLOOR_ID,
+            translation_key=MagicAreasIssue.RESERVED_FLOOR_ID,
             translation_placeholders={
                 "floor_name": floor.name,
                 "floor_id": floor.floor_id,
