@@ -11,6 +11,7 @@ from homeassistant.components.sun.const import STATE_ABOVE_HORIZON
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
+from custom_components.magic_areas.base.magic import MagicMetaArea
 from custom_components.magic_areas.const import (
     DOMAIN,
     AreaStates,
@@ -369,5 +370,67 @@ async def test_meta_area_is_bright_when_its_children_are_not_dark(
         assert_in_attribute(
             interior_state, CommonAttributes.STATES.value, AreaStates.DARK, negate=True
         )
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+class _UnprintableArea:
+    """A child area entry that cannot be turned into an entity id."""
+
+    def __format__(self, format_spec: str) -> str:
+        raise ValueError("cannot format")
+
+    def __str__(self) -> str:
+        return "unprintable"
+
+
+async def test_meta_area_active_areas_follow_the_area_entities(
+    hass: HomeAssistant,
+) -> None:
+    """get_active_areas lists the occupied children and skips ones without an entity."""
+    entries, _ = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        meta_area = entries[-1].runtime_data
+        assert isinstance(meta_area, MagicMetaArea)
+        assert meta_area.get_active_areas() == []
+
+        # NOTE: get_active_areas looks children up as binary_sensor.area_<slug>,
+        # which is not the id of the area state sensors Magic Areas creates.
+        hass.states.async_set("binary_sensor.area_kitchen", STATE_ON)
+        hass.states.async_set("binary_sensor.area_living_room", STATE_OFF)
+        assert meta_area.get_active_areas() == [MockAreaIds.KITCHEN.value]
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+async def test_meta_area_active_areas_survive_a_broken_child(
+    hass: HomeAssistant,
+) -> None:
+    """get_active_areas logs a child it cannot read and carries on with the rest."""
+    entries, _ = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        meta_area = entries[-1].runtime_data
+        assert isinstance(meta_area, MagicMetaArea)
+        hass.states.async_set("binary_sensor.area_kitchen", STATE_ON)
+        meta_area.child_areas = [_UnprintableArea(), MockAreaIds.KITCHEN.value]  # type: ignore[list-item]
+
+        assert meta_area.get_active_areas() == [MockAreaIds.KITCHEN.value]
+    finally:
+        await shutdown_integration(hass, entries)
+
+
+async def test_meta_area_initialize_is_idempotent(hass: HomeAssistant) -> None:
+    """Initializing an already initialized meta-area leaves it as it was."""
+    entries, _ = await _setup_interior_with_children(hass, "any", "sleep")
+    try:
+        meta_area = entries[-1].runtime_data
+        assert meta_area.initialized
+        entities_before = {
+            domain: list(entities) for domain, entities in meta_area.entities.items()
+        }
+
+        await meta_area.initialize()
+
+        assert meta_area.entities == entities_before
     finally:
         await shutdown_integration(hass, entries)

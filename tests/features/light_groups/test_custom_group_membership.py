@@ -95,3 +95,40 @@ async def test_custom_group_contains_only_lights_in_area(
         assert group_state.attributes[ATTR_ENTITY_ID] == expected_members
     finally:
         await shutdown_integration(hass, [config_entry])
+
+
+async def test_custom_group_with_no_lights_in_area_is_skipped(
+    hass: HomeAssistant,
+) -> None:
+    """A custom group whose configured lights are all elsewhere isn't created."""
+    lights = {
+        name: MockLight(name=name, state=STATE_OFF, unique_id=name, dimmable=True)
+        for name in LIGHT_NAMES
+    }
+    await setup_mock_entities(
+        hass,
+        LIGHT_DOMAIN,
+        {
+            DEFAULT_MOCK_AREA: [lights["light_1"], lights["light_2"]],
+            OTHER_AREA: [lights["light_3"]],
+        },
+    )
+
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    group = {
+        LightGroupEntryOptions.NAME.key: "Test Group",
+        LightGroupEntryOptions.LIGHTS.key: ["light.light_3"],
+        LightGroupEntryOptions.STATES.key: [AreaStates.OCCUPIED],
+        LightGroupEntryOptions.TURN_ON_WHEN.key: [LightGroupTurnOnWhen.AREA_OCCUPIED],
+        LightGroupEntryOptions.TURN_OFF_WHEN.key: [LightGroupTurnOffWhen.AREA_CLEAR],
+        LightGroupEntryOptions.REQUIRE_DARK.key: False,
+    }
+    merge_feature_config(
+        data, LightGroupOptions.to_config({LightGroupOptions.GROUPS.key: [group]})
+    )
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+    try:
+        assert hass.states.get(GROUP_ID) is None
+    finally:
+        await shutdown_integration(hass, [config_entry])

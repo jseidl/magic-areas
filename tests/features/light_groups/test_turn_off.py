@@ -7,7 +7,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
 
 from custom_components.magic_areas.const import AreaStates, MagicAreasEvents
-from custom_components.magic_areas.const.light_groups import LightGroupAttributes
+from custom_components.magic_areas.const.light_groups import (
+    LightGroupAttributes,
+    LightGroupTurnOnWhen,
+)
 
 from tests.helpers import assert_attribute, assert_state, trigger_occupancy
 
@@ -195,3 +198,110 @@ class TestTurnOff:
         # Lights should stay ON (own area bright doesn't trigger EXTERIOR_BRIGHT)
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_ON)
+
+
+class TestTurnOffGuards:
+    """Test the conditions that block an automatic turn-off."""
+
+    async def test_exterior_bright_ignored_when_group_is_off(
+        self, hass: HomeAssistant, setup_basic_light_group: dict
+    ):
+        """Test exterior brightness does nothing to a group that is already off."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        assert_state(hass.states.get(light_group_id), STATE_OFF)
+
+        dispatcher_send(
+            hass,
+            f"{MagicAreasEvents.AREA_STATE_CHANGED}_exterior",
+            "exterior",
+            ({AreaStates.BRIGHT}, {AreaStates.DARK}),
+        )
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.1)
+
+        assert_state(hass.states.get(light_group_id), STATE_OFF)
+
+    async def test_exterior_bright_ignored_in_manual_mode(
+        self, hass: HomeAssistant, setup_basic_light_group: dict
+    ):
+        """Test manual mode keeps lights on when the exterior gets bright."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor = setup_basic_light_group["motion_sensor"]
+
+        await trigger_occupancy(hass, motion_sensor, occupied=True)
+        await hass.services.async_call(
+            "light", "turn_on", {"entity_id": light_group_id}, blocking=True
+        )
+        await hass.async_block_till_done()
+        assert_attribute(
+            hass.states.get(light_group_id), LightGroupAttributes.MODE.value, "manual"
+        )
+
+        dispatcher_send(
+            hass,
+            f"{MagicAreasEvents.AREA_STATE_CHANGED}_exterior",
+            "exterior",
+            ({AreaStates.BRIGHT}, {AreaStates.DARK}),
+        )
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.1)
+
+        assert_state(hass.states.get(light_group_id), STATE_ON)
+
+    async def test_no_turn_off_triggers_means_never_turn_off(
+        self, hass: HomeAssistant, setup_custom_light_group
+    ):
+        """Test a group without turn-off triggers stays on when the area clears."""
+        setup = await setup_custom_light_group(
+            states=[AreaStates.OCCUPIED],
+            turn_on_when=[LightGroupTurnOnWhen.AREA_OCCUPIED],
+            turn_off_when=[],
+            require_dark=False,
+        )
+
+        await trigger_occupancy(hass, setup["motion_sensor"], occupied=True)
+        assert_state(hass.states.get(setup["light_group_id"]), STATE_ON)
+
+        await trigger_occupancy(hass, setup["motion_sensor"], occupied=False)
+        assert_state(hass.states.get(setup["light_group_id"]), STATE_ON)
+
+    async def test_lights_on_before_occupancy_stay_on(
+        self, hass: HomeAssistant, setup_basic_light_group: dict
+    ):
+        """Test lights that are on when the area becomes occupied aren't turned off."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor = setup_basic_light_group["motion_sensor"]
+
+        await hass.services.async_call(
+            "light", "turn_on", {"entity_id": light_group_id}, blocking=True
+        )
+        await hass.async_block_till_done()
+
+        await trigger_occupancy(hass, motion_sensor, occupied=True)
+
+        assert_state(hass.states.get(light_group_id), STATE_ON)
+
+    async def test_manual_mode_blocks_state_based_turn_off(
+        self, hass: HomeAssistant, setup_basic_light_group: dict
+    ):
+        """Test manual mode keeps lights on when an unrelated state change arrives."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor = setup_basic_light_group["motion_sensor"]
+        area_id = setup_basic_light_group["config_entry"].data["id"]
+
+        await trigger_occupancy(hass, motion_sensor, occupied=True)
+        await hass.services.async_call(
+            "light", "turn_on", {"entity_id": light_group_id}, blocking=True
+        )
+        await hass.async_block_till_done()
+
+        dispatcher_send(
+            hass,
+            f"{MagicAreasEvents.AREA_STATE_CHANGED}_{area_id}",
+            area_id,
+            ({AreaStates.DARK}, {AreaStates.BRIGHT}),
+        )
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.1)
+
+        assert_state(hass.states.get(light_group_id), STATE_ON)

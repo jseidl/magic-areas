@@ -103,3 +103,39 @@ async def test_light_sensor_switches_on_event_loop(hass: HomeAssistant) -> None:
         )
     finally:
         await shutdown_integration(hass, [config_entry])
+
+
+async def test_second_exterior_load_keeps_the_switched_light_sensor(
+    hass: HomeAssistant,
+) -> None:
+    """Once an area left the sun.sun fallback, later Exterior loads don't re-resolve it."""
+
+    hass.states.async_set("sun.sun", STATE_BELOW_HORIZON)
+    hass.states.async_set(EXTERIOR_LIGHT_SENSOR, STATE_ON)
+    config_entry = MockConfigEntry(
+        domain=DOMAIN, data=get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    )
+    await init_integration(hass, [config_entry])
+    try:
+        area = config_entry.runtime_data
+        resolutions: list[str] = []
+
+        def _resolve() -> str:
+            resolutions.append(EXTERIOR_LIGHT_SENSOR)
+            return EXTERIOR_LIGHT_SENSOR
+
+        with patch.object(area, "resolve_light_entity", _resolve):
+            for _ in range(2):
+                async_dispatcher_send(
+                    hass,
+                    MagicAreasEvents.AREA_LOADED,
+                    AreaType.META,
+                    None,
+                    MetaAreaType.EXTERIOR.value,
+                )
+                await hass.async_block_till_done()
+
+        assert area.area_light_sensor == EXTERIOR_LIGHT_SENSOR
+        assert len(resolutions) == 1
+    finally:
+        await shutdown_integration(hass, [config_entry])

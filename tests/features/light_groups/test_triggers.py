@@ -7,6 +7,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
 
 from custom_components.magic_areas.const import AreaStates, MagicAreasEvents
+from custom_components.magic_areas.const.light_groups import (
+    LightGroupTurnOffWhen,
+    LightGroupTurnOnWhen,
+)
 
 from tests.features.light_groups.conftest import create_magic_context
 from tests.helpers import assert_state, trigger_occupancy, trigger_secondary_state
@@ -216,3 +220,39 @@ class TestTriggers:
         # Should have turned on via STATE_GAIN or AREA_DARK
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_ON)
+
+    async def test_area_dark_trigger_fires_without_state_gain(
+        self, hass: HomeAssistant, setup_custom_light_group
+    ):
+        """Test a group with only the AREA_DARK trigger turns on when the area gets dark."""
+        setup = await setup_custom_light_group(
+            states=[AreaStates.OCCUPIED],
+            turn_on_when=[LightGroupTurnOnWhen.AREA_DARK],
+            turn_off_when=[LightGroupTurnOffWhen.AREA_CLEAR],
+            require_dark=False,
+        )
+        light_group_id = setup["light_group_id"]
+        dark_sensor = setup["dark_sensor"]
+
+        # Start bright, then occupy: nothing but darkness triggers this group.
+        await trigger_secondary_state(hass, dark_sensor, active=True)
+        await trigger_occupancy(hass, setup["motion_sensor"], occupied=True)
+        assert_state(hass.states.get(light_group_id), STATE_OFF)
+
+        await trigger_secondary_state(hass, dark_sensor, active=False)
+        assert_state(hass.states.get(light_group_id), STATE_ON)
+
+    async def test_group_without_states_never_turns_on(
+        self, hass: HomeAssistant, setup_custom_light_group
+    ):
+        """Test a group assigned to no states isn't turned on by any trigger."""
+        setup = await setup_custom_light_group(
+            states=[],
+            turn_on_when=[LightGroupTurnOnWhen.AREA_OCCUPIED],
+            turn_off_when=[LightGroupTurnOffWhen.AREA_CLEAR],
+            require_dark=False,
+        )
+
+        await trigger_occupancy(hass, setup["motion_sensor"], occupied=True)
+
+        assert_state(hass.states.get(setup["light_group_id"]), STATE_OFF)

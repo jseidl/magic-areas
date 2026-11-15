@@ -36,7 +36,7 @@ from custom_components.magic_areas.const import (
 )
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 
-from tests.const import DEFAULT_MOCK_AREA
+from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
 from tests.helpers import (
     assert_in_attribute,
     assert_state,
@@ -616,3 +616,116 @@ class TestUnmetAggregateConditions:
             CommonAttributes.STATES.value,
             AreaStates.DARK,
         )
+
+
+class TestExteriorFallback:
+    """Test an area with no light source of its own follows the Exterior meta-area."""
+
+    async def _setup(
+        self, hass: HomeAssistant, aggregate_options: dict[str, Any], sensor: Any
+    ) -> list[MockConfigEntry]:
+        """Set up a backyard, the Exterior meta-area over it, and a plain kitchen."""
+        domain = (
+            BINARY_SENSOR_DOMAIN
+            if isinstance(sensor, MockBinarySensor)
+            else SENSOR_DOMAIN
+        )
+        await setup_mock_entities(hass, domain, {MockAreaIds.BACKYARD: [sensor]})
+        # The kitchen starts on the sun fallback, then switches once Exterior loads.
+        hass.states.async_set("sun.sun", STATE_ABOVE_HORIZON)
+
+        entries: list[MockConfigEntry] = []
+        for area in (MockAreaIds.BACKYARD, MockAreaIds.EXTERIOR, MockAreaIds.KITCHEN):
+            data = get_basic_config_entry_data(area)
+            if area is not MockAreaIds.KITCHEN:
+                merge_feature_config(
+                    data,
+                    AggregateOptions.to_config(
+                        {AggregateOptions.MIN_ENTITIES.key: 1, **aggregate_options}
+                    ),
+                )
+            entries.append(MockConfigEntry(domain=DOMAIN, data=data))
+
+        await init_integration(
+            hass, entries, areas=[MockAreaIds.BACKYARD, MockAreaIds.KITCHEN]
+        )
+        await asyncio.sleep(0.5)
+        return entries
+
+    async def _assert_kitchen_follows(
+        self, hass: HomeAssistant, exterior_sensor_id: str
+    ) -> None:
+        kitchen_state_id = (
+            f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_"
+            f"{MockAreaIds.KITCHEN.value}_area_state"
+        )
+        assert hass.states.get(exterior_sensor_id) is not None
+
+        hass.states.async_set(exterior_sensor_id, STATE_ON)
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.5)
+        assert_in_attribute(
+            hass.states.get(kitchen_state_id),
+            CommonAttributes.STATES.value,
+            AreaStates.BRIGHT,
+        )
+
+        hass.states.async_set(exterior_sensor_id, STATE_OFF)
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.5)
+        assert_in_attribute(
+            hass.states.get(kitchen_state_id),
+            CommonAttributes.STATES.value,
+            AreaStates.DARK,
+        )
+
+    async def test_uses_the_exterior_light_aggregate(self, hass: HomeAssistant):
+        """Test the exterior light aggregate drives the kitchen when there is no threshold."""
+        entries = await self._setup(
+            hass,
+            {
+                AggregateOptions.BINARY_SENSOR_DEVICE_CLASSES.key: [
+                    BinarySensorDeviceClass.LIGHT.value
+                ]
+            },
+            MockBinarySensor(
+                name="yard_light",
+                unique_id="yard_light",
+                device_class=BinarySensorDeviceClass.LIGHT,
+            ),
+        )
+        try:
+            await self._assert_kitchen_follows(
+                hass,
+                f"{BINARY_SENSOR_DOMAIN}.magic_areas_aggregates_exterior_aggregate_light",
+            )
+        finally:
+            await shutdown_integration(hass, entries)
+
+    async def test_prefers_the_exterior_threshold_sensor(self, hass: HomeAssistant):
+        """Test the exterior illuminance threshold drives the kitchen when it exists."""
+        entries = await self._setup(
+            hass,
+            {
+                AggregateOptions.ILLUMINANCE_THRESHOLD.key: 10,
+                AggregateOptions.SENSOR_DEVICE_CLASSES.key: [
+                    SensorDeviceClass.ILLUMINANCE.value
+                ],
+            },
+            MockSensor(
+                name="yard_lux",
+                unique_id="yard_lux",
+                native_value=500,
+                device_class=SensorDeviceClass.ILLUMINANCE,
+                native_unit_of_measurement=LIGHT_LUX,
+                unit_of_measurement=LIGHT_LUX,
+                extra_state_attributes={"unit_of_measurement": LIGHT_LUX},
+            ),
+        )
+        try:
+            await self._assert_kitchen_follows(
+                hass,
+                f"{BINARY_SENSOR_DOMAIN}.magic_areas_threshold_exterior_threshold_light",
+            )
+        finally:
+            await shutdown_integration(hass, entries)

@@ -207,3 +207,30 @@ class TestMagicLightGroupCallForwarding:
         assert_state(hass.states.get("light.light_1"), STATE_OFF)
         assert_state(hass.states.get("light.light_2"), STATE_OFF)
         assert_state(hass.states.get("light.light_3"), STATE_OFF)
+
+    async def test_turn_on_ignores_members_without_a_state(
+        self, hass, setup_basic_light_group
+    ):
+        """Test a member light that has no state is left out of a restricted turn_on."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        lights = setup_basic_light_group["lights"]
+
+        await hass.services.async_call(
+            "light",
+            "turn_on",
+            {"entity_id": lights[0].entity_id},
+            blocking=True,
+        )
+        hass.states.async_remove(lights[2].entity_id)
+        await hass.async_block_till_done()
+
+        await hass.services.async_call(
+            "light",
+            "turn_on",
+            {"entity_id": light_group_id, ATTR_BRIGHTNESS: 100},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        assert_state(hass.states.get(lights[0].entity_id), STATE_ON)
+        assert_state(hass.states.get(lights[1].entity_id), STATE_OFF)

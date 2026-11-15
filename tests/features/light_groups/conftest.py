@@ -3,7 +3,7 @@
 # pylint: disable=redefined-outer-name`
 
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 import logging
 from typing import Any
 
@@ -880,3 +880,75 @@ async def setup_basic_light_group_bright(
     }
 
     await shutdown_integration(hass, [light_group_basic_config_entry])
+
+
+# Custom Group Factory
+
+
+@pytest.fixture
+async def setup_custom_light_group(
+    hass: HomeAssistant,
+    setup_test_lights: list[MockLight],
+    setup_all_binary_sensors: dict[str, MockBinarySensor],
+) -> AsyncGenerator[Callable[..., Awaitable[dict[str, Any]]]]:
+    """Return a factory that sets up a single group with the given trigger options."""
+
+    config_entries: list[MockConfigEntry] = []
+
+    async def _setup(
+        *,
+        states: list[str],
+        turn_on_when: list[str],
+        turn_off_when: list[str],
+        require_dark: bool = True,
+    ) -> dict[str, Any]:
+        data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+        merge_feature_config(
+            data,
+            AggregateOptions.to_config(
+                {
+                    AggregateOptions.MIN_ENTITIES.key: 1,
+                    AggregateOptions.BINARY_SENSOR_DEVICE_CLASSES.key: [
+                        BinarySensorDeviceClass.LIGHT
+                    ],
+                }
+            ),
+        )
+        group = {
+            LightGroupEntryOptions.NAME.key: "Custom Group",
+            LightGroupEntryOptions.LIGHTS.key: [
+                "light.light_1",
+                "light.light_2",
+                "light.light_3",
+            ],
+            LightGroupEntryOptions.STATES.key: states,
+            LightGroupEntryOptions.TURN_ON_WHEN.key: turn_on_when,
+            LightGroupEntryOptions.TURN_OFF_WHEN.key: turn_off_when,
+            LightGroupEntryOptions.REQUIRE_DARK.key: require_dark,
+        }
+        merge_feature_config(
+            data, LightGroupOptions.to_config({LightGroupOptions.GROUPS.key: [group]})
+        )
+        config_entry = MockConfigEntry(
+            domain=DOMAIN, title=DEFAULT_MOCK_AREA.title(), data=data
+        )
+        config_entries.append(config_entry)
+
+        await init_integration(hass, [config_entry])
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.5)
+        await hass.async_block_till_done()
+        await enable_light_control(hass, DEFAULT_MOCK_AREA.value)
+
+        return {
+            "config_entry": config_entry,
+            "lights": setup_test_lights,
+            "motion_sensor": setup_all_binary_sensors["motion"],
+            "dark_sensor": setup_all_binary_sensors["dark"],
+            "light_group_id": f"light.magic_areas_light_groups_{DEFAULT_MOCK_AREA.value}_custom_group",
+        }
+
+    yield _setup
+
+    if config_entries:
+        await shutdown_integration(hass, config_entries)

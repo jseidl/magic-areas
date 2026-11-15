@@ -3,13 +3,14 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.components.sensor.const import (
     DOMAIN as SENSOR_DOMAIN,
     SensorDeviceClass,
 )
-from homeassistant.const import ATTR_ENTITY_ID, UnitOfTemperature
+from homeassistant.const import ATTR_ENTITY_ID, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -215,3 +216,91 @@ async def test_options_flow_field(hass: HomeAssistant) -> None:
         assert IGNORE_INTEGRATION_HIDDEN not in await _fields(meta_entry)
     finally:
         await shutdown_integration(hass, [area_entry, meta_entry])
+
+
+async def test_disabled_entities_are_excluded(hass: HomeAssistant) -> None:
+    """Entities disabled in the registry are not loaded into the area."""
+    await _setup_sensors(hass)
+    er.async_get(hass).async_update_entity(
+        PLAIN_SENSOR, disabled_by=er.RegistryEntryDisabler.USER
+    )
+    await hass.async_block_till_done()
+
+    config_entry = _area_config_entry(AREA)
+    await init_integration(hass, [config_entry])
+    try:
+        assert PLAIN_SENSOR not in _sensor_ids(hass, config_entry)
+        assert USER_HIDDEN_SENSOR in _sensor_ids(hass, config_entry)
+    finally:
+        await shutdown_integration(hass, [config_entry])
+
+
+@pytest.mark.parametrize(
+    ("ignore_diagnostic", "expected_loaded"),
+    [(True, False), (False, True)],
+)
+async def test_diagnostic_entities_follow_the_ignore_option(
+    hass: HomeAssistant, ignore_diagnostic: bool, expected_loaded: bool
+) -> None:
+    """Config and diagnostic entities are only loaded when the option is off."""
+    await _setup_sensors(hass)
+    entity_registry = er.async_get(hass)
+    entity_registry.async_update_entity(
+        PLAIN_SENSOR, entity_category=EntityCategory.DIAGNOSTIC
+    )
+    entity_registry.async_update_entity(
+        USER_HIDDEN_SENSOR, entity_category=EntityCategory.CONFIG
+    )
+    await hass.async_block_till_done()
+
+    config_entry = _area_config_entry(AREA, **{IGNORE_DIAGNOSTIC: ignore_diagnostic})
+    await init_integration(hass, [config_entry])
+    try:
+        loaded = _sensor_ids(hass, config_entry)
+        assert (PLAIN_SENSOR in loaded) is expected_loaded
+        assert (USER_HIDDEN_SENSOR in loaded) is expected_loaded
+    finally:
+        await shutdown_integration(hass, [config_entry])
+
+
+async def test_area_never_loads_its_own_entities(hass: HomeAssistant) -> None:
+    """Entities created by the area's own config entry are not loaded, even if assigned to it."""
+    await _setup_sensors(hass)
+    config_entry = _area_config_entry(AREA)
+    await init_integration(hass, [config_entry])
+    try:
+        own_entity_id = (
+            f"{SENSOR_DOMAIN}.magic_areas_aggregates_{AREA.value}_aggregate_temperature"
+        )
+        er.async_get(hass).async_update_entity(own_entity_id, area_id=AREA.value)
+        await hass.config_entries.async_reload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert own_entity_id not in _sensor_ids(hass, config_entry)
+        assert PLAIN_SENSOR in _sensor_ids(hass, config_entry)
+    finally:
+        await shutdown_integration(hass, [config_entry])
+
+
+async def test_area_recognises_entities_of_its_own_config_entry(
+    hass: HomeAssistant,
+) -> None:
+    """An entity belongs to the area only when its config entry is the area's own."""
+    await _setup_sensors(hass)
+    config_entry = _area_config_entry(AREA)
+    await init_integration(hass, [config_entry])
+    try:
+        area = _magic_area(hass, config_entry)
+        entity_registry = er.async_get(hass)
+        own_entity = entity_registry.async_get(
+            f"{SENSOR_DOMAIN}.magic_areas_aggregates_{AREA.value}_aggregate_temperature"
+        )
+        assert own_entity is not None
+        foreign_entity = entity_registry.async_get(PLAIN_SENSOR)
+        assert foreign_entity is not None
+
+        # pylint: disable=protected-access
+        assert area._is_magic_area_entity(own_entity)
+        assert not area._is_magic_area_entity(foreign_entity)
+    finally:
+        await shutdown_integration(hass, [config_entry])

@@ -196,16 +196,19 @@ rules:
 
   # Testing
   test-coverage:
-    status: pending
+    status: done
     comment: |
-      Required for Silver tier: more than 95% coverage in EVERY module
-      (not only overall).
-      Last full test suite run: 552 passed, 97% overall (before tests were moved
-      to their feature files). All config_flow/ modules are at 100%.
-      Since that run, binary_sensor/presence.py and repairs.py were raised to
-      100% (targeted runs, not yet confirmed by a full run).
-      Modules still at or below 95% in the last full run:
-      base/magic (89%, 48 lines missed) and light (89%, 28 lines missed).
+      More than 95% coverage in every module: the lowest is 97%.
+      Full test suite run (tox -e ha-major): 608 passed, 99% overall
+      (3847 statements, 23 missed, 64 modules). All config_flow/ modules
+      are at 100%.
+      Modules with remaining misses: __init__ (97%), base/magic (99%),
+      binary_sensor/__init__ (99%), const/__init__ (98%),
+      helpers/aggregates (98%), helpers/area (99%), light (98%) and
+      sensor/__init__ (98%).
+      The remaining misses in base/magic.py and light.py are defensive guards
+      that cannot be reached through a real config entry. They are kept on
+      purpose and are to be addressed separately.
       Evidence: coverage report from tox -e ha-major
 
   # Performance
@@ -367,11 +370,13 @@ rules:
       No async_get_config_entry_diagnostics found.
 
   reconfiguration-flow:
-    status: pending
+    status: exempt
     comment: |
-      Reconfiguration flow not implemented.
-      Currently requires going through options flow or removing/re-adding.
-      No async_step_reconfigure found.
+      The only setup input is the area itself, which is the entry's
+      unique_id. Changing it would mean a different entry (different entities
+      and history), so there is nothing to reconfigure. Every other setting is
+      edited through the options flow, and the area's name and floor follow
+      Home Assistant's area registry.
 
   repair-issues:
     status: done

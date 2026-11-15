@@ -2,6 +2,8 @@
 
 import asyncio
 
+from pytest_homeassistant_custom_component.common import mock_restore_cache
+
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -10,11 +12,14 @@ from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant, State
 
+from custom_components.magic_areas.const import AreaStates
 from custom_components.magic_areas.const.light_groups import (
     LightGroupAttributes,
     LightGroupOperationMode,
+    LightGroupTurnOffWhen,
+    LightGroupTurnOnWhen,
 )
 
 from tests.helpers import (
@@ -23,6 +28,8 @@ from tests.helpers import (
     trigger_occupancy,
     trigger_secondary_state,
 )
+
+GROUP_ID = "light.magic_areas_light_groups_kitchen_custom_group"
 
 
 class TestManualMode:
@@ -368,4 +375,83 @@ class TestManualMode:
             light_state,
             LightGroupAttributes.MODE.value,
             LightGroupOperationMode.MANUAL.value,
+        )
+
+    async def test_adaptive_lighting_context_does_not_enter_manual_mode(
+        self, hass: HomeAssistant, setup_basic_light_group: dict
+    ):
+        """Test changes made by Adaptive Lighting don't count as manual control."""
+        light_group_id = setup_basic_light_group["light_group_id"]
+        motion_sensor = setup_basic_light_group["motion_sensor"]
+
+        await trigger_occupancy(hass, motion_sensor, occupied=True)
+        assert_state(hass.states.get(light_group_id), STATE_ON)
+
+        await hass.services.async_call(
+            LIGHT_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: light_group_id},
+            blocking=True,
+            context=Context(id="01HADAPTIVE:al:LIGHTING"),
+        )
+        await hass.async_block_till_done()
+        await asyncio.sleep(0.1)
+
+        light_state = hass.states.get(light_group_id)
+        assert_state(light_state, STATE_OFF)
+        assert_attribute(
+            light_state,
+            LightGroupAttributes.MODE.value,
+            LightGroupOperationMode.MAGIC.value,
+        )
+
+
+class TestStateRestore:
+    """Test a light group restoring its state when Home Assistant restarts."""
+
+    async def _setup(
+        self,
+        hass: HomeAssistant,
+        setup_custom_light_group,
+        restored: State,
+    ) -> dict:
+        mock_restore_cache(hass, [restored])
+        return await setup_custom_light_group(
+            states=[AreaStates.OCCUPIED],
+            turn_on_when=[LightGroupTurnOnWhen.AREA_OCCUPIED],
+            turn_off_when=[LightGroupTurnOffWhen.AREA_CLEAR],
+            require_dark=False,
+        )
+
+    async def test_restores_on_state_and_resets_manual_mode_when_clear(
+        self, hass: HomeAssistant, setup_custom_light_group
+    ):
+        """Test a clear area restores the on state but forgets manual mode."""
+        restored = State(
+            GROUP_ID,
+            STATE_ON,
+            {LightGroupAttributes.MODE.value: LightGroupOperationMode.MANUAL.value},
+        )
+        setup = await self._setup(hass, setup_custom_light_group, restored)
+
+        light_state = hass.states.get(setup["light_group_id"])
+        assert_attribute(
+            light_state,
+            LightGroupAttributes.MODE.value,
+            LightGroupOperationMode.MAGIC.value,
+        )
+
+    async def test_restores_without_a_saved_mode(
+        self, hass: HomeAssistant, setup_custom_light_group
+    ):
+        """Test a saved state with no mode attribute leaves the group in magic mode."""
+        setup = await self._setup(
+            hass, setup_custom_light_group, State(GROUP_ID, STATE_OFF)
+        )
+
+        light_state = hass.states.get(setup["light_group_id"])
+        assert_attribute(
+            light_state,
+            LightGroupAttributes.MODE.value,
+            LightGroupOperationMode.MAGIC.value,
         )

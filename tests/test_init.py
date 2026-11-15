@@ -8,7 +8,15 @@ from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAI
 from homeassistant.const import STATE_OFF
 from homeassistant.core import HomeAssistant
 
-from tests.helpers import assert_state
+from custom_components.magic_areas.const import DOMAIN, ConfigDomains, Features
+
+from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
+from tests.helpers import (
+    assert_state,
+    get_basic_config_entry_data,
+    init_integration,
+    shutdown_integration,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,3 +32,39 @@ async def test_init_default_config(
     )
 
     assert_state(area_binary_sensor, STATE_OFF)
+
+
+async def test_invalid_features_config_disables_every_feature(
+    hass: HomeAssistant,
+) -> None:
+    """A features section that is not a mapping enables no feature."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data[ConfigDomains.FEATURES.value] = ["not", "a", "mapping"]
+    config_entry = MockConfigEntry(domain=DOMAIN, data=data)
+    await init_integration(hass, [config_entry])
+    try:
+        area = config_entry.runtime_data
+        assert not area.has_feature(Features.LIGHT_GROUPS)
+        assert not area.has_feature(Features.AGGREGATION)
+    finally:
+        await shutdown_integration(hass, [config_entry])
+
+
+async def test_area_type_helpers(hass: HomeAssistant) -> None:
+    """Areas report whether they are interior or exterior from their configured type."""
+    interior = MockConfigEntry(
+        domain=DOMAIN, data=get_basic_config_entry_data(MockAreaIds.KITCHEN)
+    )
+    exterior = MockConfigEntry(
+        domain=DOMAIN, data=get_basic_config_entry_data(MockAreaIds.BACKYARD)
+    )
+    await init_integration(
+        hass, [interior, exterior], areas=[MockAreaIds.KITCHEN, MockAreaIds.BACKYARD]
+    )
+    try:
+        assert interior.runtime_data.is_interior()
+        assert not interior.runtime_data.is_exterior()
+        assert exterior.runtime_data.is_exterior()
+        assert not exterior.runtime_data.is_interior()
+    finally:
+        await shutdown_integration(hass, [interior, exterior])

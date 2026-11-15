@@ -16,7 +16,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.const import DOMAIN, MetaAreaAutoReloadSettings
+from custom_components.magic_areas.const import (
+    DOMAIN,
+    MAGIC_DEVICE_ID_PREFIX,
+    MetaAreaAutoReloadSettings,
+)
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 
 from tests.const import MockAreaIds
@@ -224,3 +228,155 @@ async def test_entity_removal_reloads_area_that_had_it(
 
     assert device_area.make_entity_registry_filter()(event_data)
     assert not entity_area.make_entity_registry_filter()(event_data)
+
+
+def _past_filters(device_area: MagicArea, entity_area: MagicArea) -> tuple[Any, Any]:
+    """Return both areas' device registry filters, once they no longer ignore events."""
+    past = datetime.now(UTC) - timedelta(seconds=MetaAreaAutoReloadSettings.DELAY + 1)
+    device_area.timestamp = past
+    entity_area.timestamp = past
+    return (
+        device_area.make_device_registry_filter(),
+        entity_area.make_device_registry_filter(),
+    )
+
+
+def _gateway_device_id(hass: HomeAssistant) -> str:
+    entry = er.async_get(hass).async_get(INHERITED_SENSOR)
+    assert entry is not None and entry.device_id is not None
+    return entry.device_id
+
+
+async def test_entity_creation_reloads_the_area_it_belongs_to(
+    hass: HomeAssistant,
+    area_config_entries: dict[MockAreaIds, MockConfigEntry],
+) -> None:
+    """A new entity reloads the area that holds it, directly or through its device."""
+
+    device_area = _magic_area(hass, area_config_entries[DEVICE_AREA])
+    entity_area = _magic_area(hass, area_config_entries[ENTITY_AREA])
+    past = datetime.now(UTC) - timedelta(seconds=MetaAreaAutoReloadSettings.DELAY + 1)
+    device_area.timestamp = past
+    entity_area.timestamp = past
+
+    inherited: Any = {"action": "create", "entity_id": INHERITED_SENSOR}
+    overridden: Any = {"action": "create", "entity_id": OVERRIDDEN_SENSOR}
+
+    # Inherits DEVICE_AREA through its device.
+    assert device_area.make_entity_registry_filter()(inherited)
+    assert not entity_area.make_entity_registry_filter()(inherited)
+
+    # Has ENTITY_AREA of its own.
+    assert entity_area.make_entity_registry_filter()(overridden)
+    assert not device_area.make_entity_registry_filter()(overridden)
+
+
+async def test_device_registry_filter_ignores_magic_areas_devices(
+    hass: HomeAssistant,
+    area_config_entries: dict[MockAreaIds, MockConfigEntry],
+) -> None:
+    """Devices created by Magic Areas itself never reload an area."""
+
+    device_filter, _ = _past_filters(
+        _magic_area(hass, area_config_entries[DEVICE_AREA]),
+        _magic_area(hass, area_config_entries[ENTITY_AREA]),
+    )
+    event_data: Any = {
+        "action": "update",
+        "device_id": f"{MAGIC_DEVICE_ID_PREFIX}{DEVICE_AREA.value}",
+        "changes": {"area_id": DEVICE_AREA.value},
+    }
+
+    assert not device_filter(event_data)
+
+
+async def test_device_registry_filter_ignores_events_right_after_load(
+    hass: HomeAssistant,
+    area_config_entries: dict[MockAreaIds, MockConfigEntry],
+) -> None:
+    """Device events arriving just after an area loaded don't reload it."""
+
+    device_area = _magic_area(hass, area_config_entries[DEVICE_AREA])
+    device_area.timestamp = datetime.now(UTC)
+    event_data: Any = {
+        "action": "update",
+        "device_id": _gateway_device_id(hass),
+        "changes": {"area_id": DEVICE_AREA.value},
+    }
+
+    assert not device_area.make_device_registry_filter()(event_data)
+
+
+async def test_device_registry_filter_follows_device_area_changes(
+    hass: HomeAssistant,
+    area_config_entries: dict[MockAreaIds, MockConfigEntry],
+) -> None:
+    """A device leaving an area, or one it already held changing, reloads that area only."""
+
+    device_filter, entity_filter = _past_filters(
+        _magic_area(hass, area_config_entries[DEVICE_AREA]),
+        _magic_area(hass, area_config_entries[ENTITY_AREA]),
+    )
+    gateway_id = _gateway_device_id(hass)
+
+    # The gateway was moved out of DEVICE_AREA.
+    moved: Any = {
+        "action": "update",
+        "device_id": gateway_id,
+        "changes": {"area_id": DEVICE_AREA.value},
+    }
+    assert device_filter(moved)
+    assert not entity_filter(moved)
+
+    # Another change to a device DEVICE_AREA had loaded.
+    renamed: Any = {
+        "action": "update",
+        "device_id": gateway_id,
+        "changes": {"name": "Old name"},
+    }
+    assert device_filter(renamed)
+    assert not entity_filter(renamed)
+
+
+async def test_device_registry_filter_picks_up_devices_added_to_the_area(
+    hass: HomeAssistant,
+    area_config_entries: dict[MockAreaIds, MockConfigEntry],
+) -> None:
+    """A device that wasn't loaded but now sits in the area reloads it."""
+
+    device_filter, entity_filter = _past_filters(
+        _magic_area(hass, area_config_entries[DEVICE_AREA]),
+        _magic_area(hass, area_config_entries[ENTITY_AREA]),
+    )
+
+    device_registry = dr.async_get(hass)
+    config_entry = MockConfigEntry(domain="test")
+    config_entry.add_to_hass(hass)
+    newcomer = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={("test", "newcomer")},
+        name="Newcomer",
+    )
+    device_registry.async_update_device(newcomer.id, area_id=DEVICE_AREA.value)
+    await hass.async_block_till_done()
+
+    event_data: Any = {
+        "action": "update",
+        "device_id": newcomer.id,
+        "changes": {"name": None},
+    }
+    assert device_filter(event_data)
+    assert not entity_filter(event_data)
+
+    # A device somewhere else entirely is no concern of either.
+    elsewhere = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={("test", "elsewhere")},
+        name="Elsewhere",
+    )
+    other_event: Any = {
+        "action": "update",
+        "device_id": elsewhere.id,
+        "changes": {"name": None},
+    }
+    assert not device_filter(other_event)

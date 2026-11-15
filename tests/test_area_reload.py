@@ -4,17 +4,28 @@ import asyncio
 from datetime import datetime
 import logging
 
-from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.helpers.area_registry import async_get as async_get_ar
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_registry import (
     EVENT_ENTITY_REGISTRY_UPDATED,
     _EventEntityRegistryUpdatedData_CreateRemove,
     _EventEntityRegistryUpdatedData_Update,
 )
+from homeassistant.setup import async_setup_component
 
 from custom_components.magic_areas.base.magic import MagicArea
-from custom_components.magic_areas.const import DOMAIN, MetaAreaAutoReloadSettings
+from custom_components.magic_areas.const import (
+    DOMAIN,
+    MagicAreasEvents,
+    MetaAreaAutoReloadSettings,
+)
 
 from tests.const import MockAreaIds
+from tests.helpers import get_basic_config_entry_data
 from tests.mocks import MockBinarySensor
 
 # Total time to wait for the full reload cascade to complete: the regular area
@@ -181,3 +192,39 @@ async def test_meta_reload_from_single_reload(
     _assert_has_not_reloaded(MockAreaIds.EXTERIOR.value)
     _assert_has_not_reloaded(MockAreaIds.SECOND_FLOOR.value)
     _assert_has_not_reloaded(MockAreaIds.GROUND_LEVEL.value)
+
+
+async def test_area_announces_itself_once_home_assistant_has_started(
+    hass: HomeAssistant,
+) -> None:
+    """An area loaded while Home Assistant is starting waits for it to finish before announcing."""
+    announcements: list[tuple[str, str | None, str]] = []
+    async_dispatcher_connect(
+        hass,
+        MagicAreasEvents.AREA_LOADED,
+        lambda area_type, floor_id, area_id: announcements.append(
+            (area_type, floor_id, area_id)
+        ),
+    )
+    hass.set_state(CoreState.not_running)
+
+    config_entry = MockConfigEntry(
+        domain=DOMAIN, data=get_basic_config_entry_data(MockAreaIds.KITCHEN)
+    )
+    config_entry.add_to_hass(hass)
+    async_get_ar(hass).async_create(name=MockAreaIds.KITCHEN.value)
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    try:
+        assert not announcements
+
+        hass.set_state(CoreState.running)
+        hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
+        await hass.async_block_till_done()
+
+        assert [area_id for _, _, area_id in announcements].count(
+            MockAreaIds.KITCHEN.value
+        ) >= 1
+    finally:
+        await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()

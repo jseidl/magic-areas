@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.config_entries import SOURCE_USER
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.helpers import (
     area_registry as ar,
     floor_registry as fr,
@@ -197,3 +197,42 @@ async def test_config_flow_skips_reserved_floor(hass: HomeAssistant) -> None:
         hass.config_entries.flow.async_abort(result["flow_id"])
     finally:
         await shutdown_integration(hass, [config_entry])
+
+
+async def test_other_area_update_does_not_reload(hass: HomeAssistant) -> None:
+    """Updating a different area, even moving it to another floor, leaves this area alone."""
+    config_entries = await _setup_area_and_floor_metas(hass)
+    try:
+        area = _magic_area(hass, config_entries[AREA])
+        area_registry = ar.async_get(hass)
+        other = area_registry.async_create(
+            "Study", floor_id=MockFloorIds.FIRST_FLOOR.value
+        )
+
+        area_registry.async_update(other.id, floor_id=MockFloorIds.SECOND_FLOOR.value)
+        await hass.async_block_till_done()
+
+        assert _magic_area(hass, config_entries[AREA]) is area
+    finally:
+        await shutdown_integration(hass, list(config_entries.values()))
+
+
+async def test_floor_meta_ignores_loaded_areas_while_starting(
+    hass: HomeAssistant,
+) -> None:
+    """A meta-area doesn't schedule reloads for area signals until Home Assistant is running."""
+    config_entries = await _setup_area_and_floor_metas(hass)
+    try:
+        new_meta: MagicMetaArea = _magic_area(hass, config_entries[NEW_FLOOR_META])
+
+        hass.set_state(CoreState.not_running)
+        # pylint: disable=protected-access
+        with patch.object(new_meta, "_delayed_reload", AsyncMock()) as reload:
+            await new_meta._handle_loaded_area(
+                "interior", MockFloorIds.SECOND_FLOOR.value, AREA.value
+            )
+            await hass.async_block_till_done()
+            reload.assert_not_awaited()
+        hass.set_state(CoreState.running)
+    finally:
+        await shutdown_integration(hass, list(config_entries.values()))

@@ -332,3 +332,34 @@ async def test_options_flow_label_fields(hass: HomeAssistant) -> None:
         }
     finally:
         await shutdown_integration(hass, [area_entry, meta_entry])
+
+
+async def test_meta_area_excludes_entities_listed_in_exclude_entities(
+    hass: HomeAssistant,
+) -> None:
+    """A meta-area leaves out child entities listed in its exclude_entities."""
+    await _setup_labelled_sensors(hass)
+    aggregate = (
+        f"{SENSOR_DOMAIN}.magic_areas_aggregates_{AREA.value}_aggregate_temperature"
+    )
+
+    area_entry = _area_config_entry(AREA)
+    meta_entry = _area_config_entry(
+        META_AREA, **{AreaConfigOptions.EXCLUDE_ENTITIES.key: [aggregate]}
+    )
+    await init_integration(hass, [area_entry, meta_entry], areas=[AREA])
+    try:
+        area_state = f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{AREA.value}_area_state"
+        assert aggregate not in _entity_ids(hass, meta_entry)
+        assert area_state in _entity_ids(hass, meta_entry, BINARY_SENSOR_DOMAIN)
+    finally:
+        await shutdown_integration(hass, [area_entry, meta_entry])
+
+
+async def test_area_excludes_entities_listed_in_exclude_entities(
+    hass: HomeAssistant,
+) -> None:
+    """A regular area leaves out the entities listed in its exclude_entities."""
+    assert await _area_sensor_ids(hass, **{EXCLUDE_ENTITIES: [PLAIN_SENSOR]}) == {
+        CUSTOM_LABELLED_SENSOR
+    }
