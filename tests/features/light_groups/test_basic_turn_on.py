@@ -1,7 +1,5 @@
 """Tests for basic light group turn-on scenarios."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
@@ -76,7 +74,6 @@ class TestBasicTurnOn:
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_OFF)
@@ -163,7 +160,6 @@ class TestBasicTurnOn:
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights are off
         light_state = hass.states.get(light_group_id)
@@ -172,7 +168,6 @@ class TestBasicTurnOn:
         # Trigger motion again (still occupied, no transition)
         hass.states.async_set(motion_sensor.entity_id, STATE_ON)
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         # Lights should NOT turn on automatically (manual mode from manual turn-off)
         light_state = hass.states.get(light_group_id)
@@ -196,7 +191,6 @@ class TestBasicTurnOn:
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # No state changes (no events fired)
         # Lights should stay off
@@ -220,7 +214,6 @@ class TestBasicTurnOn:
         assert_state(light_state, STATE_OFF)
 
         # Wait without triggering anything
-        await asyncio.sleep(0.5)
 
         # Lights should still be off
         light_state = hass.states.get(light_group_id)

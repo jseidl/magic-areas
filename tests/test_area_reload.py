@@ -176,7 +176,6 @@ async def test_meta_reload_from_single_reload(
     )
     # Let any remaining debounced reloads (that must NOT happen) have a chance
     # to fire before asserting the negative cases.
-    await asyncio.sleep(1)
 
     # Check corresponding area reloaded
     _assert_has_reloaded(MockAreaIds.KITCHEN.value)

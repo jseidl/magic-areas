@@ -5,8 +5,6 @@ MagicLightGroup has a critical feature: when you call turn_on with attributes
 not turn on additional lights.
 """
 
-import asyncio
-
 from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_RGB_COLOR
 from homeassistant.const import STATE_OFF, STATE_ON
 
@@ -30,7 +28,6 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Verify they're on
         assert_state(hass.states.get("light.light_1"), STATE_ON)
@@ -45,7 +42,6 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Step 3: Verify only light_1 and light_2 have brightness changed
         # light_3 should remain OFF (not turned on)
@@ -73,7 +69,6 @@ class TestMagicLightGroupCallForwarding:
             "light", "turn_on", {"entity_id": "light.light_1"}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Call turn_on with color on the group
         await hass.services.async_call(
@@ -83,7 +78,6 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Verify only light_1 has color changed
         light1_state = hass.states.get("light.light_1")
@@ -105,7 +99,6 @@ class TestMagicLightGroupCallForwarding:
             "light", "turn_on", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # All lights should be on
         assert_state(hass.states.get("light.light_1"), STATE_ON)
@@ -129,7 +122,6 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # All lights should be turned on with brightness
         for light_id in ("light.light_1", "light.light_2", "light.light_3"):
@@ -149,14 +141,12 @@ class TestMagicLightGroupCallForwarding:
                 "light", "turn_on", {"entity_id": light_id}, blocking=True
             )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Turn off light_3
         await hass.services.async_call(
             "light", "turn_off", {"entity_id": "light.light_3"}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Call with multiple attributes
         await hass.services.async_call(
@@ -170,7 +160,6 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Verify light_1 and light_2 have both attributes
         for light_id in ("light.light_1", "light.light_2"):
@@ -194,14 +183,12 @@ class TestMagicLightGroupCallForwarding:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Call turn_off on the group
         await hass.services.async_call(
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # All lights should be off (even though light_3 was already off)
         assert_state(hass.states.get("light.light_1"), STATE_OFF)

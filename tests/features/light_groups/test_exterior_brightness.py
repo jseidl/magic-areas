@@ -1,7 +1,5 @@
 """Tests for exterior brightness turn-off behavior."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
@@ -35,7 +33,6 @@ class TestExteriorBrightness:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights turned off
         light_state = hass.states.get(light_group_id)
@@ -62,7 +59,6 @@ class TestExteriorBrightness:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights did NOT turn off (no EXTERIOR_BRIGHT in config)
         light_state = hass.states.get(light_group_id)
@@ -90,7 +86,6 @@ class TestExteriorBrightness:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Lights should stay ON (own area bright doesn't trigger exterior logic)
         # Note: Lights may turn off via STATE_LOSS if dark is required, but that's
@@ -120,7 +115,6 @@ class TestExteriorBrightness:
             ({AreaStates.DARK}, {AreaStates.BRIGHT}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Should NOT turn off (EXTERIOR_BRIGHT only triggers on bright)
         light_state = hass.states.get(light_group_id)
@@ -147,7 +141,6 @@ class TestExteriorBrightness:
             ({AreaStates.BRIGHT, AreaStates.EXTENDED}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Should still turn off (bright is in new_states)
         light_state = hass.states.get(light_group_id)

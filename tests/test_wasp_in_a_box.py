@@ -190,7 +190,6 @@ async def test_wasp_in_a_box_logic(
 
     # Test motion door open behavior
     hass.states.async_set(door_sensor_entity_id, STATE_ON)
-    await asyncio.sleep(1)
     await hass.async_block_till_done()
 
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
@@ -216,7 +215,6 @@ async def test_wasp_in_a_box_logic(
 
     # Test motion on door closed behavior
     hass.states.async_set(door_sensor_entity_id, STATE_OFF)
-    await asyncio.sleep(1)
     await hass.async_block_till_done()
 
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
@@ -245,7 +243,6 @@ async def test_wasp_in_a_box_logic(
     await hass.async_block_till_done()
 
     # Wait a bit for wasp sensor to trigger
-    await asyncio.sleep(1)
     await hass.async_block_till_done()
 
     wasp_in_a_box_state = hass.states.get(wasp_in_a_box_entity_id)
@@ -299,7 +296,6 @@ async def test_wasp_in_a_box_as_presence(
     assert_state(wasp_in_a_box_state, STATE_ON)
 
     await hass.async_block_till_done()
-    await asyncio.sleep(1)
 
     area_sensor_state = hass.states.get(area_state_entity_id)
     assert_state(area_sensor_state, STATE_ON)
@@ -639,7 +635,6 @@ async def test_box_change_with_missing_wasp_aggregate(
 
     door_sensor.turn_on()
     await hass.async_block_till_done()
-    await asyncio.sleep(0.5)
 
     state = hass.states.get(WASP_ENTITY_ID)
     assert_state(state, STATE_OFF)
@@ -659,7 +654,6 @@ async def test_wasp_change_with_missing_box_aggregate(
 
     motion_sensor.turn_on()
     await hass.async_block_till_done()
-    await asyncio.sleep(0.5)
 
     state = hass.states.get(WASP_ENTITY_ID)
     assert_state(state, STATE_ON)

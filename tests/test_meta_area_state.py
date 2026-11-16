@@ -1,6 +1,5 @@
 """Test for meta area changes and how the system handles it."""
 
-import asyncio
 import logging
 
 import pytest
@@ -322,7 +321,6 @@ async def test_meta_area_ignores_children_without_a_states_attribute(
         # Replace the kitchen's state with one that has no attributes at all.
         hass.states.async_set(KITCHEN_SENSOR_ID, STATE_OFF)
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         assert_in_attribute(
             hass.states.get(INTERIOR_SENSOR_ID),
@@ -361,7 +359,6 @@ async def test_meta_area_is_bright_when_its_children_are_not_dark(
     hass.states.async_set("sun.sun", STATE_ABOVE_HORIZON)
     entries, _ = await _setup_interior_with_children(hass, "any", "sleep")
     try:
-        await asyncio.sleep(0.5)
         interior_state = hass.states.get(INTERIOR_SENSOR_ID)
 
         assert_in_attribute(

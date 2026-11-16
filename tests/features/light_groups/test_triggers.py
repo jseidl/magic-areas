@@ -1,7 +1,5 @@
 """Tests for light group trigger mechanisms."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
@@ -59,7 +57,6 @@ class TestTriggers:
             (set(), set()),  # No new or lost states
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights stay on (no duplicate turn-on)
         light_state = hass.states.get(light_group_id)
@@ -113,7 +110,6 @@ class TestTriggers:
             ({AreaStates.DARK}, {AreaStates.BRIGHT}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify trigger did NOT fire
         light_state = hass.states.get(light_group_id)
@@ -163,7 +159,6 @@ class TestTriggers:
             ({AreaStates.DARK}, {AreaStates.BRIGHT}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify trigger did NOT fire
         light_state = hass.states.get(light_group_id)
@@ -205,7 +200,6 @@ class TestTriggers:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # STATE_GAIN trigger (dark gained while occupied)
         dispatcher_send(
@@ -215,7 +209,6 @@ class TestTriggers:
             ({AreaStates.DARK}, {AreaStates.BRIGHT}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Should have turned on via STATE_GAIN or AREA_DARK
         light_state = hass.states.get(light_group_id)

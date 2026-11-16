@@ -1,6 +1,5 @@
 """Tests for the BLE Tracker feature."""
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import patch
@@ -20,6 +19,7 @@ from tests.const import DEFAULT_MOCK_AREA
 from tests.helpers import (
     assert_in_attribute,
     assert_state,
+    async_advance_time,
     get_basic_config_entry_data,
     init_integration,
     merge_feature_config,
@@ -131,8 +131,7 @@ async def test_ble_tracker_presence_sensor(
 
     # Set BLE sensor to something else
     hass.states.async_set(ble_sensor_entity_id, STATE_UNKNOWN)
-    await hass.async_block_till_done()
-    await asyncio.sleep(0.5)
+    await async_advance_time(hass)
 
     ble_sensor_state = hass.states.get(ble_sensor_entity_id)
     assert_state(ble_sensor_state, STATE_UNKNOWN)

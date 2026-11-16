@@ -1,7 +1,5 @@
 """Tests for state priority filtering system."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
@@ -68,7 +66,6 @@ class TestStatePriority:
         await trigger_secondary_state(hass, sleep_sensor, active=False)
 
         # Sleep group should turn off
-        await asyncio.sleep(0.5)
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_OFF)
 
@@ -121,7 +118,6 @@ class TestStatePriority:
         await trigger_secondary_state(hass, movie_mode, active=False)
 
         # Movie group should turn off
-        await asyncio.sleep(0.5)
         light_state = hass.states.get(movie_group_id)
         assert_state(light_state, STATE_OFF)
 
@@ -155,7 +151,6 @@ class TestStatePriority:
 
         # Turn off movie mode (gaming still active)
         await trigger_secondary_state(hass, movie_mode, active=False)
-        await asyncio.sleep(0.5)
 
         # Movie group turns off, gaming stays on
         movie_group = hass.states.get(movie_group_id)
@@ -195,7 +190,6 @@ class TestStatePriority:
 
         # Deactivate sleep (movie still active)
         await trigger_secondary_state(hass, sleep_sensor, active=False)
-        await asyncio.sleep(0.5)
 
         # Sleep group turns off
         sleep_group = hass.states.get(sleep_group_id)

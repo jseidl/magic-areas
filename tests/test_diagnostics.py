@@ -1,17 +1,16 @@
 """Tests for Magic Areas diagnostics."""
 
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.binary_sensor.const import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.const import STATE_ON
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.magic_areas.const import CONF_AREA_ID, DOMAIN, AreaStates
 from custom_components.magic_areas.const.aggregates import AggregateOptions
 from custom_components.magic_areas.const.presence_hold import PresenceHoldOptions
-from custom_components.magic_areas.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.magic_areas.diagnostics import async_get_config_entry_diagnostics
 
 from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
 from tests.helpers import (

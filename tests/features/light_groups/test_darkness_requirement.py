@@ -1,7 +1,5 @@
 """Tests for darkness requirement checks."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
@@ -63,7 +61,6 @@ class TestDarknessRequirement:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Event: Area becomes occupied while bright
         await trigger_occupancy(hass, motion_sensor, occupied=True)
@@ -95,7 +92,6 @@ class TestDarknessRequirement:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Lights should stay ON (darkness is only checked at turn-on)
         light_state = hass.states.get(light_group_id)
@@ -124,7 +120,6 @@ class TestDarknessRequirement:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Lights should stay ON (no feedback loop)
         light_state = hass.states.get(light_group_id)
@@ -169,7 +164,6 @@ class TestDarknessRequirement:
                 ({AreaStates.BRIGHT}, {AreaStates.DARK}),
             )
             await hass.async_block_till_done()
-            await asyncio.sleep(0.1)
 
             # Becomes dark again
             dispatcher_send(
@@ -179,7 +173,6 @@ class TestDarknessRequirement:
                 ({AreaStates.DARK}, {AreaStates.BRIGHT}),
             )
             await hass.async_block_till_done()
-            await asyncio.sleep(0.1)
 
         # Lights should stay ON through all oscillations
         light_state = hass.states.get(light_group_id)

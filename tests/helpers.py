@@ -476,8 +476,8 @@ async def safe_set_state(hass: HomeAssistant, sensor, active: bool = True) -> No
     # Handle both MockBinarySensor objects and entity_id strings
     entity_id = sensor.entity_id if hasattr(sensor, "entity_id") else sensor
     hass.states.async_set(entity_id, state)
-    await hass.async_block_till_done()
-    await asyncio.sleep(0.5)  # Wait for event propagation
+    # Fires zero-delay timers (e.g. clear_timeout=0) instead of sleeping.
+    await async_advance_time(hass)
 
 
 async def trigger_occupancy(

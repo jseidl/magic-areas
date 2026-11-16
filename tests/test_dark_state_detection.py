@@ -6,7 +6,6 @@ real Home Assistant instances with minimal mocking (following light_groups test 
 
 # pylint: disable=redefined-outer-name`
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -64,7 +63,6 @@ async def set_illuminance_sensor_state(
         sensor.entity_id, str(number), attributes={"unit_of_measurement": LIGHT_LUX}
     )
     await hass.async_block_till_done()
-    await asyncio.sleep(0.5)  # Event propagation delay
 
 
 async def trigger_light_sensor_state(
@@ -74,7 +72,6 @@ async def trigger_light_sensor_state(
     state = STATE_ON if bright else STATE_OFF
     hass.states.async_set(sensor.entity_id, state)
     await hass.async_block_till_done()
-    await asyncio.sleep(0.5)  # Event propagation delay
 
 
 async def set_sun_state(hass: HomeAssistant, above_horizon: bool = True) -> None:
@@ -82,7 +79,6 @@ async def set_sun_state(hass: HomeAssistant, above_horizon: bool = True) -> None
     state = STATE_ABOVE_HORIZON if above_horizon else STATE_BELOW_HORIZON
     hass.states.async_set("sun.sun", state)
     await hass.async_block_till_done()
-    await asyncio.sleep(0.5)
 
 
 # Fixtures
@@ -426,7 +422,6 @@ class TestDarknessDetection:
             attributes={"unit_of_measurement": LIGHT_LUX},
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         # Should default to dark
         area_state = hass.states.get(area_state_id)
@@ -446,7 +441,6 @@ class TestDarknessDetection:
             attributes={"unit_of_measurement": LIGHT_LUX},
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         # Should default to dark
         area_state = hass.states.get(area_state_id)
@@ -609,7 +603,6 @@ class TestUnmetAggregateConditions:
         entry = MockConfigEntry(domain=DOMAIN, data=data)
         entries.append(entry)
         await init_integration(hass, [entry])
-        await asyncio.sleep(0.5)
 
         assert_in_attribute(
             hass.states.get(UNMET_AREA_STATE_ID),
@@ -649,7 +642,6 @@ class TestExteriorFallback:
         await init_integration(
             hass, entries, areas=[MockAreaIds.BACKYARD, MockAreaIds.KITCHEN]
         )
-        await asyncio.sleep(0.5)
         return entries
 
     async def _assert_kitchen_follows(
@@ -663,7 +655,6 @@ class TestExteriorFallback:
 
         hass.states.async_set(exterior_sensor_id, STATE_ON)
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
         assert_in_attribute(
             hass.states.get(kitchen_state_id),
             CommonAttributes.STATES.value,
@@ -672,7 +663,6 @@ class TestExteriorFallback:
 
         hass.states.async_set(exterior_sensor_id, STATE_OFF)
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
         assert_in_attribute(
             hass.states.get(kitchen_state_id),
             CommonAttributes.STATES.value,

@@ -1,7 +1,5 @@
 """Tests for light group turn-off behaviors."""
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import dispatcher_send
@@ -79,7 +77,6 @@ class TestTurnOff:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights turned off
         light_state = hass.states.get(light_group_id)
@@ -103,7 +100,6 @@ class TestTurnOff:
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify manual mode
         light_state = hass.states.get(light_group_id)
@@ -137,7 +133,6 @@ class TestTurnOff:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify lights did NOT turn off (no EXTERIOR_BRIGHT in config)
         light_state = hass.states.get(light_group_id)
@@ -159,7 +154,6 @@ class TestTurnOff:
 
         # Area is still occupied (no state loss)
         # Lights should stay on
-        await asyncio.sleep(0.5)
 
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_ON)
@@ -193,7 +187,6 @@ class TestTurnOff:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Lights should stay ON (own area bright doesn't trigger EXTERIOR_BRIGHT)
         light_state = hass.states.get(light_group_id)
@@ -217,7 +210,6 @@ class TestTurnOffGuards:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         assert_state(hass.states.get(light_group_id), STATE_OFF)
 
@@ -244,7 +236,6 @@ class TestTurnOffGuards:
             ({AreaStates.BRIGHT}, {AreaStates.DARK}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         assert_state(hass.states.get(light_group_id), STATE_ON)
 
@@ -302,6 +293,5 @@ class TestTurnOffGuards:
             ({AreaStates.DARK}, {AreaStates.BRIGHT}),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         assert_state(hass.states.get(light_group_id), STATE_ON)

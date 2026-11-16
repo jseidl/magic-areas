@@ -1,7 +1,5 @@
 """Tests for manual mode override behavior."""
 
-import asyncio
-
 from pytest_homeassistant_custom_component.common import mock_restore_cache
 
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
@@ -52,7 +50,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         # Verify manual mode was entered
         light_state = hass.states.get(light_group_id)
@@ -89,7 +86,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify manual mode was entered
         light_state = hass.states.get(light_group_id)
@@ -154,7 +150,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Step 6: Assert light group is in manual mode
         light_state = hass.states.get(light_group_id)
@@ -201,7 +196,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify manual mode
         light_state = hass.states.get(light_group_id)
@@ -239,7 +233,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         light_state = hass.states.get(light_group_id)
         assert_attribute(
@@ -280,7 +273,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         light_state = hass.states.get(light_group_id)
         assert_attribute(
@@ -292,7 +284,6 @@ class TestManualMode:
         # Trigger motion again (state change but not clear)
         hass.states.async_set(motion_sensor.entity_id, STATE_ON)
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
 
         # Manual mode should persist
         light_state = hass.states.get(light_group_id)
@@ -303,7 +294,6 @@ class TestManualMode:
         )
 
         # Various state changes (as long as area doesn't clear)
-        await asyncio.sleep(0.5)
 
         # Manual mode should still persist
         light_state = hass.states.get(light_group_id)
@@ -330,7 +320,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Should enter manual mode
         light_state = hass.states.get(light_group_id)
@@ -367,7 +356,6 @@ class TestManualMode:
             blocking=True,
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         # Verify attribute was updated
         light_state = hass.states.get(light_group_id)
@@ -395,7 +383,6 @@ class TestManualMode:
             context=Context(id="01HADAPTIVE:al:LIGHTING"),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.1)
 
         light_state = hass.states.get(light_group_id)
         assert_state(light_state, STATE_OFF)

@@ -1,6 +1,5 @@
 """Tests for the Fan groups feature."""
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import patch
@@ -341,8 +340,6 @@ async def test_fan_group_logic(
     tracked_sensor_state = hass.states.get(tracked_entity_id)
     assert_state(tracked_sensor_state, str(SETPOINT_VALUE * 2))
 
-    await asyncio.sleep(1)
-
     fan_group_state = hass.states.get(fan_group_entity_id)
     assert_state(fan_group_state, STATE_ON)
 
@@ -358,8 +355,6 @@ async def test_fan_group_logic(
 
     tracked_sensor_state = hass.states.get(tracked_entity_id)
     assert_state(tracked_sensor_state, str(float(SENSOR_INITIAL_VALUE)))
-
-    await asyncio.sleep(1)
 
     fan_group_state = hass.states.get(fan_group_entity_id)
     assert_state(fan_group_state, STATE_OFF)

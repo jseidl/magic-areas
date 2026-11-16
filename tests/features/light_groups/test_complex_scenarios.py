@@ -3,8 +3,6 @@
 These tests verify complete workflows from start to finish.
 """
 
-import asyncio
-
 from homeassistant.const import STATE_OFF, STATE_ON
 
 from custom_components.magic_areas.const import AreaStates
@@ -106,7 +104,6 @@ class TestComplexScenarios:
             "light", "turn_off", {"entity_id": light_group_id}, blocking=True
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Lights are off, manual mode active
         light_state = hass.states.get(light_group_id)
@@ -147,7 +144,6 @@ class TestComplexScenarios:
             context=create_magic_context(),
         )
         await hass.async_block_till_done()
-        await asyncio.sleep(0.3)
 
         # Lights are off, but should STILL be in automatic mode (not manual)
         light_state = hass.states.get(light_group_id)
@@ -157,7 +153,6 @@ class TestComplexScenarios:
 
         # Re-triggering occupancy should turn lights back on
         await trigger_occupancy(hass, motion_sensor, occupied=False)
-        await asyncio.sleep(0.2)
         await trigger_occupancy(hass, motion_sensor, occupied=True)
 
         # Lights should turn on (still in auto mode)

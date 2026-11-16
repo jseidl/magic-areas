@@ -2,7 +2,6 @@
 
 # pylint: disable=redefined-outer-name`
 
-import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
 import logging
 from typing import Any
@@ -325,7 +324,6 @@ async def setup_basic_light_group(
     await hass.async_block_till_done()
 
     # Wait for aggregate sensor and area states to initialize
-    await asyncio.sleep(1.0)
     await hass.async_block_till_done()
 
     # Debug: Log aggregate and area states
@@ -852,7 +850,6 @@ async def setup_basic_light_group_bright(
     await hass.async_block_till_done()
 
     # Wait for initial setup
-    await asyncio.sleep(0.5)
 
     # NOW set dark sensor to ON (bright) - after integration is running
     # This way the aggregate sensor will react to the state change
@@ -864,7 +861,6 @@ async def setup_basic_light_group_bright(
     await hass.async_block_till_done()
 
     # Wait for aggregate sensor to update
-    await asyncio.sleep(0.5)
     await hass.async_block_till_done()
 
     await enable_light_control(hass, DEFAULT_MOCK_AREA.value)
@@ -936,7 +932,6 @@ async def setup_custom_light_group(
 
         await init_integration(hass, [config_entry])
         await hass.async_block_till_done()
-        await asyncio.sleep(0.5)
         await hass.async_block_till_done()
         await enable_light_control(hass, DEFAULT_MOCK_AREA.value)
 
