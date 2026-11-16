@@ -1,4 +1,4 @@
-"""Tests for the BLE Tracker feature."""
+"""Tests for the BLE trackers feature."""
 
 from collections.abc import AsyncGenerator
 from typing import Any

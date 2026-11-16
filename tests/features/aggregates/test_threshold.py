@@ -1,4 +1,4 @@
-"""Test for aggregate (group) sensor behavior."""
+"""Tests for the threshold sensors built on aggregates."""
 
 from collections.abc import AsyncGenerator
 import logging

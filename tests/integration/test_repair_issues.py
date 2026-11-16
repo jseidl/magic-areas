@@ -39,9 +39,7 @@ from tests.helpers import (
 )
 from tests.mocks import MockBinarySensor
 
-COMPONENT_PATH = (
-    pathlib.Path(__file__).parent.parent / "custom_components" / "magic_areas"
-)
+COMPONENT_PATH = pathlib.Path(__file__).parents[2] / "custom_components" / "magic_areas"
 TRANSLATIONS_PATH = COMPONENT_PATH / "translations" / "en.json"
 STRINGS_PATH = COMPONENT_PATH / "strings.json"
 

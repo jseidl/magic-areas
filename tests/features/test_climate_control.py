@@ -1,4 +1,4 @@
-"""Tests for the BLE Tracker feature."""
+"""Tests for the climate control feature."""
 
 from collections.abc import AsyncGenerator
 import logging

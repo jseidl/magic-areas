@@ -63,8 +63,8 @@ case "$CHOICE" in
     echo ""
     echo "Examples:"
     echo "  $0 stable                              # Run all tests"
-    echo "  $0 stable tests/test_wasp_in_a_box.py  # Run specific test file"
-    echo "  $0 stable tests/test_presence.py::test_area_state_changes -v  # Run specific test with verbose"
+    echo "  $0 stable tests/features/test_wasp_in_a_box.py  # Run specific test file"
+    echo "  $0 stable tests/area/test_state.py::test_area_primary_state_change -v  # Run specific test with verbose"
     echo "  $0 stable tests/ -k wasp               # Run tests matching 'wasp'"
     exit 1
     ;;
