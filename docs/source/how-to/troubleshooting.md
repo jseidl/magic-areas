@@ -67,6 +67,16 @@ If an entity doesn’t seem to be included in a Magic Area:
 
 If any of the above isn’t true, the entity may not be recognized by Magic Areas. Use `Include Entities` in the configuration to override it if needed.
 
+### 📦 Download Diagnostics
+
+Magic Areas supports Home Assistant's diagnostics. For the area (or meta-area) you are having trouble with:
+
+1. Go to **Settings > Devices & Services > Magic Areas**.
+2. Open the three-dot menu of the affected area's entry and choose **Download diagnostics**.
+3. Attach the downloaded file to your GitHub issue.
+
+The file includes the area's configuration, current states (occupied, dark, etc.), the resolved light sensor, enabled features, presence sensors, tracked entities, and the entities Magic Areas created.
+
 ## 🆘 Still Stuck?
 
 No worries! You can:

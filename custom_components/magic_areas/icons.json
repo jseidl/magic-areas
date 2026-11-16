@@ -1,0 +1,59 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "area_state": {
+        "default": "mdi:texture-box"
+      },
+      "ble_tracker_monitor": {
+        "default": "mdi:bluetooth",
+        "state": {
+          "off": "mdi:bluetooth-off",
+          "on": "mdi:bluetooth-connect"
+        }
+      },
+      "wasp_in_a_box": {
+        "default": "mdi:bee"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "default": "mdi:infinity"
+      },
+      "custom_light_group": {
+        "default": "mdi:lightbulb-group",
+        "state": {
+          "off": "mdi:lightbulb-group-off"
+        }
+      }
+    },
+    "switch": {
+      "presence_hold": {
+        "default": "mdi:car-brake-hold"
+      },
+      "light_control": {
+        "default": "mdi:lightbulb-auto-outline",
+        "state": {
+          "off": "mdi:lightbulb-off-outline",
+          "on": "mdi:lightbulb-auto-outline"
+        }
+      },
+      "media_player_control": {
+        "default": "mdi:auto-mode"
+      },
+      "climate_control": {
+        "default": "mdi:thermostat-auto",
+        "state": {
+          "off": "mdi:thermometer-off",
+          "on": "mdi:thermostat-auto"
+        }
+      },
+      "fan_control": {
+        "default": "mdi:fan-auto",
+        "state": {
+          "off": "mdi:fan-off",
+          "on": "mdi:fan-auto"
+        }
+      }
+    }
+  }
+}

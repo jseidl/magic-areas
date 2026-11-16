@@ -25,7 +25,6 @@ from homeassistant.helpers.event import (
 from custom_components.magic_areas.base.entities import BinaryMagicEntity
 from custom_components.magic_areas.base.magic import MagicArea, MagicMetaArea
 from custom_components.magic_areas.const import (
-    EMPTY_STRING,
     INVALID_STATES,
     ONE_MINUTE,
     PRESENCE_SENSOR_VALID_ON_STATES,
@@ -621,9 +620,9 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
         self._attr_extra_state_attributes = {}
         self._attr_is_on: bool = False
 
-        self._attr_icon: str = self.area.icon or self.feature_info.icons.get(
-            BINARY_SENSOR_DOMAIN, EMPTY_STRING
-        )
+        # The default icon comes from icons.json; the area's own icon overrides it.
+        if self.area.icon:
+            self._attr_icon = self.area.icon
 
     async def async_added_to_hass(self) -> None:
         """Call to add the system to hass."""

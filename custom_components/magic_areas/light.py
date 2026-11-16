@@ -32,6 +32,7 @@ from custom_components.magic_areas.const.light_groups import (
     LIGHT_GROUP_CONTEXT_PREFIX,
     LightGroupAllLightsConfig,
     LightGroupAttributes,
+    LightGroupCustomConfig,
     LightGroupEntryOptions,
     LightGroupOperationMode,
     LightGroupOptions,
@@ -75,7 +76,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         MagicLightGroup(
             area,
             light_entities,
-            icon=LightGroupAllLightsConfig.ICON.value,
             translation_key=LightGroupAllLightsConfig.NAME.value,
         )
     )
@@ -129,7 +129,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class MagicLightGroup(MagicEntity, LightGroup):
-    """Magic Light Group for Meta-areas."""
+    """Base Magic Light Group entity."""
 
     feature_info = MagicAreasFeatureInfoLightGroups()
 
@@ -139,12 +139,16 @@ class MagicLightGroup(MagicEntity, LightGroup):
         entities,
         *,
         name=EMPTY_STRING,
-        icon=None,
         translation_key: str | None = None,
+        unique_key: str | None = None,
     ):
         """Initialize parent class and state."""
         MagicEntity.__init__(
-            self, area, domain=LIGHT_DOMAIN, translation_key=translation_key
+            self,
+            area,
+            domain=LIGHT_DOMAIN,
+            translation_key=translation_key,
+            unique_key=unique_key,
         )
         LightGroup.__init__(
             self,
@@ -156,9 +160,6 @@ class MagicLightGroup(MagicEntity, LightGroup):
 
         if not name:
             delattr(self, "_attr_name")
-
-        if icon:
-            self._attr_icon = icon
 
     def _get_active_lights(self) -> list[str]:
         """Return list of lights that are on."""
@@ -224,7 +225,9 @@ class AreaLightGroup(MagicLightGroup):
             area,
             group_config[LightGroupEntryOptions.LIGHTS.key],
             name=group_name,
-            translation_key=slugify(group_name).replace("-", "_"),
+            translation_key=LightGroupCustomConfig.TRANSLATION_KEY.value,
+            # Keeps entity/unique ids stable: derived from the group name.
+            unique_key=slugify(group_name).replace("-", "_"),
         )
 
         # Set group properties

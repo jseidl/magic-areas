@@ -595,15 +595,6 @@ class MetaAreaIcons(StrEnum):
     GLOBAL = "mdi:home"
 
 
-class FeatureIcons(StrEnum):
-    """Feature related icons."""
-
-    PRESENCE_HOLD_SWITCH = "mdi:car-brake-hold"
-    LIGHT_CONTROL_SWITCH = "mdi:lightbulb-auto-outline"
-    MEDIA_CONTROL_SWITCH = "mdi:auto-mode"
-    CLIMATE_CONTROL_SWITCH = "mdi:thermostat-auto"
-
-
 # Area State Constants
 # All states defined in AreaStates enum (built into the integration)
 BUILTIN_AREA_STATES = [state.value for state in AreaStates]
@@ -703,7 +694,6 @@ class MagicAreasFeatureInfo:
 
     id: str
     translation_keys: dict[str, str | None]
-    icons: dict[str, str] = {}
 
 
 class MagicAreasFeatureInfoPresenceTracking(MagicAreasFeatureInfo):
@@ -711,7 +701,6 @@ class MagicAreasFeatureInfoPresenceTracking(MagicAreasFeatureInfo):
 
     id = "presence_tracking"
     translation_keys = {BINARY_SENSOR_DOMAIN: "area_state"}
-    icons = {BINARY_SENSOR_DOMAIN: "mdi:texture-box"}
 
 
 class MagicAreasFeatureInfoPresenceHold(MagicAreasFeatureInfo):
@@ -719,7 +708,6 @@ class MagicAreasFeatureInfoPresenceHold(MagicAreasFeatureInfo):
 
     id = "presence_hold"
     translation_keys = {SWITCH_DOMAIN: "presence_hold"}
-    icons = {SWITCH_DOMAIN: "mdi:car-brake-hold"}
 
 
 class MagicAreasFeatureInfoBLETrackers(MagicAreasFeatureInfo):
@@ -727,7 +715,6 @@ class MagicAreasFeatureInfoBLETrackers(MagicAreasFeatureInfo):
 
     id = "ble_trackers"
     translation_keys = {BINARY_SENSOR_DOMAIN: "ble_tracker_monitor"}
-    icons = {BINARY_SENSOR_DOMAIN: "mdi:bluetooth"}
 
 
 class MagicAreasFeatureInfoWaspInABox(MagicAreasFeatureInfo):
@@ -735,7 +722,6 @@ class MagicAreasFeatureInfoWaspInABox(MagicAreasFeatureInfo):
 
     id = "wasp_in_a_box"
     translation_keys = {BINARY_SENSOR_DOMAIN: "wasp_in_a_box"}
-    icons = {BINARY_SENSOR_DOMAIN: "mdi:bee"}
 
 
 class MagicAreasFeatureInfoAggregates(MagicAreasFeatureInfo):
@@ -767,12 +753,8 @@ class MagicAreasFeatureInfoLightGroups(MagicAreasFeatureInfo):
 
     id = "light_groups"
     translation_keys = {
-        LIGHT_DOMAIN: None,  # let light category be appended to it
+        LIGHT_DOMAIN: None,  # light group name/type provides the translation key
         SWITCH_DOMAIN: "light_control",
-    }
-    icons = {
-        LIGHT_DOMAIN: "mdi:lightbulb-group",
-        SWITCH_DOMAIN: "mdi:lightbulb-auto-outline",
     }
 
 
@@ -783,7 +765,6 @@ class MagicAreasFeatureInfoClimateControl(MagicAreasFeatureInfo):
     translation_keys = {
         SWITCH_DOMAIN: "climate_control",
     }
-    icons = {SWITCH_DOMAIN: "mdi:thermostat-auto"}
 
 
 class MagicAreasFeatureInfoFanGroups(MagicAreasFeatureInfo):
@@ -794,7 +775,6 @@ class MagicAreasFeatureInfoFanGroups(MagicAreasFeatureInfo):
         FAN_DOMAIN: "fan_group",
         SWITCH_DOMAIN: "fan_control",
     }
-    icons = {SWITCH_DOMAIN: "mdi:fan-auto"}
 
 
 class MagicAreasFeatureInfoMediaPlayerGroups(MagicAreasFeatureInfo):
@@ -805,7 +785,6 @@ class MagicAreasFeatureInfoMediaPlayerGroups(MagicAreasFeatureInfo):
         MEDIA_PLAYER_DOMAIN: "media_player_group",
         SWITCH_DOMAIN: "media_player_control",
     }
-    icons = {SWITCH_DOMAIN: "mdi:auto-mode"}
 
 
 class MagicAreasFeatureInfoCoverGroups(MagicAreasFeatureInfo):

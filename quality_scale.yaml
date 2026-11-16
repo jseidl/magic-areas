@@ -297,11 +297,14 @@ rules:
       Design decision: Keep enabled for initial setup support.
 
   icon-translations:
-    status: pending
+    status: done
     comment: |
-      Icon translations not yet implemented.
-      Currently uses static icons from feature_info.
-      Evidence: base/entities.py sets _attr_icon statically
+      Icons are provided through icons.json using entity translation keys,
+      with on/off state icons for the control switches, BLE tracker and light
+      groups. All user-defined light groups share the custom_light_group key.
+      Only the area's own icon (set in Home Assistant's area registry) is still
+      applied as _attr_icon, on the presence sensor, since it is user data.
+      Evidence: icons.json, base/entities.py, tests/test_icons.py
 
   exception-translations:
     status: exempt
@@ -363,11 +366,13 @@ rules:
 
   # Advanced Features
   diagnostics:
-    status: pending
+    status: done
     comment: |
-      Diagnostics integration not yet implemented.
-      Would be useful for debugging area state and configuration issues.
-      No async_get_config_entry_diagnostics found.
+      async_get_config_entry_diagnostics returns the entry data and options
+      (redacted), plus the area's states, resolved light sensor, enabled
+      features, presence sensors, tracked and created entities, the area state
+      entity and, for meta-areas, the child areas.
+      Evidence: diagnostics.py, tests/test_diagnostics.py (100% coverage)
 
   reconfiguration-flow:
     status: exempt

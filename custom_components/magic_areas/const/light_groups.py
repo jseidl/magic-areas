@@ -39,7 +39,13 @@ class LightGroupAllLightsConfig(StrEnum):
     """Attributes for the All Lights group."""
 
     NAME = "all_lights"
-    ICON = "mdi:infinity"
+
+
+class LightGroupCustomConfig(StrEnum):
+    """Attributes for user-defined light groups."""
+
+    # Shared translation key (icon) for every user-defined light group.
+    TRANSLATION_KEY = "custom_light_group"
 
 
 # ============================================================================

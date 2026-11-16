@@ -24,6 +24,7 @@ class MagicEntity(RestoreEntity):
     area: MagicArea
     feature_info: MagicAreasFeatureInfo | None = None
     _extra_identifiers: list[str] | None = None
+    _id_key: str | None = None
     _attr_has_entity_name = True
 
     def __init__(
@@ -32,8 +33,20 @@ class MagicEntity(RestoreEntity):
         domain: str,
         translation_key: str | None = None,
         extra_identifiers: list[str] | None = None,
+        unique_key: str | None = None,
     ) -> None:
-        """Initialize the magic area."""
+        """Initialize the magic area.
+
+        Args:
+            area: The area this entity belongs to.
+            domain: Entity platform domain.
+            translation_key: Extra part of the translation key (device class, etc.).
+            extra_identifiers: Extra parts appended to the entity & unique ids.
+            unique_key: Overrides the translation key when generating the entity
+                id and unique id. Used by entities that share a translation key
+                but must keep distinct, stable ids (e.g. user-defined light groups).
+
+        """
         # Avoiding using super() due multiple inheritance issues
         RestoreEntity.__init__(self)
 
@@ -57,9 +70,9 @@ class MagicEntity(RestoreEntity):
             translation_key_parts.append(translation_key)
         self._attr_translation_key = "_".join(translation_key_parts)
         self._attr_translation_placeholders = {}
+        self._id_key = unique_key or self._attr_translation_key
 
-        # Resolve icon
-        self._attr_icon = self.feature_info.icons.get(domain, None)
+        # Icons are provided by icons.json through the translation key.
 
         # Resolve entity id & unique id
         self.entity_id = self._generate_entity_id(domain)
@@ -83,11 +96,8 @@ class MagicEntity(RestoreEntity):
             self.area.slug,
         ]
 
-        if (
-            self._attr_translation_key
-            and self._attr_translation_key != self.feature_info.id
-        ):
-            entity_id_parts.append(self._attr_translation_key)
+        if self._id_key and self._id_key != self.feature_info.id:
+            entity_id_parts.append(self._id_key)
 
         if self._extra_identifiers:
             entity_id_parts.extend(self._extra_identifiers)
@@ -108,8 +118,8 @@ class MagicEntity(RestoreEntity):
             self.area.slug,
         ]
 
-        if self._attr_translation_key:
-            unique_id_parts.append(self._attr_translation_key)
+        if self._id_key:
+            unique_id_parts.append(self._id_key)
 
         if self._extra_identifiers:
             unique_id_parts.extend(self._extra_identifiers)
