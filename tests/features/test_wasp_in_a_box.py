@@ -740,16 +740,6 @@ async def _setup_binary_area(
     return config_entry
 
 
-@pytest.fixture(name="config_entries_to_unload")
-async def fixture_config_entries_to_unload(
-    hass: HomeAssistant,
-) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    entries: list[MockConfigEntry] = []
-    yield entries
-    await shutdown_integration(hass, entries)
-
-
 class TestWaspInABoxSetup:
     """Test the wasp in a box sensor creation rules."""
 

@@ -35,13 +35,13 @@ from custom_components.magic_areas.const.area_aware_media_player import (
 )
 
 from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
+from tests.features.media_player.helpers import AREA_STATE_ID, make_entry
 from tests.helpers import (
     assert_in_attribute,
     assert_state,
     async_mock_service,
     get_basic_config_entry_data,
     init_integration,
-    merge_feature_config,
     setup_mock_entities,
     shutdown_integration,
     trigger_occupancy,
@@ -236,23 +236,10 @@ async def test_area_aware_media_player(
     # Turn off AAMP
 
 
-SLUG = DEFAULT_MOCK_AREA.value
-
-
-GROUP_ID = (
-    f"{MEDIA_PLAYER_DOMAIN}.magic_areas_media_player_groups_{SLUG}_media_player_group"
-)
-
-
 AAMP_ID = f"{MEDIA_PLAYER_DOMAIN}.magic_areas_area_aware_media_player_global"
 
 
 PLAYER_ID = f"{MEDIA_PLAYER_DOMAIN}.setup_player"
-
-
-AREA_STATE_ID = (
-    f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{SLUG}_area_state"
-)
 
 
 def _aamp_options(devices: list[str]) -> dict:
@@ -265,57 +252,30 @@ def _aamp_options(devices: list[str]) -> dict:
     )
 
 
-def _entry(area: MockAreaIds, *feature_configs: dict, features=()) -> MockConfigEntry:
-    """Build a config entry with the given features enabled."""
-    data = get_basic_config_entry_data(area)
-    merge_feature_config(data, *feature_configs)
-    for feature in features:
-        data["features"].setdefault(feature, {})
-    return MockConfigEntry(domain=DOMAIN, data=data)
-
-
-@pytest.fixture(name="player")
-async def fixture_player(hass: HomeAssistant) -> MockMediaPlayer:
-    """Register one media player in the default area."""
-    mock_player = MockMediaPlayer(name="setup_player", unique_id="setup_player")
-    await setup_mock_entities(
-        hass, MEDIA_PLAYER_DOMAIN, {DEFAULT_MOCK_AREA: [mock_player]}
-    )
-    return mock_player
-
-
-@pytest.fixture(name="entries")
-async def fixture_entries(hass: HomeAssistant) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    registered: list[MockConfigEntry] = []
-    yield registered
-    await shutdown_integration(hass, registered)
-
-
 class TestAreaAwareMediaPlayerSetup:
     """Test which areas the global area-aware media player includes."""
 
     async def test_created_when_an_area_qualifies(
-        self, hass: HomeAssistant, player, entries
+        self, hass: HomeAssistant, player, config_entries_to_unload
     ):
         """Test the area-aware media player exists with a qualifying area."""
-        area_entry = _entry(
+        area_entry = make_entry(
             DEFAULT_MOCK_AREA,
             _aamp_options([player.entity_id]),
         )
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, global_entry])
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, global_entry])
         await init_integration(hass, [area_entry, global_entry])
 
         assert_state(hass.states.get(AAMP_ID), STATE_IDLE)
 
     async def test_area_without_the_feature_is_skipped(
-        self, hass: HomeAssistant, player, entries, caplog
+        self, hass: HomeAssistant, player, config_entries_to_unload, caplog
     ):
         """Test an area that did not enable the feature does not qualify."""
-        area_entry = _entry(DEFAULT_MOCK_AREA)
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, global_entry])
+        area_entry = make_entry(DEFAULT_MOCK_AREA)
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, global_entry])
         caplog.set_level(logging.DEBUG)
         await init_integration(hass, [area_entry, global_entry])
 
@@ -323,14 +283,14 @@ class TestAreaAwareMediaPlayerSetup:
         assert "Does not have Area-aware media player feature enabled" in caplog.text
 
     async def test_area_without_media_players_is_skipped(
-        self, hass: HomeAssistant, entries, caplog
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
     ):
         """Test an area with the feature but no media players does not qualify."""
-        area_entry = _entry(
+        area_entry = make_entry(
             DEFAULT_MOCK_AREA, _aamp_options([f"{MEDIA_PLAYER_DOMAIN}.nowhere"])
         )
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, global_entry])
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, global_entry])
         caplog.set_level(logging.DEBUG)
         await init_integration(hass, [area_entry, global_entry])
 
@@ -338,12 +298,12 @@ class TestAreaAwareMediaPlayerSetup:
         assert "Has no media player entities" in caplog.text
 
     async def test_area_without_notification_devices_is_skipped(
-        self, hass: HomeAssistant, player, entries, caplog
+        self, hass: HomeAssistant, player, config_entries_to_unload, caplog
     ):
         """Test an area with the feature but no notification devices does not qualify."""
-        area_entry = _entry(DEFAULT_MOCK_AREA, _aamp_options([]))
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, global_entry])
+        area_entry = make_entry(DEFAULT_MOCK_AREA, _aamp_options([]))
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, global_entry])
         caplog.set_level(logging.DEBUG)
         await init_integration(hass, [area_entry, global_entry])
 
@@ -351,16 +311,16 @@ class TestAreaAwareMediaPlayerSetup:
         assert "Has no notification devices" in caplog.text
 
     async def test_meta_areas_are_skipped(
-        self, hass: HomeAssistant, player, entries, caplog
+        self, hass: HomeAssistant, player, config_entries_to_unload, caplog
     ):
         """Test other meta areas never count towards the area-aware media player."""
-        area_entry = _entry(
+        area_entry = make_entry(
             DEFAULT_MOCK_AREA,
             _aamp_options([player.entity_id]),
         )
-        interior_entry = _entry(MockAreaIds.INTERIOR)
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, interior_entry, global_entry])
+        interior_entry = make_entry(MockAreaIds.INTERIOR)
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, interior_entry, global_entry])
         caplog.set_level(logging.DEBUG)
         await init_integration(hass, [area_entry, interior_entry, global_entry])
 
@@ -372,7 +332,9 @@ class TestAreaAwarePlayback:
     """Test how the area-aware media player routes playback."""
 
     @pytest.fixture(name="playback_calls")
-    async def fixture_playback_calls(self, hass: HomeAssistant, player, entries):
+    async def fixture_playback_calls(
+        self, hass: HomeAssistant, player, config_entries_to_unload
+    ):
         """Load a qualifying area plus Global and capture play_media calls."""
         motion = MockBinarySensor(
             name="playback_motion",
@@ -382,9 +344,9 @@ class TestAreaAwarePlayback:
         await setup_mock_entities(
             hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: [motion]}
         )
-        area_entry = _entry(DEFAULT_MOCK_AREA, _aamp_options([player.entity_id]))
-        global_entry = _entry(MockAreaIds.GLOBAL)
-        entries.extend([area_entry, global_entry])
+        area_entry = make_entry(DEFAULT_MOCK_AREA, _aamp_options([player.entity_id]))
+        global_entry = make_entry(MockAreaIds.GLOBAL)
+        config_entries_to_unload.extend([area_entry, global_entry])
         await init_integration(hass, [area_entry, global_entry])
 
         calls = async_mock_service(

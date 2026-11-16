@@ -1,10 +1,8 @@
 """Test for aggregate (group) sensor behavior."""
 
-from collections.abc import AsyncGenerator
 import logging
 from random import randint
 from statistics import mean
-from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -40,155 +38,10 @@ from tests.helpers import (
     init_integration,
     merge_feature_config,
     setup_mock_entities,
-    shutdown_integration,
 )
 from tests.mocks import MockBinarySensor, MockSensor
 
 _LOGGER = logging.getLogger(__name__)
-
-
-# Fixtures
-
-
-@pytest.fixture(name="aggregates_config_entry")
-def mock_config_entry_aggregates() -> MockConfigEntry:
-    """Fixture for mock configuration entry."""
-    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
-    data.update(
-        AggregateOptions.to_config(
-            {
-                AggregateOptions.MIN_ENTITIES.key: 1,
-                AggregateOptions.BINARY_SENSOR_DEVICE_CLASSES.key: [
-                    cls.value for cls in BinarySensorDeviceClass
-                ],
-                AggregateOptions.SENSOR_DEVICE_CLASSES.key: [
-                    cls.value for cls in SensorDeviceClass
-                ],
-            }
-        )
-    )
-    return MockConfigEntry(domain=DOMAIN, data=data)
-
-
-@pytest.fixture(name="_setup_integration_aggregates")
-async def setup_integration_aggregates(
-    hass: HomeAssistant,
-    aggregates_config_entry: MockConfigEntry,
-) -> AsyncGenerator[Any]:
-    """Set up integration with secondary states config."""
-
-    await init_integration(hass, [aggregates_config_entry])
-    yield
-    await shutdown_integration(hass, [aggregates_config_entry])
-
-
-# Entities
-
-
-@pytest.fixture(name="entities_binary_sensor_connectivity_multiple")
-async def setup_entities_binary_sensor_connectivity_multiple(
-    hass: HomeAssistant,
-) -> list[MockBinarySensor]:
-    """Create multiple mock sensor and setup the system with it."""
-    nr_entities = 3
-    mock_binary_sensor_entities = []
-    for i in range(nr_entities):
-        mock_binary_sensor_entities.append(
-            MockBinarySensor(
-                name=f"connectivity_sensor_{i}",
-                unique_id=f"connectivity_sensor_{i}",
-                device_class=BinarySensorDeviceClass.CONNECTIVITY,
-            )
-        )
-    await setup_mock_entities(
-        hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: mock_binary_sensor_entities}
-    )
-    return mock_binary_sensor_entities
-
-
-@pytest.fixture(name="entities_sensor_temperature_multiple")
-async def setup_entities_sensor_temperature_multiple(
-    hass: HomeAssistant,
-) -> list[MockSensor]:
-    """Create multiple mock sensor and setup the system with it."""
-    nr_entities = 3
-    mock_sensor_entities = []
-    for i in range(nr_entities):
-        random_value = randint(0, 100)
-        mock_sensor_entities.append(
-            MockSensor(
-                name=f"temperature_sensor_{i}",
-                unique_id=f"temperature_sensor_{i}",
-                native_value=random_value,
-                device_class=SensorDeviceClass.TEMPERATURE,
-                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                unit_of_measurement=UnitOfTemperature.CELSIUS,
-                extra_state_attributes={
-                    "unit_of_measurement": UnitOfTemperature.CELSIUS,
-                },
-            )
-        )
-    await setup_mock_entities(
-        hass, SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: mock_sensor_entities}
-    )
-    return mock_sensor_entities
-
-
-@pytest.fixture(name="entities_sensor_current_multiple")
-async def setup_entities_sensor_current_multiple(
-    hass: HomeAssistant,
-) -> list[MockSensor]:
-    """Create multiple mock sensor and setup the system with it."""
-    nr_entities = 3
-    mock_sensor_entities = []
-    for i in range(nr_entities):
-        random_value = randint(0, 100)
-        mock_sensor_entities.append(
-            MockSensor(
-                name=f"current_sensor_{i}",
-                unique_id=f"current_sensor_{i}",
-                native_value=random_value,
-                device_class=SensorDeviceClass.CURRENT,
-                native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-                unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-                extra_state_attributes={
-                    "unit_of_measurement": UnitOfElectricCurrent.AMPERE,
-                },
-            )
-        )
-    await setup_mock_entities(
-        hass, SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: mock_sensor_entities}
-    )
-    return mock_sensor_entities
-
-
-@pytest.fixture(name="entities_sensor_aqi_multiple")
-async def setup_entities_sensor_aqi_multiple(
-    hass: HomeAssistant,
-) -> list[MockSensor]:
-    """Create multiple mock AQI sensors and setup the system with it.
-
-    Home Assistant AQI sensors are intentionally unitless (device_class=aqi,
-    state_class=measurement, no unit_of_measurement) -- deliberately not
-    setting native_unit_of_measurement/unit_of_measurement here, unlike the
-    other fixtures above, to reproduce that.
-    """
-    nr_entities = 3
-    mock_sensor_entities = []
-    for i in range(nr_entities):
-        random_value = randint(0, 500)
-        mock_sensor_entities.append(
-            MockSensor(
-                name=f"aqi_sensor_{i}",
-                unique_id=f"aqi_sensor_{i}",
-                native_value=random_value,
-                device_class=SensorDeviceClass.AQI,
-            )
-        )
-    await setup_mock_entities(
-        hass, SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: mock_sensor_entities}
-    )
-    return mock_sensor_entities
 
 
 # Tests
@@ -463,17 +316,9 @@ def _make_sensor(
     )
 
 
-@pytest.fixture(name="entries")
-async def fixture_entries(hass: HomeAssistant) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    registered: list[MockConfigEntry] = []
-    yield registered
-    await shutdown_integration(hass, registered)
-
-
 async def _setup_sensor_aggregates(
     hass: HomeAssistant,
-    entries: list[MockConfigEntry],
+    config_entries_to_unload: list[MockConfigEntry],
     sensors: list[MockSensor],
     **aggregate_options,
 ) -> None:
@@ -488,7 +333,7 @@ async def _setup_sensor_aggregates(
         ),
     )
     entry = MockConfigEntry(domain=DOMAIN, data=data)
-    entries.append(entry)
+    config_entries_to_unload.append(entry)
     await init_integration(hass, [entry])
 
 
@@ -496,25 +341,27 @@ class TestSensorAggregateSetup:
     """Test the sensor aggregate creation rules."""
 
     async def test_aggregate_created_for_configured_class(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test an aggregate exists for a configured device class."""
         await _setup_sensor_aggregates(
             hass,
-            entries,
+            config_entries_to_unload,
             [_make_sensor(SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS)],
         )
 
         assert hass.states.get(_sensor_aggregate_id("temperature")) is not None
 
-    async def test_no_aggregates_without_sensors(self, hass: HomeAssistant, entries):
+    async def test_no_aggregates_without_sensors(
+        self, hass: HomeAssistant, config_entries_to_unload
+    ):
         """Test an area without sensors gets no sensor aggregates."""
-        await _setup_sensor_aggregates(hass, entries, [])
+        await _setup_sensor_aggregates(hass, config_entries_to_unload, [])
 
         assert hass.states.get(_sensor_aggregate_id("temperature")) is None
 
     async def test_sensors_without_state_are_skipped(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test a registered sensor that has no state yet is not aggregated."""
         sensor = _make_sensor(SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS)
@@ -522,15 +369,17 @@ class TestSensorAggregateSetup:
         hass.states.async_remove(sensor.entity_id)
         await hass.async_block_till_done()
 
-        await _setup_sensor_aggregates(hass, entries, [])
+        await _setup_sensor_aggregates(hass, config_entries_to_unload, [])
 
         assert hass.states.get(_sensor_aggregate_id("temperature")) is None
 
     async def test_sensors_without_device_class_are_skipped(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test sensors with no device class are never aggregated."""
-        await _setup_sensor_aggregates(hass, entries, [_make_sensor(None, None)])
+        await _setup_sensor_aggregates(
+            hass, config_entries_to_unload, [_make_sensor(None, None)]
+        )
 
         assert hass.states.get(_sensor_aggregate_id("temperature")) is None
         assert not [
@@ -540,12 +389,12 @@ class TestSensorAggregateSetup:
         ]
 
     async def test_aggregate_skipped_below_minimum_entities(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test a device class with too few sensors gets no aggregate."""
         await _setup_sensor_aggregates(
             hass,
-            entries,
+            config_entries_to_unload,
             [_make_sensor(SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS)],
             **{AggregateOptions.MIN_ENTITIES.key: 2},
         )
@@ -553,12 +402,12 @@ class TestSensorAggregateSetup:
         assert hass.states.get(_sensor_aggregate_id("temperature")) is None
 
     async def test_aggregate_skipped_for_unconfigured_class(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test a device class that is not configured gets no aggregate."""
         await _setup_sensor_aggregates(
             hass,
-            entries,
+            config_entries_to_unload,
             [_make_sensor(SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS)],
             **{AggregateOptions.SENSOR_DEVICE_CLASSES.key: ["humidity"]},
         )
@@ -566,27 +415,27 @@ class TestSensorAggregateSetup:
         assert hass.states.get(_sensor_aggregate_id("temperature")) is None
 
     async def test_disabling_aggregates_removes_the_sensor(
-        self, hass: HomeAssistant, entries
+        self, hass: HomeAssistant, config_entries_to_unload
     ):
         """Test an aggregate is removed from the registry once Aggregates is disabled."""
         await _setup_sensor_aggregates(
             hass,
-            entries,
+            config_entries_to_unload,
             [_make_sensor(SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS)],
         )
         registry = er.async_get(hass)
         aggregate_id = _sensor_aggregate_id("temperature")
         assert registry.async_get(aggregate_id) is not None
 
-        data = dict(entries[0].data)
+        data = dict(config_entries_to_unload[0].data)
         data["features"] = {}
-        hass.config_entries.async_update_entry(entries[0], data=data)
+        hass.config_entries.async_update_entry(config_entries_to_unload[0], data=data)
         await hass.async_block_till_done()
 
         assert registry.async_get(aggregate_id) is None
 
     async def test_aggregate_creation_error_is_contained(
-        self, hass: HomeAssistant, entries, caplog
+        self, hass: HomeAssistant, config_entries_to_unload, caplog
     ):
         """Test a failing aggregate does not break the platform."""
         with patch(
@@ -594,7 +443,7 @@ class TestSensorAggregateSetup:
         ):
             await _setup_sensor_aggregates(
                 hass,
-                entries,
+                config_entries_to_unload,
                 [
                     _make_sensor(
                         SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS
@@ -621,7 +470,7 @@ class TestAggregateStateClass:
     async def test_aggregate_state_class(
         self,
         hass: HomeAssistant,
-        entries,
+        config_entries_to_unload,
         device_class: SensorDeviceClass,
         unit: str,
         expected: str,
@@ -629,7 +478,7 @@ class TestAggregateStateClass:
         """Test the aggregate uses the state class that fits its device class."""
         await _setup_sensor_aggregates(
             hass,
-            entries,
+            config_entries_to_unload,
             [_make_sensor(device_class, unit)],
             **{AggregateOptions.SENSOR_DEVICE_CLASSES.key: [device_class.value]},
         )
@@ -675,16 +524,6 @@ async def _setup_binary_aggregates(
     config_entry = MockConfigEntry(domain=DOMAIN, data=data)
     await init_integration(hass, [config_entry])
     return config_entry
-
-
-@pytest.fixture(name="config_entries_to_unload")
-async def fixture_config_entries_to_unload(
-    hass: HomeAssistant,
-) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    entries: list[MockConfigEntry] = []
-    yield entries
-    await shutdown_integration(hass, entries)
 
 
 class TestAggregateSensors:

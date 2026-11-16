@@ -1,19 +1,12 @@
 """Tests for the media player groups feature and its control switch."""
 
-from collections.abc import AsyncGenerator
 import logging
 from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant.components.binary_sensor import (
-    DOMAIN as BINARY_SENSOR_DOMAIN,
-    BinarySensorDeviceClass,
-)
-from homeassistant.components.media_player.const import (
-    DOMAIN as MEDIA_PLAYER_DOMAIN,
-)
+from homeassistant.components.media_player.const import DOMAIN as MEDIA_PLAYER_DOMAIN
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -24,12 +17,15 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
-from custom_components.magic_areas.const import (
-    DOMAIN,
-    Features,
-)
+from custom_components.magic_areas.const import DOMAIN, Features
 
 from tests.const import DEFAULT_MOCK_AREA, MockAreaIds
+from tests.features.media_player.helpers import (
+    AREA_STATE_ID,
+    GROUP_ID,
+    SLUG,
+    make_entry,
+)
 from tests.helpers import (
     assert_in_attribute,
     assert_state,
@@ -39,71 +35,34 @@ from tests.helpers import (
     init_integration,
     merge_feature_config,
     setup_mock_entities,
-    shutdown_integration,
     trigger_occupancy,
 )
-from tests.mocks import MockBinarySensor, MockMediaPlayer
+from tests.mocks import MockMediaPlayer
 
 _LOGGER = logging.getLogger(__name__)
-
-SLUG = DEFAULT_MOCK_AREA.value
-
-
-GROUP_ID = (
-    f"{MEDIA_PLAYER_DOMAIN}.magic_areas_media_player_groups_{SLUG}_media_player_group"
-)
-
-AREA_STATE_ID = (
-    f"{BINARY_SENSOR_DOMAIN}.magic_areas_presence_tracking_{SLUG}_area_state"
-)
-
-
-def _entry(area: MockAreaIds, *feature_configs: dict, features=()) -> MockConfigEntry:
-    """Build a config entry with the given features enabled."""
-    data = get_basic_config_entry_data(area)
-    merge_feature_config(data, *feature_configs)
-    for feature in features:
-        data["features"].setdefault(feature, {})
-    return MockConfigEntry(domain=DOMAIN, data=data)
-
-
-@pytest.fixture(name="player")
-async def fixture_player(hass: HomeAssistant) -> MockMediaPlayer:
-    """Register one media player in the default area."""
-    mock_player = MockMediaPlayer(name="setup_player", unique_id="setup_player")
-    await setup_mock_entities(
-        hass, MEDIA_PLAYER_DOMAIN, {DEFAULT_MOCK_AREA: [mock_player]}
-    )
-    return mock_player
-
-
-@pytest.fixture(name="entries")
-async def fixture_entries(hass: HomeAssistant) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    registered: list[MockConfigEntry] = []
-    yield registered
-    await shutdown_integration(hass, registered)
 
 
 class TestMediaPlayerGroup:
     """Test the media player group creation."""
 
     async def test_group_contains_the_areas_media_players(
-        self, hass: HomeAssistant, player, entries
+        self, hass: HomeAssistant, player, config_entries_to_unload
     ):
         """Test the group is created and tracks the area's media players."""
-        entry = _entry(DEFAULT_MOCK_AREA, features=[Features.MEDIA_PLAYER_GROUPS])
-        entries.append(entry)
+        entry = make_entry(DEFAULT_MOCK_AREA, features=[Features.MEDIA_PLAYER_GROUPS])
+        config_entries_to_unload.append(entry)
         await init_integration(hass, [entry])
 
         group_state = hass.states.get(GROUP_ID)
         assert group_state is not None
         assert_in_attribute(group_state, "entity_id", player.entity_id)
 
-    async def test_no_group_without_media_players(self, hass: HomeAssistant, entries):
+    async def test_no_group_without_media_players(
+        self, hass: HomeAssistant, config_entries_to_unload
+    ):
         """Test no group is created for an area without media players."""
-        entry = _entry(DEFAULT_MOCK_AREA, features=[Features.MEDIA_PLAYER_GROUPS])
-        entries.append(entry)
+        entry = make_entry(DEFAULT_MOCK_AREA, features=[Features.MEDIA_PLAYER_GROUPS])
+        config_entries_to_unload.append(entry)
         await init_integration(hass, [entry])
 
         assert hass.states.get(GROUP_ID) is None
@@ -144,28 +103,6 @@ async def _turn_switch(hass: HomeAssistant, entity_id: str, on: bool) -> None:
         blocking=True,
     )
     await hass.async_block_till_done()
-
-
-@pytest.fixture(name="config_entries_to_unload")
-async def fixture_config_entries_to_unload(
-    hass: HomeAssistant,
-) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    entries: list[MockConfigEntry] = []
-    yield entries
-    await shutdown_integration(hass, entries)
-
-
-@pytest.fixture(name="motion_sensor")
-async def fixture_control_motion_sensor(hass: HomeAssistant) -> MockBinarySensor:
-    """Register a motion sensor in the default area."""
-    sensor = MockBinarySensor(
-        name="motion",
-        unique_id="switch_test_motion",
-        device_class=BinarySensorDeviceClass.MOTION,
-    )
-    await setup_mock_entities(hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: [sensor]})
-    return sensor
 
 
 class TestMediaPlayerControlSwitch:

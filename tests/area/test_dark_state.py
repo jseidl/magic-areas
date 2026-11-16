@@ -528,15 +528,6 @@ def _unmet_illuminance_sensor() -> MockSensor:
 class TestUnmetAggregateConditions:
     """Test the area ignores aggregates whose creation conditions are not met."""
 
-    @pytest.fixture(name="entries")
-    async def fixture_entries(
-        self, hass: HomeAssistant
-    ) -> AsyncGenerator[list[MockConfigEntry]]:
-        """Unload every entry registered by a test once it is done."""
-        registered: list[MockConfigEntry] = []
-        yield registered
-        await shutdown_integration(hass, registered)
-
     @pytest.mark.parametrize(
         ("binary_sensors", "sensors", "aggregate_options"),
         [
@@ -575,7 +566,7 @@ class TestUnmetAggregateConditions:
     async def test_unmet_conditions_fall_back_to_the_sun(
         self,
         hass: HomeAssistant,
-        entries,
+        config_entries_to_unload,
         binary_sensors: list[Any],
         sensors: list[Any],
         aggregate_options: dict[str, Any],
@@ -601,7 +592,7 @@ class TestUnmetAggregateConditions:
             ),
         )
         entry = MockConfigEntry(domain=DOMAIN, data=data)
-        entries.append(entry)
+        config_entries_to_unload.append(entry)
         await init_integration(hass, [entry])
 
         assert_in_attribute(

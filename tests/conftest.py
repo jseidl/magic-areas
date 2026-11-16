@@ -57,6 +57,16 @@ def patch_async_call_later(hass):
 # Config entries
 
 
+@pytest.fixture(name="config_entries_to_unload")
+async def fixture_config_entries_to_unload(
+    hass: HomeAssistant,
+) -> AsyncGenerator[list[MockConfigEntry]]:
+    """Unload every entry registered by a test once it is done."""
+    entries: list[MockConfigEntry] = []
+    yield entries
+    await shutdown_integration(hass, entries)
+
+
 @pytest.fixture(name="basic_config_entry")
 async def mock_config_entry() -> MockConfigEntry:
     """Fixture for mock configuration entry."""
@@ -80,6 +90,18 @@ async def mock_config_entry_all_areas_with_meta_config_entry() -> list[MockConfi
 
 
 # Entities
+
+
+@pytest.fixture(name="motion_sensor")
+async def fixture_motion_sensor(hass: HomeAssistant) -> MockBinarySensor:
+    """Register a motion sensor in the default area."""
+    sensor = MockBinarySensor(
+        name="motion",
+        unique_id="switch_test_motion",
+        device_class=BinarySensorDeviceClass.MOTION,
+    )
+    await setup_mock_entities(hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: [sensor]})
+    return sensor
 
 
 @pytest.fixture(name="entities_binary_sensor_motion_one")

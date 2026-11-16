@@ -1,9 +1,7 @@
 """Tests for the health binary sensor."""
 
-from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
-import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.components.binary_sensor import (
@@ -23,7 +21,6 @@ from tests.helpers import (
     init_integration,
     merge_feature_config,
     setup_mock_entities,
-    shutdown_integration,
 )
 from tests.mocks import MockBinarySensor
 
@@ -62,16 +59,6 @@ async def _setup_binary_area(
     config_entry = MockConfigEntry(domain=DOMAIN, data=data)
     await init_integration(hass, [config_entry])
     return config_entry
-
-
-@pytest.fixture(name="config_entries_to_unload")
-async def fixture_config_entries_to_unload(
-    hass: HomeAssistant,
-) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    entries: list[MockConfigEntry] = []
-    yield entries
-    await shutdown_integration(hass, entries)
 
 
 class TestHealthSensor:

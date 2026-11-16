@@ -1,6 +1,5 @@
 """Tests for the presence hold feature."""
 
-from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
 import pytest
@@ -9,10 +8,7 @@ from pytest_homeassistant_custom_component.common import (
     mock_restore_cache,
 )
 
-from homeassistant.components.binary_sensor import (
-    DOMAIN as BINARY_SENSOR_DOMAIN,
-    BinarySensorDeviceClass,
-)
+from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -34,10 +30,8 @@ from tests.helpers import (
     get_basic_config_entry_data,
     init_integration,
     merge_feature_config,
-    setup_mock_entities,
     shutdown_integration,
 )
-from tests.mocks import MockBinarySensor
 
 SLUG = DEFAULT_MOCK_AREA.value
 
@@ -78,28 +72,6 @@ async def _turn(hass: HomeAssistant, entity_id: str, on: bool) -> None:
         blocking=True,
     )
     await hass.async_block_till_done()
-
-
-@pytest.fixture(name="config_entries_to_unload")
-async def fixture_config_entries_to_unload(
-    hass: HomeAssistant,
-) -> AsyncGenerator[list[MockConfigEntry]]:
-    """Unload every entry registered by a test once it is done."""
-    entries: list[MockConfigEntry] = []
-    yield entries
-    await shutdown_integration(hass, entries)
-
-
-@pytest.fixture(name="motion_sensor")
-async def fixture_motion_sensor(hass: HomeAssistant) -> MockBinarySensor:
-    """Register a motion sensor in the default area."""
-    sensor = MockBinarySensor(
-        name="motion",
-        unique_id="switch_test_motion",
-        device_class=BinarySensorDeviceClass.MOTION,
-    )
-    await setup_mock_entities(hass, BINARY_SENSOR_DOMAIN, {DEFAULT_MOCK_AREA: [sensor]})
-    return sensor
 
 
 class TestPresenceHoldSwitch:
