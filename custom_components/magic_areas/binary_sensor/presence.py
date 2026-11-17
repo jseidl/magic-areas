@@ -30,6 +30,7 @@ from custom_components.magic_areas.const import (
     PRESENCE_SENSOR_VALID_ON_STATES,
     UPDATE_INTERVAL,
     AreaAttributes,
+    AreaAttributeValues,
     AreaConfigOptions,
     AreaStates,
     CalculationMode,
@@ -60,6 +61,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         self._last_off_time: datetime = datetime.now(UTC) - timedelta(days=2)
         self._clear_timeout_callback: Callable[[], None] | None = None
+        self._clear_timeout_expired: bool = False
 
         self._sensors: set[str] = set()
         self._active_sensors: set[str] = set()
@@ -221,7 +223,8 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
                 self.area.states
             ),
             AreaAttributes.CLEAR_TIMEOUT.value: self._get_clear_timeout() / ONE_MINUTE,
-            AreaAttributes.LIGHT_SENSOR.value: self.area.area_light_sensor,
+            AreaAttributes.LIGHT_SENSOR.value: self.area.area_light_sensor
+            or AreaAttributeValues.NOT_DEFINED.value,
         }
 
     # Entity loading
@@ -292,10 +295,17 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             )
             return
 
-        if to_state and to_state not in self._valid_on_states():
+        old_state = event.data["old_state"]
+        was_active = old_state is None or old_state.state in self._valid_on_states()
+
+        # Only an entity that stops being active restarts the clear countdown.
+        # Changes between inactive states (e.g. a media player going from idle
+        # to standby) must not push the clear deadline forward, otherwise a
+        # chatty inactive entity keeps the area occupied forever.
+        if to_state and to_state not in self._valid_on_states() and was_active:
             _LOGGER.debug(
                 "Setting last non-normal time %s %s",
-                event.data["old_state"],
+                old_state,
                 event.data["new_state"],
             )
             self._last_off_time = datetime.now(UTC)  # Update last_off_time
@@ -451,6 +461,12 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
             if not self.area.is_occupied():
                 return False
 
+            if self._clear_timeout_expired:
+                # The scheduled clear timer fired and nothing became active.
+                self._clear_timeout_expired = False
+                _LOGGER.debug("%s: Clear timer expired", self.area.name)
+                return False
+
             if self._is_on_clear_timeout():
                 _LOGGER.debug("%s: Area is on timeout", self.area.name)
                 if self._timeout_exceeded():
@@ -462,6 +478,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
                     )
                     self._set_clear_timeout()
         else:
+            self._clear_timeout_expired = False
             self._remove_clear_timeout()
 
         return True
@@ -550,8 +567,15 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
 
         _LOGGER.debug("%s: Scheduling clear in %s seconds", self.area.name, timeout)
         self._clear_timeout_callback = async_call_later(
-            self.hass, timeout, self._update_state
+            self.hass, timeout, self._clear_timeout_fired
         )
+
+    @callback
+    def _clear_timeout_fired(self, now: datetime | None = None) -> None:
+        """Handle the clear timer firing: it is no longer pending."""
+        self._clear_timeout_callback = None
+        self._clear_timeout_expired = True
+        self._update_state(now)
 
     def _get_clear_timeout(self) -> int:
         """Return configured clear timeout value."""
@@ -580,6 +604,7 @@ class AreaStateTrackerEntity(BinaryMagicEntity):
         # pylint: disable-next=not-callable
         self._clear_timeout_callback()
         self._clear_timeout_callback = None
+        self._clear_timeout_expired = False
 
     def _is_on_clear_timeout(self) -> bool:
         return self._clear_timeout_callback is not None
@@ -687,7 +712,7 @@ class AreaStateBinarySensor(AreaStateTrackerEntity, BinarySensorEntity):
                     CommonAttributes.ACTIVE_SENSORS.value: [],
                     AreaAttributes.LAST_ACTIVE_SENSORS.value: [],
                     AreaAttributes.LIGHT_SENSOR.value: self.area.area_light_sensor
-                    or "none",  # string representation for translation
+                    or AreaAttributeValues.NOT_DEFINED.value,
                     AreaAttributes.CLEAR_TIMEOUT.value: 0,
                 }
             )

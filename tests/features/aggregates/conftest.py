@@ -15,11 +15,7 @@ from homeassistant.components.sensor.const import (
     DOMAIN as SENSOR_DOMAIN,
     SensorDeviceClass,
 )
-from homeassistant.const import (
-    LIGHT_LUX,
-    UnitOfElectricCurrent,
-    UnitOfTemperature,
-)
+from homeassistant.const import LIGHT_LUX, UnitOfElectricCurrent, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.magic_areas.const import DOMAIN

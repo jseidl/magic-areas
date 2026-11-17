@@ -7,10 +7,16 @@ real Home Assistant instances with minimal mocking (following light_groups test 
 # pylint: disable=redefined-outer-name`
 
 from collections.abc import AsyncGenerator
+from datetime import timedelta
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
@@ -26,9 +32,13 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from custom_components.magic_areas.const import (
     DOMAIN,
+    UPDATE_INTERVAL,
+    AreaAttributes,
+    AreaAttributeValues,
     AreaConfigOptions,
     AreaStates,
     CommonAttributes,
@@ -299,12 +309,51 @@ class TestLightEntityResolution:
     async def test_windowless_area_no_light_sensor(
         self, hass: HomeAssistant, setup_windowless_area: dict
     ):
-        """Test windowless area has None for light sensor (priority 3)."""
+        """Test windowless area has no light sensor (priority 3)."""
         area_state_id = setup_windowless_area["area_state_id"]
 
         # Windowless area should always be dark
         area_state = hass.states.get(area_state_id)
         assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.DARK)
+
+        # The attribute is a translatable value, never null
+        assert (
+            area_state.attributes[AreaAttributes.LIGHT_SENSOR.value]
+            == AreaAttributeValues.NOT_DEFINED
+        )
+
+        # It stays that way after the next state update
+        hass.states.async_set("sun.sun", STATE_BELOW_HORIZON)
+        await hass.async_block_till_done()
+        async_fire_time_changed(
+            hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL + 1)
+        )
+        await hass.async_block_till_done()
+        area_state = hass.states.get(area_state_id)
+        assert (
+            area_state.attributes[AreaAttributes.LIGHT_SENSOR.value]
+            == AreaAttributeValues.NOT_DEFINED
+        )
+
+    def test_not_defined_value_has_a_translation(self):
+        """Test the not-defined attribute value is a translation state key."""
+        path = (
+            Path(__file__).parents[2]
+            / "custom_components/magic_areas/translations/en.json"
+        )
+        translations = json.loads(path.read_text(encoding="utf-8"))
+        found = []
+
+        def walk(node):
+            if isinstance(node, dict):
+                if "light_sensor" in node and "state" in node["light_sensor"]:
+                    found.append(node["light_sensor"]["state"])
+                for child in node.values():
+                    walk(child)
+
+        walk(translations)
+        assert found
+        assert all(AreaAttributeValues.NOT_DEFINED.value in states for states in found)
 
     async def test_sun_fallback_no_aggregates(
         self, hass: HomeAssistant, setup_basic_area_no_aggregates: dict

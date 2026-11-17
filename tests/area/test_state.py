@@ -17,12 +17,14 @@ from homeassistant.components.binary_sensor import (
     DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
 )
-from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
+from homeassistant.components.media_player import DOMAIN as MEDIA_PLAYER_DOMAIN
+from homeassistant.const import STATE_OFF, STATE_ON, STATE_PLAYING, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, StateMachine
 
 from custom_components.magic_areas.binary_sensor.presence import AreaStateTrackerEntity
 from custom_components.magic_areas.const import (
     DOMAIN,
+    UPDATE_INTERVAL,
     AreaAttributes,
     AreaStates,
     CommonAttributes,
@@ -44,7 +46,7 @@ from tests.helpers import (
     trigger_occupancy,
     trigger_secondary_state,
 )
-from tests.mocks import MockBinarySensor
+from tests.mocks import MockBinarySensor, MockMediaPlayer
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -581,3 +583,161 @@ async def test_unavailable_secondary_sensor_is_ignored(
     assert_in_attribute(
         hass.states.get(AREA_SENSOR_ID), CommonAttributes.STATES.value, AreaStates.SLEEP
     )
+
+
+# Regression tests for areas getting stuck occupied
+
+CLEAR_TIMEOUT_MINUTES = 1
+CLEAR_TIMEOUT_SECONDS = CLEAR_TIMEOUT_MINUTES * 60
+UPDATE_INTERVAL_SECONDS = UPDATE_INTERVAL + 1
+STATE_IDLE = "idle"
+STATE_STANDBY = "standby"
+
+
+@pytest.fixture(name="clear_timeout_config_entry")
+def mock_config_entry_clear_timeout() -> MockConfigEntry:
+    """Config entry with a real (non-zero) clear timeout."""
+    data = get_basic_config_entry_data(DEFAULT_MOCK_AREA)
+    data.update(
+        PresenceTrackingOptions.to_config(
+            {
+                PresenceTrackingOptions.CLEAR_TIMEOUT.key: CLEAR_TIMEOUT_MINUTES,
+                PresenceTrackingOptions.SENSOR_DEVICE_CLASS.key: (
+                    PresenceTrackingOptions.SENSOR_DEVICE_CLASS.default
+                ),
+            }
+        )
+    )
+    return MockConfigEntry(domain=DOMAIN, data=data)
+
+
+@pytest.fixture(name="clear_timeout_area")
+async def setup_clear_timeout_area(
+    hass: HomeAssistant,
+    entities_binary_sensor_motion_one: list[MockBinarySensor],
+    clear_timeout_config_entry: MockConfigEntry,
+) -> AsyncGenerator[dict[str, str]]:
+    """Area with a motion sensor and a media player, 1 minute clear timeout."""
+    media_player = MockMediaPlayer(name="tv", unique_id="tv")
+    await setup_mock_entities(
+        hass, MEDIA_PLAYER_DOMAIN, {DEFAULT_MOCK_AREA: [media_player]}
+    )
+    await init_integration(hass, [clear_timeout_config_entry])
+
+    yield {
+        "motion_id": entities_binary_sensor_motion_one[0].entity_id,
+        "media_player_id": media_player.entity_id,
+    }
+
+    await shutdown_integration(hass, [clear_timeout_config_entry])
+
+
+async def test_inactive_to_inactive_changes_do_not_postpone_clearing(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    clear_timeout_area: dict[str, str],
+) -> None:
+    """Test a chatty inactive entity cannot keep an area occupied forever."""
+    motion_id = clear_timeout_area["motion_id"]
+    media_player_id = clear_timeout_area["media_player_id"]
+
+    hass.states.async_set(motion_id, STATE_ON)
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    hass.states.async_set(motion_id, STATE_OFF)
+    await hass.async_block_till_done()
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    # The media player flaps between inactive states more often than the timeout
+    # would elapse. This must not restart the countdown.
+    for index in range(4):
+        await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS / 3)
+        hass.states.async_set(
+            media_player_id, STATE_STANDBY if index % 2 == 0 else STATE_IDLE
+        )
+        await hass.async_block_till_done()
+
+    await _advance(hass, freezer, UPDATE_INTERVAL_SECONDS)
+
+    area_state = hass.states.get(AREA_SENSOR_ID)
+    assert_state(area_state, STATE_OFF)
+    assert_in_attribute(area_state, CommonAttributes.STATES.value, AreaStates.CLEAR)
+
+
+async def test_active_sensor_going_inactive_restarts_the_clear_countdown(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    clear_timeout_area: dict[str, str],
+) -> None:
+    """Test an entity leaving the active state still restarts the countdown."""
+    motion_id = clear_timeout_area["motion_id"]
+    media_player_id = clear_timeout_area["media_player_id"]
+
+    hass.states.async_set(motion_id, STATE_ON)
+    await hass.async_block_till_done()
+    hass.states.async_set(media_player_id, STATE_PLAYING)
+    await hass.async_block_till_done()
+    hass.states.async_set(motion_id, STATE_OFF)
+    await hass.async_block_till_done()
+
+    # Playing media keeps the area occupied well past the clear timeout
+    await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS * 3)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    # Media stopping is a real active -> inactive change: countdown restarts
+    hass.states.async_set(media_player_id, STATE_IDLE)
+    await hass.async_block_till_done()
+    await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS / 2)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_ON)
+
+    await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_OFF)
+
+
+async def test_fired_clear_timer_is_no_longer_pending(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    clear_timeout_area: dict[str, str],
+) -> None:
+    """Test the timer handle is released when the clear timer fires."""
+    motion_id = clear_timeout_area["motion_id"]
+    tracker = _tracker(hass)
+
+    hass.states.async_set(motion_id, STATE_ON)
+    await hass.async_block_till_done()
+    hass.states.async_set(motion_id, STATE_OFF)
+    await hass.async_block_till_done()
+    assert tracker._is_on_clear_timeout() is True  # pylint: disable=protected-access
+
+    await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS + 1)
+
+    assert tracker._is_on_clear_timeout() is False  # pylint: disable=protected-access
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_OFF)
+
+
+async def test_watchdog_clears_an_area_when_the_clear_timer_is_lost(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    clear_timeout_area: dict[str, str],
+) -> None:
+    """Test the periodic update still clears an area whose timer went missing."""
+    motion_id = clear_timeout_area["motion_id"]
+    tracker = _tracker(hass)
+
+    hass.states.async_set(motion_id, STATE_ON)
+    await hass.async_block_till_done()
+    hass.states.async_set(motion_id, STATE_OFF)
+    await hass.async_block_till_done()
+
+    # Simulate a lost timer
+    tracker._remove_clear_timeout()  # pylint: disable=protected-access
+    assert tracker._is_on_clear_timeout() is False  # pylint: disable=protected-access
+
+    # The next periodic update notices nothing is pending and reschedules the
+    # clear timer, so the area is not stuck.
+    await _advance(hass, freezer, UPDATE_INTERVAL_SECONDS)
+    assert tracker._is_on_clear_timeout() is True  # pylint: disable=protected-access
+
+    await _advance(hass, freezer, CLEAR_TIMEOUT_SECONDS + 1)
+    assert_state(hass.states.get(AREA_SENSOR_ID), STATE_OFF)

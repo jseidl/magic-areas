@@ -385,7 +385,7 @@
           "light_sensor": {
             "name": "Light sensor",
             "state": {
-              "none": "Not defined"
+              "not_defined": "Not defined"
             }
           },
           "presence_sensors": {

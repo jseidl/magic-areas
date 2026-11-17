@@ -544,6 +544,12 @@ class AreaAttributes(StrEnum):
     PRESENCE_SENSORS = auto()
 
 
+class AreaAttributeValues(StrEnum):
+    """Special attribute values; each must exist as a translation state key."""
+
+    NOT_DEFINED = auto()
+
+
 class MetaAreaType(StrEnum):
     """Meta area types."""
 

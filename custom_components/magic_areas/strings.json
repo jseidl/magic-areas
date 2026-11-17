@@ -385,7 +385,7 @@
           "light_sensor": {
             "name": "Light sensor",
             "state": {
-              "none": "None available"
+              "not_defined": "None available"
             }
           },
           "type": {
